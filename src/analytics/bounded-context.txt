@@ -1,0 +1,5 @@
+BOUNDED CONTEXT: analytics
+Nombre en el informe: Analíticas
+Aggregates (PROVISIONAL): por definir
+Pantallas de Figma: Métricas de autonomía
+Nota: Solo métricas de autonomía. Las métricas de ventas son de la web Angular (administrador).

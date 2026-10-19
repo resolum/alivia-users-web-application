@@ -1,0 +1,4 @@
+BOUNDED CONTEXT: iam
+Nombre en el informe: IAM
+Aggregates (PROVISIONAL): Account
+Pantallas de Figma: Inicio de sesión, Recuperar acceso
