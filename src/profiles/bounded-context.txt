@@ -1,0 +1,4 @@
+BOUNDED CONTEXT: profiles
+Nombre en el informe: Perfiles
+Aggregates (PROVISIONAL): Profile, HomeProfile
+Pantallas de Figma: Mi perfil, Hogar, Persona asistida (TODO confirmar)
