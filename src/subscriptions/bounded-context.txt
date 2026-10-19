@@ -1,0 +1,4 @@
+BOUNDED CONTEXT: subscriptions
+Nombre en el informe: Pagos y Suscripciones
+Aggregates (PROVISIONAL): Subscription, Payment
+Pantallas de Figma: Elegir plan, Contratación, Suscripción

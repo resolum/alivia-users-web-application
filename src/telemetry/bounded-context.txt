@@ -1,0 +1,4 @@
+BOUNDED CONTEXT: telemetry
+Nombre en el informe: Telemetría
+Aggregates (PROVISIONAL): Monitoring, Synchronization
+Pantallas de Figma: Dispositivos
