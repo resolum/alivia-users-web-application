@@ -87,7 +87,7 @@ export const es = {
       noAccount: '¿Aún no tienes una cuenta?',
       plans: 'Conoce nuestros planes',
       errors: {
-        passwordRequired: 'Ingresa tu contraseña.',
+        passwordRequired: 'Este campo es obligatorio.',
       },
       showcase: {
         connected: 'Plataforma Asistiva Conectada',

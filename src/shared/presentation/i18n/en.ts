@@ -85,7 +85,7 @@ export const en: Translations = {
       noAccount: "Don't have an account yet?",
       plans: 'Explore our plans',
       errors: {
-        passwordRequired: 'Enter your password.',
+        passwordRequired: 'This field is required.',
       },
       showcase: {
         connected: 'Connected Assistive Platform',

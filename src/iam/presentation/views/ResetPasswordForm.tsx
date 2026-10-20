@@ -83,7 +83,11 @@ export function ResetPasswordForm({
         title={t.resetPassword.title}
         subtitle={t.resetPassword.subtitle}
       />
-      <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form
+        noValidate
+        onSubmit={(event) => void handleSubmit(event)}
+        className="flex flex-col gap-4"
+      >
         {errorKey && <AuthErrorAlert message={t.errors[errorKey]} />}
         {showNewLink && (
           <Link
