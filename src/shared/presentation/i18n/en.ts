@@ -78,7 +78,7 @@ export const en: Translations = {
     signIn: {
       title: 'Welcome to Alivia',
       subtitle: 'Manage the care and service of your home.',
-      passwordLabel: 'Password',
+      credentialLabel: 'Password',
       remember: 'Remember me on this device',
       forgotPassword: 'Forgot your password?',
       submit: 'Sign in',

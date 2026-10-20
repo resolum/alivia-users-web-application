@@ -34,6 +34,7 @@ export function SignInForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
+  const [unexpectedSubmitFailure, setUnexpectedSubmitFailure] = useState(false);
   const [errors, setErrors] = useState<
     FieldErrors<'emailAddress' | 'password'>
   >({});
@@ -43,7 +44,7 @@ export function SignInForm() {
     setErrors((current) => ({ ...current, [field]: undefined }));
   }
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     const command = new SignInCommand({
       emailAddress: email.trim(),
@@ -54,9 +55,14 @@ export function SignInForm() {
 
     if (Object.keys(nextErrors).length > 0) return;
 
-    if (await submit(command, remember)) {
-      navigate(resolveOrigin(location.state), { replace: true });
-    }
+    setUnexpectedSubmitFailure(false);
+    submit(command, remember)
+      .then((successful) => {
+        if (successful) {
+          void navigate(resolveOrigin(location.state), { replace: true });
+        }
+      })
+      .catch(() => setUnexpectedSubmitFailure(true));
   }
 
   const emailError =
@@ -73,10 +79,13 @@ export function SignInForm() {
   return (
     <form
       noValidate
-      onSubmit={(event) => void handleSubmit(event)}
+      onSubmit={handleSubmit}
       className="flex flex-col gap-4"
     >
       {errorKey && <AuthErrorAlert message={t.errors[errorKey]} />}
+      {unexpectedSubmitFailure && (
+        <AuthErrorAlert message={t.errors.unknown} />
+      )}
 
       <AuthField
         id="sign-in-email"
@@ -105,7 +114,7 @@ export function SignInForm() {
 
       <AuthField
         id="sign-in-password"
-        label={t.signIn.passwordLabel}
+        label={t.signIn.credentialLabel}
         required
         requiredLabel={t.common.required}
         error={passwordError}

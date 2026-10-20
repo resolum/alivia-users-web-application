@@ -33,6 +33,7 @@ export function ResetPasswordForm({
   const { status, errorKey, submit } = useResetPassword();
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
+  const [unexpectedSubmitFailure, setUnexpectedSubmitFailure] = useState(false);
   const [errors, setErrors] = useState<ResetPasswordFormErrors>({});
   const requirements = evaluatePassword(password);
   const isSubmitting = status === 'submitting';
@@ -40,7 +41,7 @@ export function ResetPasswordForm({
   const showNewLink =
     errorKey === 'invalidPasswordToken' || errorKey === 'passwordTokenExpired';
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+  function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     const command = createDefinePasswordCommandFromUrl({
       token,
@@ -59,9 +60,14 @@ export function ResetPasswordForm({
 
     if (Object.keys(nextErrors).length > 0) return;
 
-    if (await submit(command)) {
-      navigate('/password-updated', { replace: true });
-    }
+    setUnexpectedSubmitFailure(false);
+    submit(command)
+      .then((successful) => {
+        if (successful) {
+          void navigate('/password-updated', { replace: true });
+        }
+      })
+      .catch(() => setUnexpectedSubmitFailure(true));
   }
 
   const passwordError =
@@ -85,10 +91,13 @@ export function ResetPasswordForm({
       />
       <form
         noValidate
-        onSubmit={(event) => void handleSubmit(event)}
+        onSubmit={handleSubmit}
         className="flex flex-col gap-4"
       >
         {errorKey && <AuthErrorAlert message={t.errors[errorKey]} />}
+        {unexpectedSubmitFailure && (
+          <AuthErrorAlert message={t.errors.unknown} />
+        )}
         {showNewLink && (
           <Link
             to="/recover-password"

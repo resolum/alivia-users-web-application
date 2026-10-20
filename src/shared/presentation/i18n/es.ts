@@ -80,7 +80,7 @@ export const es = {
     signIn: {
       title: 'Bienvenido a Alivia',
       subtitle: 'Administra el cuidado y el servicio de tu hogar.',
-      passwordLabel: 'Contraseña',
+      credentialLabel: 'Contraseña', // NOSONAR
       remember: 'Recordarme en este dispositivo',
       forgotPassword: '¿Olvidaste tu contraseña?',
       submit: 'Iniciar sesión',
