@@ -1,19 +1,17 @@
-import { Navigate, Outlet } from 'react-router';
+import { Navigate, Outlet, useLocation } from 'react-router';
+import { getNavItemByPath } from '@/shared/presentation/components/navigator/nav-selectors.ts';
 import { useSession } from '@/shared/presentation/hooks/useSession.ts';
-import type { AccessLevel } from '@/shared/presentation/session/session.types.ts';
-
-interface RequireAccessProps {
-  required: AccessLevel;
-}
 
 /**
- * Route guard that redirects to /home when the session access level
- * does not meet the required level.
+ * Route guard that uses the navigation catalog as the single source of truth
+ * for the access levels required by each route.
  */
-export function RequireAccess({ required }: RequireAccessProps) {
+export function RequireAccess() {
   const { accessLevel } = useSession();
+  const { pathname } = useLocation();
+  const item = getNavItemByPath(pathname);
 
-  if (required === 'principal' && accessLevel !== 'principal') {
+  if (item && !item.accessLevels.includes(accessLevel)) {
     return <Navigate to="/home" replace />;
   }
 

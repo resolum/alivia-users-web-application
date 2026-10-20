@@ -4,17 +4,37 @@ type DeepStringMap<T> = {
 
 export const es = {
   nav: {
-    home: 'Inicio',
-    assistedPerson: 'Persona asistida',
-    careNetwork: 'Red de cuidado',
-    activities: 'Actividades',
-    household: 'Hogar',
-    subscription: 'Suscripción',
-    devices: 'Dispositivos',
-    incidents: 'Incidencias',
-    metrics: 'Métricas',
-    notifications: 'Notificaciones',
-    profile: 'Mi perfil',
+    items: {
+      home: 'Inicio',
+      assistedPerson: 'Persona asistida',
+      careNetwork: 'Red de cuidado',
+      activities: 'Actividades',
+      household: 'Hogar',
+      devices: 'Dispositivos',
+      contracting: 'Contratación',
+      subscription: 'Suscripción',
+      incidents: 'Incidencias',
+      metrics: 'Métricas',
+      profile: 'Mi perfil',
+      notifications: 'Notificaciones',
+    },
+    groups: {
+      principal: 'PRINCIPAL',
+      care: 'CUIDADO',
+      home: 'HOGAR',
+      service: 'SERVICIO',
+      analytics: 'ANALÍTICA',
+      account: 'CUENTA',
+    },
+    header: {
+      appName: 'Alivia',
+      principalSubtitle: 'Web del Cuidador',
+      guestSubtitle: 'Cuidador',
+      guestBadge: 'INVITADO',
+    },
+    mainNavigation: 'Navegación principal',
+    notificationsUnread: 'Notificaciones, {count} sin leer',
+    language: 'Idioma',
     signOut: 'Cerrar sesión',
   },
   actions: {
@@ -38,8 +58,11 @@ export const es = {
     openMenu: 'Abrir menú',
     closeMenu: 'Cerrar menú',
     userMenu: 'Menú de usuario',
-    notifications: 'Notificaciones',
+    comingSoon: 'Esta sección estará disponible próximamente.',
   },
 } as const;
 
 export type Translations = DeepStringMap<typeof es>;
+export type NavLabelKey = keyof typeof es.nav.items;
+export type NavGroupLabelKey = keyof typeof es.nav.groups;
+export type NavHeaderLabelKey = keyof typeof es.nav.header;

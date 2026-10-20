@@ -1,16 +1,17 @@
-import { useLocale } from '../../i18n/index.ts';
+import { useLocale, useTranslations } from '../../i18n/index.ts';
 import type { Locale } from '../../i18n/index.ts';
 
 const localeLabels: Record<Locale, string> = { es: 'ES', en: 'EN' };
 
 export function LanguageSwitcher() {
   const { locale, setLocale } = useLocale();
+  const t = useTranslations();
   const locales: Locale[] = ['es', 'en'];
 
   return (
     <div
       role="group"
-      aria-label="Idioma"
+      aria-label={t.nav.language}
       className="flex items-center gap-1"
     >
       {locales.map((l) => (
@@ -20,7 +21,7 @@ export function LanguageSwitcher() {
           aria-pressed={locale === l}
           onClick={() => setLocale(l)}
           className={[
-            'px-2 py-1 rounded text-xs font-semibold transition-colors duration-150',
+            'flex min-h-11 min-w-11 items-center justify-center rounded-lg px-2 text-xs font-semibold transition-colors duration-150',
             locale === l
               ? 'bg-alivia-primary text-white'
               : 'text-alivia-text-muted hover:bg-alivia-primary-mist',

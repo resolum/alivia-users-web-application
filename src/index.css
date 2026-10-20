@@ -15,6 +15,7 @@
   --color-alivia-text: #252F45;
   --color-alivia-text-muted: #3B4A6B;
   --color-alivia-text-soft: #8890A3;
+  --color-alivia-danger: #B3261E;
 }
 
 @layer base {

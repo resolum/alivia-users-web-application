@@ -27,4 +27,5 @@ export interface SessionState {
   user: SessionUser | null;
   accessLevel: AccessLevel;
   can: (permission: string) => boolean;
+  signOut: () => void;
 }
