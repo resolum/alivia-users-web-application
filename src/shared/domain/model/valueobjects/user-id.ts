@@ -12,6 +12,14 @@ export class UserId {
   }
 
   /**
+   * Creates a user identifier from its raw string value.
+   * @param value - Stable user id from the identity / accounts context.
+   */
+  static of(value: string): UserId {
+    return new UserId(value);
+  }
+
+  /**
    * @returns The raw string id.
    */
   getValue(): string {

@@ -1,12 +1,22 @@
 import type { ReactNode } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
+import {
+  ForgotPasswordView,
+  GuestOnly,
+  IamAuthLayout,
+  PasswordUpdatedView,
+  RequireAuth,
+  ResetPasswordView,
+  SignInView,
+} from '@/iam/index.ts';
 import { AppLayout } from '@/shared/presentation/components/layout/AppLayout.tsx';
-import { AuthLayout } from '@/shared/presentation/components/layout/AuthLayout.tsx';
-import { NAV_ITEMS, type NavItemId } from '@/shared/presentation/components/navigator/navigation.catalog.ts';
+import {
+  NAV_ITEMS,
+  type NavItemId,
+} from '@/shared/presentation/components/navigator/navigation.catalog.ts';
 import { HomeView } from '@/shared/presentation/views/home/HomeView.tsx';
 import { NavPlaceholderPage } from '@/shared/presentation/views/placeholder-page/NavPlaceholderPage.tsx';
 import { PageNotFoundView } from '@/shared/presentation/views/page-not-found/PageNotFoundView.tsx';
-import { PlaceholderPage } from '@/shared/presentation/views/placeholder-page/PlaceholderPage.tsx';
 import { RequireAccess } from './RequireAccess.tsx';
 
 const NAV_VIEWS: Partial<Record<NavItemId, ReactNode>> = {
@@ -19,8 +29,8 @@ const navRoutes = NAV_ITEMS.map((item) => ({
 }));
 
 /**
- * Application routes configuration.
- * Route paths and access levels come from the navigation catalog.
+ * Public auth screens live under GuestOnly; private screens require both a
+ * session and the access level declared by the navigation catalog.
  */
 export const router = createBrowserRouter([
   {
@@ -29,19 +39,31 @@ export const router = createBrowserRouter([
     element: <Navigate to="/home" replace />,
   },
   {
-    element: <RequireAccess />,
+    element: <GuestOnly />,
     children: [
+      { path: 'sign-in', element: <SignInView /> },
       {
-        element: <AppLayout />,
-        children: navRoutes,
+        element: <IamAuthLayout />,
+        children: [
+          { path: 'recover-password', element: <ForgotPasswordView /> },
+          { path: 'reset-password', element: <ResetPasswordView /> },
+          { path: 'password-updated', element: <PasswordUpdatedView /> },
+        ],
       },
     ],
   },
   {
-    element: <AuthLayout />,
+    element: <RequireAuth />,
     children: [
-      { path: 'sign-in', element: <PlaceholderPage title="Iniciar sesión" /> },
-      { path: 'recover-password', element: <PlaceholderPage title="Recuperar acceso" /> },
+      {
+        element: <RequireAccess />,
+        children: [
+          {
+            element: <AppLayout />,
+            children: navRoutes,
+          },
+        ],
+      },
     ],
   },
   { path: '*', element: <PageNotFoundView /> },

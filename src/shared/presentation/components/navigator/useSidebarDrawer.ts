@@ -1,7 +1,6 @@
 import {
   useCallback,
   useEffect,
-  useRef,
   useState,
   type RefObject,
 } from 'react';
@@ -50,31 +49,51 @@ function trapFocus(event: KeyboardEvent, panel: HTMLElement): void {
   }
 }
 
+interface DrawerState {
+  readonly isOpen: boolean;
+  readonly pathname: string;
+  readonly restoreFocus: boolean;
+}
+
 /** Mobile drawer state: focus trap, focus return, scroll lock and route close. */
 export function useSidebarDrawer(
   panelRef: RefObject<HTMLElement | null>,
   triggerRef: RefObject<HTMLButtonElement | null>,
 ) {
-  const [isOpen, setIsOpen] = useState(false);
   const { pathname } = useLocation();
-  const previousPath = useRef(pathname);
+  const [drawer, setDrawer] = useState<DrawerState>({
+    isOpen: false,
+    pathname,
+    restoreFocus: false,
+  });
 
-  const open = useCallback(() => setIsOpen(true), []);
+  if (drawer.pathname !== pathname) {
+    setDrawer({
+      isOpen: false,
+      pathname,
+      restoreFocus: drawer.isOpen,
+    });
+  }
+
+  const { isOpen } = drawer;
+
+  const open = useCallback(() => {
+    setDrawer((current) => ({ ...current, isOpen: true }));
+  }, []);
 
   const close = useCallback(() => {
-    setIsOpen(false);
+    setDrawer((current) => ({ ...current, isOpen: false, restoreFocus: false }));
     triggerRef.current?.focus();
   }, [triggerRef]);
 
-  const closeWithoutFocus = useCallback(() => setIsOpen(false), []);
+  const closeWithoutFocus = useCallback(() => {
+    setDrawer((current) => ({ ...current, isOpen: false, restoreFocus: false }));
+  }, []);
 
   useEffect(() => {
-    if (previousPath.current === pathname) return;
-    previousPath.current = pathname;
-    if (!isOpen) return;
-    setIsOpen(false);
+    if (!drawer.restoreFocus) return;
     triggerRef.current?.focus();
-  }, [pathname, isOpen, triggerRef]);
+  }, [drawer.restoreFocus, pathname, triggerRef]);
 
   useEffect(() => {
     if (!isOpen) return;
