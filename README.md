@@ -1,72 +1,79 @@
 # Alivia Users Web Application
 
-`alivia-users-web-application` is the web application for end-users of the Alivia platform, family members and caregivers.
+`alivia-users-web-application` is the web application for end-users of the Alivia platform: family members and caregivers.
 
-This application serves as the main interface for users to interact with the Alivia platform. It provides features for monitoring the health and daily activities of assisted persons, managing the care network, handling subscriptions and payments, and keeping up with notifications and autonomy metrics.
+This application serves as the main interface for users to interact with the Alivia platform. It provides features for monitoring the daily activities of assisted persons, managing the care network, handling subscriptions and payments, and keeping up with notifications and autonomy metrics.
 
 ## Purpose
 
 In the current version, the application focuses on:
 
-- displaying a home dashboard with alerts, devices, activities and subscription summaries
-- managing the assisted person's profile and household information
-- managing the care network (family members, caregivers and invitations)
-- managing and tracking activities
+- authenticating users (sign-in and password recovery) and managing the session
+- adapting navigation and content to the user's access level (principal caregiver or invited caregiver)
+- displaying a home dashboard with the day's care agenda, device alerts and upcoming events
+- managing the assisted person's profile and the care network (family members, caregivers and invitations)
+- managing and tracking care activities
 - managing subscriptions and payments
 - tracking technical support incidents and device installation
-- managing IoT devices linked to the assisted person
+- monitoring the IoT devices linked to the assisted person
 - displaying autonomy metrics and insights
-- managing user profile and notification preferences
+- managing the user profile and notification preferences
 
 ## Bounded Contexts
 
 ### IAM
 
-The IAM bounded context is responsible for managing user identities, sessions and access levels within the application.
+The IAM bounded context is responsible for user identities, sessions and access levels.
 
 Main responsibility:
 
-- authenticate users and manage user sessions
-- handle access levels (principal and invitado)
+- authenticate users, restore sessions and renew tokens
+- request and complete password recovery through a token link
+- derive the access level from the user's role: `ROLE_RELATIVE` is `principal` and `ROLE_CAREGIVER` is `invitado`; accounts with any other role belong to the administrator web and are rejected
 
 Main domain concept:
 
-- `Account`
+- `User`
+- `Role`
+- `AuthSession`
 
 ### Profiles
 
-The Profiles bounded context is responsible for managing user and household profiles, including personal information and preferences.
+The Profiles bounded context is responsible for the personal information of the people involved in the care.
 
 Main responsibility:
 
-- store and update the user's personal profile
-- manage the assisted person's profile and household information
+- store and update the user's personal profile (name, phone and photo)
+- provide the names displayed across the application
 
 Main domain concept:
 
-- `Profile`
-- `HomeProfile`
+- `PersonProfile`
 
-### Care
+The household information shown in the design has no backend aggregate yet.
 
-The Care bounded context is responsible for managing the network of people involved in the care of an assisted person.
+### Assistance
+
+The Assistance bounded context is responsible for the care of assisted persons and the network of people involved in it. The family member registers on their own, pays the subscription, manages assisted persons, invites caregivers by email and assigns care activities.
 
 Main responsibility:
 
-- manage family members and caregivers
+- manage assisted persons, family members and caregivers
 - handle invitations to join the care network
-- manage and track care activities
+- manage care activities, their assignments and the daily agenda
 
 Main domain concept:
 
-- `FamilyMember`
+- `Relative`
+- `AssistedPerson`
 - `Caregiver`
-- `CareTask`
 - `Invitation`
+- `CareActivity`
+- `AgendaItem`
 
 ### Subscriptions
 
-The Subscriptions bounded context is responsible for managing subscriptions and payments for the Alivia service.
+The Subscriptions bounded context is responsible for subscription plans and payments for the Alivia service.
 
 Main responsibility:
 
@@ -80,7 +87,7 @@ Main domain concept:
 
 ### Support
 
-The Support bounded context is responsible for managing technical support processes, from the initial evaluation through device installation to ongoing incident tracking.
+The Support bounded context is responsible for technical support, from the initial evaluation through device installation to ongoing incident tracking.
 
 Main responsibility:
 
@@ -93,27 +100,27 @@ Main domain concept:
 - `Installation`
 - `Incident`
 
-### Communications
+### Communication
 
-The Communications bounded context is responsible for managing notifications delivered to users.
+The Communication bounded context is responsible for the notifications delivered to users.
 
 Main responsibility:
 
-- send and display notifications to the user
+- display notifications to the user
 - manage communication channels and preferences
 
 Main domain concept:
 
 - `Notification`
 
-### Telemetry
+### Tracking
 
-The Telemetry bounded context is responsible for managing IoT devices linked to the assisted person and the data they produce.
+The Tracking bounded context is responsible for monitoring the devices installed in the assisted person's home and the data they produce.
 
 Main responsibility:
 
-- manage device registration and synchronization
 - monitor device status and readings
+- surface device alerts
 
 Main domain concept:
 
@@ -122,12 +129,11 @@ Main domain concept:
 
 ### Analytics
 
-The Analytics bounded context is responsible for processing and displaying autonomy metrics derived from telemetry data.
+The Analytics bounded context is responsible for displaying autonomy metrics derived from the tracking data.
 
 Main responsibility:
 
-- process telemetry data into autonomy metrics
-- display insights and reports to the user
+- display autonomy metrics, insights and reports
 
 Main domain concept:
 
@@ -139,40 +145,44 @@ Each bounded context follows a layered structure inspired by light DDD principle
 
 ### Domain Layer
 
-Contains the core concepts and data shapes of the bounded context.
+Contains the core concepts and data shapes of the bounded context, mirroring the backend domain model.
 
 Responsibilities:
 
-- define entities and value objects
-- enforce domain-level constraints
+- define entities, value objects and enumerations (as const arrays with derived types)
+- define commands with field-level validation
+- define domain errors with stable codes, never user-facing texts
 
 ### Application Layer
 
-Coordinates data retrieval and presentation-level workflows.
+Coordinates the workflows of the bounded context. In IAM it contains a single framework-free module, `iam.store.ts`.
 
 Responsibilities:
 
+- keep the session state and expose the use cases (sign in, sign out, password recovery)
 - orchestrate calls to the infrastructure layer
-- expose data and operations to the presentation layer
+- throw typed domain errors, leaving messages and navigation to the presentation layer
 
 ### Infrastructure Layer
 
-Contains the technical implementations for communicating with external services.
+Contains the technical implementations for communicating with the backend.
 
 Responsibilities:
 
 - implement endpoint clients extending `BaseApiEndpoint`
-- implement assemblers extending `BaseAssembler`
+- implement assemblers extending `BaseAssembler`, which are the only place that knows the shape of API responses
+- read configuration from the environment modules
+- provide a development mock that follows the backend contract
 
-### Presentation Layer
+### Presentation Layer (Interfaces)
 
 Exposes the views and components of the bounded context to the user.
 
 Responsibilities:
 
 - display data retrieved from the application layer
-- handle user interactions
-- render context-specific UI components
+- handle user interactions, form state and navigation
+- render context-specific UI components and route guards
 
 ## Project Structure
 
@@ -182,6 +192,7 @@ alivia-users-web-application/
 ├── pnpm-lock.yaml
 ├── README.md
 ├── LICENSE.md
+├── .env.example
 ├── .gitignore
 ├── index.html
 ├── vite.config.ts
@@ -189,16 +200,37 @@ alivia-users-web-application/
 ├── tsconfig.app.json
 ├── tsconfig.node.json
 ├── eslint.config.js
+├── sonar-project.properties
+├── docs/
+│   ├── iam-api-contract.md
+│   └── home-data-contract.md
 └── src/
     ├── index.css
     ├── main.tsx
     ├── App.tsx
     ├── vite-env.d.ts
+    ├── ARCHITECTURE.txt
     ├── app/
     │   ├── router.tsx
     │   ├── providers.tsx
-    │   └── RequireAccess.tsx
+    │   ├── RequireAccess.tsx
+    │   ├── layout/
+    │   │   └── AppTopBar.tsx
+    │   └── home/
+    │       ├── HomeView.tsx
+    │       ├── HomePrincipalView.tsx
+    │       ├── HomeGuestView.tsx
+    │       ├── home.view-model.ts
+    │       ├── home.data-source.ts
+    │       ├── home.demo-data.ts
+    │       ├── home.dates.ts
+    │       ├── useHomeSummary.ts
+    │       ├── i18n/
+    │       └── components/
     ├── shared/
+    │   ├── config/
+    │   │   ├── environment.types.ts
+    │   │   └── environment.ts
     │   ├── domain/
     │   │   └── model/
     │   │       ├── base-entity.ts
@@ -222,21 +254,59 @@ alivia-users-web-application/
     │       │   ├── top-bar/
     │       │   └── language-switcher/
     │       └── views/
-    │           ├── home/
     │           ├── page-not-found/
     │           └── placeholder-page/
     ├── iam/
+    │   ├── index.ts
     │   ├── bounded-context.txt
-    │   ├── domain/model/
+    │   ├── domain/
+    │   │   └── model/
+    │   │       ├── valueobjects/
+    │   │       │   └── email-address.ts
+    │   │       ├── iam.enums.ts
+    │   │       ├── field-errors.ts
+    │   │       ├── iam-error.ts
+    │   │       ├── password-policy.ts
+    │   │       ├── role.entity.ts
+    │   │       ├── user.entity.ts
+    │   │       ├── auth-session.ts
+    │   │       ├── sign-in.command.ts
+    │   │       ├── sign-up.command.ts
+    │   │       ├── verify-email.command.ts
+    │   │       ├── resend-verification-code.command.ts
+    │   │       ├── forgot-password.command.ts
+    │   │       └── reset-password.command.ts
     │   ├── application/
+    │   │   └── iam.store.ts
     │   ├── infrastructure/
+    │   │   ├── forgot-password/
+    │   │   ├── refresh/
+    │   │   ├── reset-password/
+    │   │   ├── sign-in/
+    │   │   ├── iam-api.ts
+    │   │   ├── iam-mock-api.ts
+    │   │   ├── iam-session.storage.ts
+    │   │   ├── iam.assembler.ts
+    │   │   ├── iam.resources.ts
+    │   │   ├── iam.environment.ts
+    │   │   └── iam.environment.types.ts
     │   └── presentation/
+    │       ├── IamSessionProvider.tsx
+    │       ├── hooks/
+    │       ├── guards/
+    │       ├── components/
+    │       ├── i18n/
+    │       └── views/
+    │           ├── sign-in/
+    │           ├── forgot-password/
+    │           ├── reset-password/
+    │           └── password-updated/
     ├── profiles/
-    ├── care/
+    ├── assistance/
     ├── subscriptions/
     ├── support/
-    ├── communications/
-    ├── telemetry/
+    ├── communication/
+    ├── tracking/
     └── analytics/
 ```
 
@@ -247,6 +317,8 @@ The web application is built using the following technologies:
 - TypeScript 6
 - React 19
 - Vite 8
-- Tailwind CSS v4 (CSS-first configuration, no `tailwind.config.js`)
+- Tailwind
 - React Router 8
 - pnpm 11
+- ESLint
+- SonarQube Cloud

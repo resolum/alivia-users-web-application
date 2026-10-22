@@ -8,18 +8,23 @@ import { defineConfig, globalIgnores } from "eslint/config";
 const CONTEXTS = [
   "iam",
   "profiles",
-  "care",
+  "assistance",
   "subscriptions",
   "support",
-  "communications",
-  "telemetry",
+  "communication",
   "analytics",
+  "tracking",
 ];
 
 function boundaryPatterns() {
   const internalPath = (ctx) => [
     {
-      group: [`@/${ctx}/**`],
+      group: [
+        `@/${ctx}/application/**`,
+        `@/${ctx}/domain/**`,
+        `@/${ctx}/infrastructure/**`,
+        `@/${ctx}/presentation/**`,
+      ],
       message: `Import from '${ctx}' via its public index.ts, not internal paths.`,
     },
   ];
@@ -29,13 +34,24 @@ function boundaryPatterns() {
       message: `src/shared must not import from the '${ctx}' context.`,
     },
   ];
+  const appImport = {
+    group: ["@/app", "@/app/**"],
+    message: "Bounded contexts must not import from src/app.",
+  };
+  const sharedAppImport = {
+    group: ["@/app", "@/app/**"],
+    message: "src/shared must not import from src/app.",
+  };
   const crossContextRules = CONTEXTS.map((ctx) => ({
     files: [`src/${ctx}/**`],
     rules: {
       "no-restricted-imports": [
         "error",
         {
-          patterns: CONTEXTS.filter((c) => c !== ctx).flatMap(internalPath),
+          patterns: [
+            ...CONTEXTS.filter((c) => c !== ctx).flatMap(internalPath),
+            appImport,
+          ],
         },
       ],
     },
@@ -46,12 +62,23 @@ function boundaryPatterns() {
       "no-restricted-imports": [
         "error",
         {
-          patterns: CONTEXTS.flatMap(allPaths),
+          patterns: [...CONTEXTS.flatMap(allPaths), sharedAppImport],
         },
       ],
     },
   };
-  return [...crossContextRules, sharedRule];
+  const appRule = {
+    files: ["src/app/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: CONTEXTS.flatMap(internalPath),
+        },
+      ],
+    },
+  };
+  return [...crossContextRules, sharedRule, appRule];
 }
 
 export default defineConfig([

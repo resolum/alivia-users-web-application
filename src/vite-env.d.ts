@@ -12,4 +12,5 @@ interface ImportMetaEnv {
   readonly VITE_IAM_MOCK?: string;
   readonly VITE_IAM_MOCK_FAIL?: string;
   readonly VITE_DEV_ROLE?: string;
+  readonly VITE_DEMO_DATA?: string;
 }

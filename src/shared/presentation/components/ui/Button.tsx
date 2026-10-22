@@ -3,9 +3,9 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 type Variant = 'primary' | 'secondary' | 'ghost';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: Variant;
-  loading?: boolean;
-  children: ReactNode;
+  readonly variant?: Variant;
+  readonly loading?: boolean;
+  readonly children: ReactNode;
 }
 
 const variantClasses: Record<Variant, string> = {

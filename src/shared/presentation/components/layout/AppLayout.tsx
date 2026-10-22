@@ -1,28 +1,28 @@
-import { useRef } from 'react';
-import { Outlet, useLocation } from 'react-router';
-import { Sidebar } from '../navigator/Sidebar.tsx';
-import { TopBar } from '../top-bar/TopBar.tsx';
+import { useCallback, useRef, type ReactNode } from 'react';
+import { Outlet } from 'react-router';
 import { useTranslations } from '../../i18n/index.ts';
-import { getNavItemByPath } from '../navigator/nav-selectors.ts';
+import { Sidebar } from '../navigator/Sidebar.tsx';
 import { useSidebarDrawer } from '../navigator/useSidebarDrawer.ts';
+import { AppLayoutControlsContext } from './app-layout-controls.ts';
 
-function useSectionTitle(): string {
-  const { pathname } = useLocation();
-  const t = useTranslations();
-  const item = getNavItemByPath(pathname);
-  return item ? t.nav.items[item.labelKey] : t.nav.header.appName;
+interface AppLayoutProps {
+  readonly topBar?: ReactNode;
+  readonly banner?: ReactNode;
 }
 
 /**
- * Main authenticated layout: fixed sidebar on desktop and
- * an accessible drawer on mobile.
+ * Main authenticated shell: fixed sidebar on desktop and
+ * an accessible drawer on mobile. The top bar and banner are injected
+ * by the app composition so shared stays independent from app.
  */
-export function AppLayout() {
+export function AppLayout({ topBar, banner }: AppLayoutProps = {}) {
   const t = useTranslations();
-  const title = useSectionTitle();
   const sidebarRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const { isOpen, open, close } = useSidebarDrawer(sidebarRef, menuButtonRef);
+  const setMenuButton = useCallback((node: HTMLButtonElement | null) => {
+    menuButtonRef.current = node;
+  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -45,12 +45,16 @@ export function AppLayout() {
         <Sidebar />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <TopBar
-          title={title}
-          menuOpen={isOpen}
-          onMenuOpen={open}
-          menuButtonRef={menuButtonRef}
-        />
+        <AppLayoutControlsContext.Provider
+          value={{
+            menuOpen: isOpen,
+            onMenuOpen: open,
+            menuButtonRef: setMenuButton,
+          }}
+        >
+          {topBar}
+        </AppLayoutControlsContext.Provider>
+        {banner}
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded focus:bg-white focus:px-4 focus:py-2 focus:text-alivia-primary focus:shadow"

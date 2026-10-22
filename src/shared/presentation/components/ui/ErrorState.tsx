@@ -2,16 +2,18 @@ import type { ReactNode } from 'react';
 import { Button } from './Button.tsx';
 
 interface ErrorStateProps {
-  title?: string;
-  message?: string;
-  onRetry?: () => void;
-  children?: ReactNode;
+  readonly title?: string;
+  readonly message?: string;
+  readonly retryLabel?: string;
+  readonly onRetry?: () => void;
+  readonly children?: ReactNode;
 }
 
 /** Shown when a section fails to load. Offers an optional retry action. */
 export function ErrorState({
   title = 'Algo salió mal',
   message = 'Por favor, inténtalo de nuevo.',
+  retryLabel = 'Reintentar',
   onRetry,
   children,
 }: ErrorStateProps) {
@@ -33,7 +35,7 @@ export function ErrorState({
       {children}
       {onRetry && (
         <Button variant="secondary" onClick={onRetry}>
-          Reintentar
+          {retryLabel}
         </Button>
       )}
     </div>
