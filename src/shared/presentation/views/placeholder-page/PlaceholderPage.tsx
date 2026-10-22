@@ -1,10 +1,12 @@
+import { useTranslations } from '../../i18n/index.ts';
 import { useDocumentTitle } from '../../hooks/useDocumentTitle.ts';
 
 interface PlaceholderPageProps {
-  title: string;
+  readonly title: string;
 }
 
 export function PlaceholderPage({ title }: PlaceholderPageProps) {
+  const t = useTranslations();
   useDocumentTitle(title);
 
   return (
@@ -18,7 +20,7 @@ export function PlaceholderPage({ title }: PlaceholderPageProps) {
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold text-alivia-text">{title}</h1>
         <p className="text-sm text-alivia-text-soft">
-          Esta sección estará disponible próximamente.
+          {t.layout.comingSoon}
         </p>
       </div>
     </div>

@@ -1,7 +1,7 @@
 /**
- * Base entity interface that all entities should implement. It includes a unique identifier (id) of type string.
+ * Base entity interface that all entities should implement. It includes a
+ * unique identifier whose type can be specialized by each bounded context.
  */
-
-export interface BaseEntity {
-  id: string;
+export interface BaseEntity<TId = string> {
+  id: TId;
 }

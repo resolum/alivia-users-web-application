@@ -1,14 +1,36 @@
+import type { ReactNode } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
+import {
+  ForgotPasswordView,
+  GuestOnly,
+  IamAuthLayout,
+  PasswordUpdatedView,
+  RequireAuth,
+  ResetPasswordView,
+  SignInView,
+} from '@/iam/index.ts';
 import { AppLayout } from '@/shared/presentation/components/layout/AppLayout.tsx';
-import { AuthLayout } from '@/shared/presentation/components/layout/AuthLayout.tsx';
+import {
+  NAV_ITEMS,
+  type NavItemId,
+} from '@/shared/presentation/components/navigator/navigation.catalog.ts';
 import { HomeView } from '@/shared/presentation/views/home/HomeView.tsx';
+import { NavPlaceholderPage } from '@/shared/presentation/views/placeholder-page/NavPlaceholderPage.tsx';
 import { PageNotFoundView } from '@/shared/presentation/views/page-not-found/PageNotFoundView.tsx';
-import { PlaceholderPage } from '@/shared/presentation/views/placeholder-page/PlaceholderPage.tsx';
 import { RequireAccess } from './RequireAccess.tsx';
 
+const NAV_VIEWS: Partial<Record<NavItemId, ReactNode>> = {
+  home: <HomeView />,
+};
+
+const navRoutes = NAV_ITEMS.map((item) => ({
+  path: item.route.slice(1),
+  element: NAV_VIEWS[item.id] ?? <NavPlaceholderPage itemId={item.id} />,
+}));
+
 /**
- * Application routes configuration.
- * Defines the routing structure for the React application, including lazy-loaded components and child routes.
+ * Public auth screens live under GuestOnly; private screens require both a
+ * session and the access level declared by the navigation catalog.
  */
 export const router = createBrowserRouter([
   {
@@ -17,31 +39,31 @@ export const router = createBrowserRouter([
     element: <Navigate to="/home" replace />,
   },
   {
-    element: <AppLayout />,
+    element: <GuestOnly />,
     children: [
-      { path: 'home', element: <HomeView /> },
-      { path: 'assisted-person', element: <PlaceholderPage title="Persona asistida" /> },
-      { path: 'activities', element: <PlaceholderPage title="Actividades" /> },
-      { path: 'notifications', element: <PlaceholderPage title="Notificaciones" /> },
-      { path: 'profile', element: <PlaceholderPage title="Mi perfil" /> },
+      { path: 'sign-in', element: <SignInView /> },
       {
-        element: <RequireAccess required="principal" />,
+        element: <IamAuthLayout />,
         children: [
-          { path: 'care-network', element: <PlaceholderPage title="Red de cuidado" /> },
-          { path: 'household', element: <PlaceholderPage title="Hogar" /> },
-          { path: 'subscription', element: <PlaceholderPage title="Suscripción" /> },
-          { path: 'devices', element: <PlaceholderPage title="Dispositivos" /> },
-          { path: 'incidents', element: <PlaceholderPage title="Incidencias" /> },
-          { path: 'metrics', element: <PlaceholderPage title="Métricas" /> },
+          { path: 'recover-password', element: <ForgotPasswordView /> },
+          { path: 'reset-password', element: <ResetPasswordView /> },
+          { path: 'password-updated', element: <PasswordUpdatedView /> },
         ],
       },
     ],
   },
   {
-    element: <AuthLayout />,
+    element: <RequireAuth />,
     children: [
-      { path: 'sign-in', element: <PlaceholderPage title="Iniciar sesión" /> },
-      { path: 'recover-password', element: <PlaceholderPage title="Recuperar acceso" /> },
+      {
+        element: <RequireAccess />,
+        children: [
+          {
+            element: <AppLayout />,
+            children: navRoutes,
+          },
+        ],
+      },
     ],
   },
   { path: '*', element: <PageNotFoundView /> },

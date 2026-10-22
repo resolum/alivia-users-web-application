@@ -1,12 +1,14 @@
 import type { InputHTMLAttributes } from 'react';
 
 const inputBase =
-  'w-full rounded-lg border border-alivia-primary-mist bg-white px-3 py-2 ' +
+  'w-full rounded-lg border border-transparent bg-alivia-primary-mist/60 px-3 py-2 ' +
   'text-sm text-alivia-text placeholder:text-alivia-text-soft ' +
   'transition-colors duration-150 ' +
   'hover:border-alivia-primary-light ' +
-  'focus:border-alivia-primary-mid focus:outline-none ' +
+  'focus:border-alivia-primary-mid focus:bg-white focus:outline-none ' +
   'disabled:bg-alivia-mint disabled:cursor-not-allowed';
+
+export { inputBase };
 
 export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={inputBase} {...props} />;

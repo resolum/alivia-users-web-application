@@ -10,11 +10,13 @@
   --color-alivia-primary-mist: #DCE5F7;
   --color-alivia-secondary: #2EC4B6;
   --color-alivia-secondary-dark: #1E9184;
+  --color-alivia-secondary-deep: #14746B;
   --color-alivia-secondary-light: #A3E8E0;
   --color-alivia-mint: #E6F8F5;
   --color-alivia-text: #252F45;
   --color-alivia-text-muted: #3B4A6B;
   --color-alivia-text-soft: #8890A3;
+  --color-alivia-danger: #B3261E;
 }
 
 @layer base {
