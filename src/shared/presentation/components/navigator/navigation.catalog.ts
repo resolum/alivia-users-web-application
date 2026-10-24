@@ -20,7 +20,7 @@ const PRINCIPAL_ACCESS_LEVELS = ['principal'] as const;
  * destinations owned by different contexts (for example, contracting).
  */
 export const NAV_ITEMS = [
-  // shared
+  // app composition
   {
     id: 'home',
     labelKey: 'home',
@@ -28,7 +28,7 @@ export const NAV_ITEMS = [
     icon: 'home',
     accessLevels: BOTH_ACCESS_LEVELS,
   },
-  // profiles
+  // assistance
   {
     id: 'assistedPerson',
     labelKey: 'assistedPerson',
@@ -36,7 +36,7 @@ export const NAV_ITEMS = [
     icon: 'assistedPerson',
     accessLevels: BOTH_ACCESS_LEVELS,
   },
-  // care
+  // assistance
   {
     id: 'careNetwork',
     labelKey: 'careNetwork',
@@ -44,7 +44,7 @@ export const NAV_ITEMS = [
     icon: 'careNetwork',
     accessLevels: PRINCIPAL_ACCESS_LEVELS,
   },
-  // care
+  // assistance
   {
     id: 'activities',
     labelKey: 'activities',
@@ -52,7 +52,7 @@ export const NAV_ITEMS = [
     icon: 'activities',
     accessLevels: BOTH_ACCESS_LEVELS,
   },
-  // profiles
+  // shell (no bounded-context owner yet; PENDING(confirm))
   {
     id: 'household',
     labelKey: 'household',
@@ -60,7 +60,7 @@ export const NAV_ITEMS = [
     icon: 'household',
     accessLevels: PRINCIPAL_ACCESS_LEVELS,
   },
-  // telemetry
+  // tracking
   {
     id: 'devices',
     labelKey: 'devices',
@@ -108,7 +108,7 @@ export const NAV_ITEMS = [
     icon: 'profile',
     accessLevels: BOTH_ACCESS_LEVELS,
   },
-  // communications
+  // communication
   {
     id: 'notifications',
     labelKey: 'notifications',

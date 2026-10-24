@@ -1,0 +1,5 @@
+BOUNDED CONTEXT: tracking
+Nombre en el informe: Telemetría (5.10)
+Aggregates: por definir
+Pantallas de Figma: Dispositivos
+Nota: el contrato del backend figura como pendiente; no se modelan datos hasta confirmarlo.

@@ -32,8 +32,14 @@ export const es = {
       guestSubtitle: 'Cuidador',
       guestBadge: 'INVITADO',
     },
+    roles: {
+      principal: 'Cuidador Principal',
+      guest: 'Cuidador',
+      support: 'Cuidador de apoyo',
+    },
     mainNavigation: 'Navegación principal',
     notificationsUnread: 'Notificaciones, {count} sin leer',
+    notificationsUnreadNoCount: 'Notificaciones, hay sin leer',
     language: 'Idioma',
     signOut: 'Cerrar sesión',
   },
@@ -59,6 +65,7 @@ export const es = {
     closeMenu: 'Cerrar menú',
     userMenu: 'Menú de usuario',
     comingSoon: 'Esta sección estará disponible próximamente.',
+    demoBanner: 'Modo demostración: los datos son ficticios.',
   },
   iam: {
     auth: {
@@ -164,6 +171,76 @@ export const es = {
       configuration:
         'La aplicación no está configurada correctamente. Contacta a soporte.',
       unknown: 'Ocurrió un error inesperado. Inténtalo de nuevo.',
+    },
+  },
+  home: {
+    meta: {
+      title: 'Inicio',
+    },
+    greeting: {
+      hello: 'Hola, {name}',
+      helloNoName: 'Hola',
+    },
+    principal: {
+      summaryLabel: 'RESUMEN DE HOY',
+      reportIncident: 'Reportar incidencia',
+      newActivity: 'Nueva actividad',
+    },
+    panel: {
+      assistedPersonLabel: 'PERSONA ASISTIDA',
+      viewProfile: 'Ver perfil',
+      today: 'Hoy',
+      agendaLabel: 'Actividades de hoy',
+      scheduledActivity: '{count} actividad programada',
+      scheduledActivities: '{count} actividades programadas',
+      viewAgenda: 'Ver agenda completa',
+      selectorLabel: 'Seleccionar persona asistida',
+      emptyTitle: 'Aún no hay una persona asistida registrada',
+      emptyAction: 'Registrar persona asistida',
+      emptyAgenda: 'No hay actividades programadas para hoy.',
+    },
+    timeline: {
+      responsible: 'Responsable: {name}',
+    },
+    alert: {
+      extraSituation: '+{count} situación más',
+      extraSituations: '+{count} situaciones más',
+      viewDevice: 'Ver dispositivo',
+    },
+    event: {
+      label: 'PRÓXIMO EVENTO',
+      technician: 'Técnico asignado',
+      viewFollowUp: 'Ver seguimiento',
+    },
+    guest: {
+      welcome:
+        '¡Bienvenido a Alivia! Nos alegra contar con tu apoyo en el cuidado diario.',
+      nextActivityIntro: 'Esta es tu próxima actividad',
+      careFor: 'Cuidado de {name}',
+      nextActivityLabel: 'PRÓXIMA ACTIVIDAD',
+      viewActivity: 'Ver actividad',
+      viewMyActivities: 'Ver mis actividades',
+      emptyTitle: 'No tienes actividades próximas',
+      emptyDescription:
+        'Cuando tengas una actividad asignada, aparecerá aquí.',
+    },
+    status: {
+      scheduled: 'Programada',
+      inProgress: 'En curso',
+      completed: 'Completada',
+      cancelled: 'Cancelada',
+      missed: 'No realizada',
+    },
+    dates: {
+      today: 'Hoy',
+      tomorrow: 'Mañana',
+      overnight: 'hasta el día siguiente',
+    },
+    states: {
+      loading: 'Cargando…',
+      errorTitle: 'No pudimos cargar tu inicio',
+      errorMessage: 'Inténtalo de nuevo en unos momentos.',
+      retry: 'Reintentar',
     },
   },
 } as const;

@@ -9,7 +9,6 @@ import {
   ResetPasswordView,
   SignInView,
 } from '@/iam/index.ts';
-import { AppLayout } from '@/shared/presentation/components/layout/AppLayout.tsx';
 import {
   NAV_ITEMS,
   type NavItemId,
@@ -17,6 +16,7 @@ import {
 import { HomeView } from '@/shared/presentation/views/home/HomeView.tsx';
 import { NavPlaceholderPage } from '@/shared/presentation/views/placeholder-page/NavPlaceholderPage.tsx';
 import { PageNotFoundView } from '@/shared/presentation/views/page-not-found/PageNotFoundView.tsx';
+import { AppShell } from './shell/AppShell.tsx';
 import { RequireAccess } from './RequireAccess.tsx';
 
 const NAV_VIEWS: Partial<Record<NavItemId, ReactNode>> = {
@@ -59,7 +59,7 @@ export const router = createBrowserRouter([
         element: <RequireAccess />,
         children: [
           {
-            element: <AppLayout />,
+            element: <AppShell />,
             children: navRoutes,
           },
         ],

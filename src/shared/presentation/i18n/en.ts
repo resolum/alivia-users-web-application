@@ -30,8 +30,14 @@ export const en: Translations = {
       guestSubtitle: 'Caregiver',
       guestBadge: 'GUEST',
     },
+    roles: {
+      principal: 'Primary Caregiver',
+      guest: 'Caregiver',
+      support: 'Support caregiver',
+    },
     mainNavigation: 'Main navigation',
     notificationsUnread: 'Notifications, {count} unread',
+    notificationsUnreadNoCount: 'Notifications, unread',
     language: 'Language',
     signOut: 'Sign out',
   },
@@ -57,6 +63,7 @@ export const en: Translations = {
     closeMenu: 'Close menu',
     userMenu: 'User menu',
     comingSoon: 'This section will be available soon.',
+    demoBanner: 'Demo mode: the data is fictional.',
   },
   iam: {
     auth: {
@@ -159,6 +166,76 @@ export const en: Translations = {
       configuration:
         'The application is not configured correctly. Contact support.',
       unknown: 'Something unexpected happened. Please try again.',
+    },
+  },
+  home: {
+    meta: {
+      title: 'Home',
+    },
+    greeting: {
+      hello: 'Hello, {name}',
+      helloNoName: 'Hello',
+    },
+    principal: {
+      summaryLabel: 'TODAY AT A GLANCE',
+      reportIncident: 'Report an incident',
+      newActivity: 'New activity',
+    },
+    panel: {
+      assistedPersonLabel: 'ASSISTED PERSON',
+      viewProfile: 'View profile',
+      today: 'Today',
+      agendaLabel: "Today's activities",
+      scheduledActivity: '{count} scheduled activity',
+      scheduledActivities: '{count} scheduled activities',
+      viewAgenda: 'View full agenda',
+      selectorLabel: 'Select assisted person',
+      emptyTitle: 'No assisted person registered yet',
+      emptyAction: 'Register assisted person',
+      emptyAgenda: 'There are no activities scheduled for today.',
+    },
+    timeline: {
+      responsible: 'Responsible: {name}',
+    },
+    alert: {
+      extraSituation: '+{count} more situation',
+      extraSituations: '+{count} more situations',
+      viewDevice: 'View device',
+    },
+    event: {
+      label: 'UPCOMING EVENT',
+      technician: 'Assigned technician',
+      viewFollowUp: 'View follow-up',
+    },
+    guest: {
+      welcome:
+        'Welcome to Alivia! We are glad to have your support in daily care.',
+      nextActivityIntro: 'This is your next activity',
+      careFor: 'Caring for {name}',
+      nextActivityLabel: 'NEXT ACTIVITY',
+      viewActivity: 'View activity',
+      viewMyActivities: 'View my activities',
+      emptyTitle: 'You have no upcoming activities',
+      emptyDescription:
+        'When you have an assigned activity, it will appear here.',
+    },
+    status: {
+      scheduled: 'Scheduled',
+      inProgress: 'In progress',
+      completed: 'Completed',
+      cancelled: 'Cancelled',
+      missed: 'Missed',
+    },
+    dates: {
+      today: 'Today',
+      tomorrow: 'Tomorrow',
+      overnight: 'until the next day',
+    },
+    states: {
+      loading: 'Loading…',
+      errorTitle: 'We could not load your home',
+      errorMessage: 'Please try again in a moment.',
+      retry: 'Try again',
     },
   },
 };

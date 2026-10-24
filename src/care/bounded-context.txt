@@ -1,4 +1,0 @@
-BOUNDED CONTEXT: care
-Nombre en el informe: Cuidado
-Aggregates (PROVISIONAL): FamilyMember, CareTask, Invitation, Caregiver
-Pantallas de Figma: Red de cuidado, Aceptar invitación, Actividades
