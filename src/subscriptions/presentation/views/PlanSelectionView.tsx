@@ -49,7 +49,7 @@ export function PlanSelectionView() {
     void selectPreliminaryPlan(plan.code, billingPeriod)
       .then(() => {
         setSelectedCode(plan.code);
-        navigate(plan.code === 'MINIMUM' ? '/contract/configuration/summary' : '/contract/configuration/rooms');
+        void navigate(plan.code === 'MINIMUM' ? '/contract/configuration/summary' : '/contract/configuration/rooms');
       })
       .catch(() => {
         setSelectionError(true);

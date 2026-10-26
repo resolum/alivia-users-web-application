@@ -113,15 +113,15 @@ function StripeForm({ configuration, setup, onAuthorized }: StripeFormProps) {
         />
       </div>
       <div className="sm:col-span-2">
-        <label className={labelClassName}>Número de tarjeta</label>
+        <span className={labelClassName}>Número de tarjeta</span>
         <CardNumberElement className={fieldClassName} options={{ style: cardStyle, showIcon: true, disableLink: true }} />
       </div>
       <div>
-        <label className={labelClassName}>Fecha de vencimiento</label>
+        <span className={labelClassName}>Fecha de vencimiento</span>
         <CardExpiryElement className={fieldClassName} options={{ style: cardStyle }} />
       </div>
       <div>
-        <label className={labelClassName}>CVC</label>
+        <span className={labelClassName}>CVC</span>
         <CardCvcElement className={fieldClassName} options={{ style: cardStyle }} />
       </div>
       <div className="sm:col-span-2">
