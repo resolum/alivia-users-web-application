@@ -1,4 +1,5 @@
 import { useDocumentTitle } from '@/shared/presentation/hooks/useDocumentTitle.ts';
+import { Link } from 'react-router';
 import { AuthCard } from '../components/AuthCard.tsx';
 import { AuthShowcasePanel } from '../components/AuthShowcasePanel.tsx';
 import { PortalBadge } from '../components/PortalBadge.tsx';
@@ -65,9 +66,12 @@ export function SignInView() {
                     {t.signIn.plans}
                   </a>
                 ) : (
-                  <span className="font-semibold text-alivia-primary-mid">
+                  <Link
+                    to="/plans"
+                    className="font-semibold text-alivia-primary-mid underline-offset-4 hover:text-alivia-primary hover:underline"
+                  >
                     {t.signIn.plans}
-                  </span>
+                  </Link>
                 )}
               </p>
             </section>
