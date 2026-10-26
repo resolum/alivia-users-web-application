@@ -18,6 +18,7 @@ import { NavPlaceholderPage } from '@/shared/presentation/views/placeholder-page
 import { PageNotFoundView } from '@/shared/presentation/views/page-not-found/PageNotFoundView.tsx';
 import { AppShell } from './shell/AppShell.tsx';
 import { RequireAccess } from './RequireAccess.tsx';
+import { PlanConfigurationView, PlanSelectionView } from '@/subscriptions/index.ts';
 
 const NAV_VIEWS: Partial<Record<NavItemId, ReactNode>> = {
   home: <HomeView />,
@@ -38,6 +39,8 @@ export const router = createBrowserRouter([
     path: '/',
     element: <Navigate to="/home" replace />,
   },
+  { path: 'plans', element: <PlanSelectionView /> },
+  { path: 'contract/configuration/:substep?', element: <PlanConfigurationView /> },
   {
     element: <GuestOnly />,
     children: [
