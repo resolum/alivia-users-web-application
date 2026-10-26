@@ -1,5 +1,0 @@
-BOUNDED CONTEXT: subscriptions
-Nombre en el informe: Pagos y Suscripciones (5.6)
-Aggregates: Subscription, Payment
-Pantallas de Figma: Elegir plan, Contratación, Suscripción
-Nota: el contrato del backend figura como pendiente; los nombres son provisionales.
