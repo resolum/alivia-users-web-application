@@ -15,6 +15,7 @@ export class User implements BaseEntity<UserId> {
   private readonly _status: AccountStatus;
   private readonly _roles: Role[];
   private readonly _emailVerified: boolean;
+  private readonly _profileId: string | null;
 
   /**
    * Initializes a new User instance.
@@ -27,6 +28,7 @@ export class User implements BaseEntity<UserId> {
     status: AccountStatus;
     roles: readonly Role[];
     emailVerified: boolean;
+    profileId?: string | null;
   }) {
     this._id = params.id;
     this._emailAddress = params.emailAddress;
@@ -34,6 +36,7 @@ export class User implements BaseEntity<UserId> {
     this._status = params.status;
     this._roles = [...params.roles];
     this._emailVerified = params.emailVerified;
+    this._profileId = params.profileId ?? null;
   }
 
   get id(): UserId {
@@ -58,6 +61,11 @@ export class User implements BaseEntity<UserId> {
 
   get emailVerified(): boolean {
     return this._emailVerified;
+  }
+
+  /** Id of the linked person profile, owned by the profiles context. */
+  get profileId(): string | null {
+    return this._profileId;
   }
 
   /**

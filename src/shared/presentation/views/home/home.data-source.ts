@@ -32,21 +32,10 @@ const emptyHomeDataSource: HomeDataSource = {
   },
 };
 
-let dataSourcePromise: Promise<HomeDataSource> | null = null;
-
-async function createHomeDataSource(): Promise<HomeDataSource> {
-  if (import.meta.env.VITE_DEMO_DATA !== 'true') {
-    return emptyHomeDataSource;
-  }
-
-  const module = await import('./home.demo-data.ts');
-  return module.demoHomeDataSource;
-}
-
-/** Returns the singleton Home data source. */
+/**
+ * Returns the Home data source.
+ * shortcut: Home has no backend read model yet, so it shows its empty states; plug the HTTP source in here.
+ */
 export function getHomeDataSource(): Promise<HomeDataSource> {
-  if (dataSourcePromise === null) {
-    dataSourcePromise = createHomeDataSource();
-  }
-  return dataSourcePromise;
+  return Promise.resolve(emptyHomeDataSource);
 }

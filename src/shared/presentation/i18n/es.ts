@@ -65,7 +65,6 @@ export const es = {
     closeMenu: 'Cerrar menú',
     userMenu: 'Menú de usuario',
     comingSoon: 'Esta sección estará disponible próximamente.',
-    demoBanner: 'Modo demostración: los datos son ficticios.',
   },
   iam: {
     auth: {
@@ -85,7 +84,7 @@ export const es = {
       emailInvalid: 'Ingresa un correo electrónico válido.',
     },
     signIn: {
-      title: 'Bienvenido a Alivia',
+      title: 'Ingresa a tu cuenta',
       subtitle: 'Administra el cuidado y el servicio de tu hogar.',
       credentialLabel: 'Contraseña', // NOSONAR
       remember: 'Recordarme en este dispositivo',
@@ -108,7 +107,7 @@ export const es = {
     forgotPassword: {
       title: 'Recuperar contraseña',
       subtitle: 'Ingresa el correo asociado a tu cuenta.',
-      submit: 'Enviar código',
+      submit: 'Enviar enlace de recuperación',
       confirmationTitle: 'Revisa tu correo',
       confirmation:
         'Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña.',
@@ -121,7 +120,7 @@ export const es = {
       confirmLabel: 'Confirmar contraseña',
       submit: 'Cambiar contraseña',
       requirements: {
-        heading: 'REQUISITOS DE SEGURIDAD',
+        heading: 'Tu contraseña necesita',
         summary: 'Cumples {count} de 5 requisitos de seguridad.',
         items: {
           length: 'Al menos 8 caracteres',
@@ -138,6 +137,7 @@ export const es = {
         confirmRequired: 'Confirma tu contraseña.',
         passwordMismatch: 'Las contraseñas no coinciden.',
       },
+      linkMissingTitle: 'Este enlace no funciona',
       tokenMissing:
         'El enlace de recuperación no es válido o está incompleto.',
       requestNewLink: 'Solicitar un enlace nuevo',
@@ -148,6 +148,105 @@ export const es = {
         'Tu contraseña ha sido restablecida con éxito. Ya puedes iniciar sesión con tus nuevas credenciales.',
       submit: 'Ir a iniciar sesión',
     },
+    registration: {
+      progressLabel: 'Progreso de contratación',
+      stepOf: 'Paso {current} de {total}',
+      steps: {
+        plan: 'Plan',
+        account: 'Cuenta',
+        household: 'Hogar',
+        configuration: 'Configuración',
+        evaluation: 'Evaluación',
+      },
+      haveAccount: '¿Ya tienes una cuenta?',
+      signIn: 'Iniciar sesión',
+      brandLabel: 'Alivia, volver a los planes',
+    },
+    fieldErrors: {
+      required: 'Este campo es obligatorio.',
+      invalidEmail: 'Ingresa un correo electrónico válido.',
+      weakPassword: 'La contraseña no cumple todos los requisitos.',
+      passwordMismatch: 'Las contraseñas no coinciden.',
+      termsNotAccepted: 'Acepta los términos para continuar.',
+      invalidPhone: 'Ingresa un celular válido, por ejemplo 987 654 321.',
+      invalidDni: 'El DNI debe tener 8 dígitos.',
+      invalidDate: 'Ingresa una fecha válida que no sea futura.',
+      tooLong: 'El texto es demasiado largo.',
+      alreadyRegistered: 'Este dato ya está registrado.',
+      invalid: 'Revisa este dato.',
+    },
+    signUp: {
+      title: 'Crea tu cuenta de responsable',
+      subtitle:
+        'Con estos datos identificamos a quien contrata y administra el servicio del hogar.',
+      personalSection: 'Tus datos',
+      accessSection: 'Acceso a tu cuenta',
+      firstNameLabel: 'Nombres',
+      lastNameLabel: 'Apellidos',
+      phoneLabel: 'Celular',
+      phoneHint: 'Si es de otro país, inclúyelo con su código, por ejemplo +34.',
+      dniLabel: 'DNI',
+      birthDateLabel: 'Fecha de nacimiento',
+      passwordLabel: 'Contraseña', // NOSONAR
+      confirmLabel: 'Confirmar contraseña', // NOSONAR
+      terms:
+        'Acepto los términos y condiciones y la política de privacidad de Alivia.',
+      submit: 'Crear cuenta y enviar verificación',
+      alreadyRegisteredTitle: 'Ese correo ya tiene una cuenta.',
+      alreadyRegisteredBody:
+        'Inicia sesión con él o recupera tu acceso si no recuerdas la contraseña.',
+      goToSignIn: 'Iniciar sesión',
+      recoverAccess: 'Recuperar acceso',
+    },
+    emailSent: {
+      title: 'Revisa tu correo',
+      body: 'Enviamos un enlace a {email}. Abre el mensaje y pulsa «Verificar correo» para continuar con la contratación.',
+      hint: 'Si no aparece en unos minutos, revisa las carpetas de spam o promociones.',
+      wrongEmail: '¿Escribiste mal tu correo?',
+      registerAgain: 'Registrarme de nuevo',
+      noRegistration:
+        'No encontramos un registro en curso en este navegador. Escribe tu correo para recibir un enlace nuevo.',
+    },
+    resend: {
+      title: '¿No te llegó el correo?',
+      emailLabel: 'Correo registrado',
+      submit: 'Reenviar correo de verificación',
+      wait: 'Podrás reenviarlo en {seconds} s',
+      sent: 'Si el correo está registrado y pendiente de verificación, te enviamos un enlace nuevo. El anterior ya no funciona.',
+    },
+    verifyEmail: {
+      title: 'Verificando tu correo',
+      checking: 'Estamos confirmando tu enlace…',
+      failedTitle: 'No pudimos verificar tu correo',
+      failedBody:
+        'El enlace no es válido o perdió su vigencia. Solicita un nuevo correo de verificación.',
+      missingToken:
+        'El enlace está incompleto. Ábrelo de nuevo desde el correo o solicita uno nuevo.',
+      alreadyVerified: 'Tu correo ya estaba verificado. Inicia sesión para continuar.',
+    },
+    household: {
+      title: 'Registra la cuenta de tu hogar',
+      subtitle:
+        'Es la cuenta compartida de la vivienda. Tu usuario quedará vinculado como responsable autorizado.',
+      verifiedBanner: 'Correo verificado. Ya puedes registrar tu hogar.',
+      contactSection: 'Contacto del hogar',
+      locationSection: 'Ubicación de la vivienda',
+      aliasLabel: 'Nombre del hogar',
+      aliasPlaceholder: 'Ejemplo: Casa de mamá',
+      phoneLabel: 'Teléfono de contacto',
+      contactEmailLabel: 'Correo de contacto',
+      addressLabel: 'Dirección',
+      addressPlaceholder: 'Calle, número, piso o interior',
+      districtLabel: 'Distrito',
+      cityLabel: 'Ciudad',
+      submit: 'Guardar hogar y continuar',
+      pendingTitle: 'Completa estos datos para continuar al pago:',
+      notVerifiedTitle: 'Primero verifica tu correo',
+      notVerifiedBody:
+        'Para crear la cuenta del hogar necesitamos confirmar tu correo con el enlace que te enviamos.',
+      goToEmailSent: 'Ver cómo verificar mi correo',
+      startSignUp: 'Crear mi cuenta',
+    },
     errors: {
       invalidCredentials: 'El correo o la contraseña son incorrectos.',
       emailNotVerified: 'Debes verificar tu correo antes de ingresar.',
@@ -156,10 +255,11 @@ export const es = {
       accountBlocked: 'Tu cuenta está bloqueada. Contacta a soporte.',
       accountDeactivated: 'Tu cuenta está desactivada. Contacta a soporte.',
       emailAlreadyRegistered: 'Ese correo ya está registrado.',
-      emailAlreadyVerified: 'Ese correo ya fue verificado.',
-      invalidVerificationCode: 'El código de verificación no es válido.',
+      emailAlreadyVerified: 'Ese correo ya fue verificado. Inicia sesión para continuar.',
+      invalidVerificationCode:
+        'El enlace de verificación no es válido o ya se usó. Solicita un nuevo correo.',
       verificationCodeExpired:
-        'El código de verificación venció. Solicita uno nuevo.',
+        'El enlace de verificación venció. Solicita un nuevo correo.',
       invalidPasswordToken:
         'El enlace de recuperación no es válido. Solicita uno nuevo.',
       passwordTokenExpired:
@@ -167,6 +267,9 @@ export const es = {
       roleNotAllowed: 'Tu rol no tiene acceso a este portal.',
       rateLimited:
         'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.',
+      validationFailed: 'Revisa los campos marcados.',
+      serviceUnavailable:
+        'El servicio no está disponible en este momento. Inténtalo en unos minutos.',
       network: 'No pudimos conectar con el servidor. Revisa tu conexión.',
       configuration:
         'La aplicación no está configurada correctamente. Contacta a soporte.',
@@ -240,6 +343,71 @@ export const es = {
       loading: 'Cargando…',
       errorTitle: 'No pudimos cargar tu inicio',
       errorMessage: 'Inténtalo de nuevo en unos momentos.',
+      retry: 'Reintentar',
+    },
+  },
+  profiles: {
+    title: 'Mi perfil',
+    subtitle: 'Consulta y actualiza tu información personal',
+    breadcrumbHome: 'Inicio',
+    breadcrumbLabel: 'Ruta de navegación',
+    unsavedChanges: 'Cambios sin guardar',
+    header: {
+      changePhoto: 'Cambiar foto',
+      changePhotoOf: 'Cambiar foto de {name}',
+      emailVerified: 'Correo verificado',
+    },
+    form: {
+      sectionTitle: 'Datos personales',
+      requiredLegend: 'Obligatorio',
+      firstName: 'Nombres',
+      firstNameHint: 'Tal como figura en el documento oficial',
+      lastName: 'Apellidos',
+      lastNameHint: 'Apellidos paterno y materno',
+      dni: 'DNI',
+      dniHint: 'Validado en tu registro. Para corregirlo contacta con soporte.',
+      phoneNumber: 'Teléfono de contacto',
+      phoneHint: 'Utilizado para alertas de asistencia y urgencias',
+      email: 'Correo electrónico',
+      emailHint: 'Para modificar tu correo electrónico principal contacta con soporte.',
+      emailLocked: 'Verificado (no editable)',
+      cancel: 'Cancelar',
+      save: 'Guardar cambios',
+      saved: 'Cambios guardados',
+    },
+    photo: {
+      title: 'Actualizar fotografía',
+      close: 'Cerrar',
+      preview: 'Vista previa de imagen',
+      dropTitle: 'Arrastra una imagen o selecciónala',
+      dropHint: 'JPG o PNG (máximo 5MB)',
+      replace: 'Reemplazar',
+      remove: 'Eliminar foto actual',
+      removeQueued: 'La foto se eliminará al guardar.',
+      cancel: 'Cancelar',
+      save: 'Guardar foto',
+      saved: 'Foto actualizada',
+      removed: 'Foto eliminada',
+    },
+    fieldErrors: {
+      required: 'Este campo es obligatorio.',
+      too_short: 'Ingresa al menos 2 caracteres.',
+      too_long: 'Es demasiado largo.',
+      invalid_phone: 'Ingresa un celular válido, por ejemplo +51 984 123 456.',
+      invalid_photo_type: 'Solo se aceptan imágenes JPG o PNG.',
+      photo_too_large: 'La imagen pesa más de 5MB.',
+    },
+    errors: {
+      validation_failed: 'Revisa los campos marcados.',
+      forbidden: 'No tienes permiso para modificar este perfil.',
+      not_found: 'No encontramos tu perfil.',
+      photo_upload_unavailable: 'La subida de fotos aún no está disponible.',
+      network: 'No pudimos conectar con el servidor. Revisa tu conexión.',
+      unknown: 'Ocurrió un error inesperado. Inténtalo de nuevo.',
+    },
+    states: {
+      loading: 'Cargando tu perfil…',
+      errorTitle: 'No pudimos cargar tu perfil',
       retry: 'Reintentar',
     },
   },

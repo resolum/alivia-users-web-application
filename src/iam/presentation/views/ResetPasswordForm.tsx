@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { PasswordField } from '@/shared/presentation/components/base-form/index.ts';
 import type { FieldErrors } from '../../domain/model/field-errors.ts';
 import {
   evaluatePassword,
@@ -8,10 +7,10 @@ import {
   passwordsMatch,
 } from '../../domain/model/password-policy.ts';
 import { createDefinePasswordCommandFromUrl } from '../../domain/model/reset-password.command.ts';
-import { AuthErrorAlert } from '../components/AuthErrorAlert.tsx';
-import { AuthField } from '../components/AuthField.tsx';
-import { AuthFormHeader } from '../components/AuthFormHeader.tsx';
-import { AuthSubmitButton } from '../components/AuthSubmitButton.tsx';
+import { AuthButton } from '../components/AuthButton.tsx';
+import { AuthHeading } from '../components/AuthHeading.tsx';
+import { AuthNotice } from '../components/AuthNotice.tsx';
+import { AuthPasswordField } from '../components/AuthPasswordField.tsx';
 import { PasswordRequirements } from '../components/PasswordRequirements.tsx';
 import { useResetPassword } from '../hooks/useResetPassword.ts';
 import { useIamTranslations } from '../hooks/useIamTranslations.ts';
@@ -24,10 +23,9 @@ interface ResetPasswordFormProps {
 type ResetPasswordField = 'token' | 'newPassword' | 'confirmPassword';
 type ResetPasswordFormErrors = FieldErrors<ResetPasswordField>;
 
-export function ResetPasswordForm({
-  token,
-  purpose,
-}: ResetPasswordFormProps) {
+const REQUIREMENTS_ID = 'reset-password-requirements';
+
+export function ResetPasswordForm({ token, purpose }: ResetPasswordFormProps) {
   const t = useIamTranslations();
   const navigate = useNavigate();
   const { status, errorKey, submit } = useResetPassword();
@@ -35,10 +33,8 @@ export function ResetPasswordForm({
   const [confirmation, setConfirmation] = useState('');
   const [unexpectedSubmitFailure, setUnexpectedSubmitFailure] = useState(false);
   const [errors, setErrors] = useState<ResetPasswordFormErrors>({});
-  const requirements = evaluatePassword(password);
-  const isSubmitting = status === 'submitting';
   const canSubmit = isStrongPassword(password) && confirmation.length > 0;
-  const showNewLink =
+  const linkExpired =
     errorKey === 'invalidPasswordToken' || errorKey === 'passwordTokenExpired';
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
@@ -58,7 +54,12 @@ export function ResetPasswordForm({
 
     setErrors(nextErrors);
 
-    if (Object.keys(nextErrors).length > 0) return;
+    if (Object.keys(nextErrors).length > 0) {
+      document
+        .getElementById(nextErrors.newPassword ? 'reset-password' : 'reset-password-confirm')
+        ?.focus();
+      return;
+    }
 
     setUnexpectedSubmitFailure(false);
     submit(command)
@@ -84,92 +85,70 @@ export function ResetPasswordForm({
         : undefined;
 
   return (
-    <div className="space-y-6">
-      <AuthFormHeader
-        title={t.resetPassword.title}
-        subtitle={t.resetPassword.subtitle}
-      />
+    <>
+      <AuthHeading title={t.resetPassword.title} description={t.resetPassword.subtitle} />
+
       <form
         noValidate
         onSubmit={handleSubmit}
-        className="flex flex-col gap-4"
+        className="mt-8 flex animate-step-in flex-col gap-5 [animation-delay:60ms]"
       >
-        {errorKey && <AuthErrorAlert message={t.errors[errorKey]} />}
-        {unexpectedSubmitFailure && (
-          <AuthErrorAlert message={t.errors.unknown} />
+        {errorKey && (
+          <AuthNotice tone="error">
+            {t.errors[errorKey]}
+            {linkExpired && (
+              <>
+                {' '}
+                <Link
+                  to="/recover-password"
+                  className="font-semibold underline underline-offset-4"
+                >
+                  {t.resetPassword.requestNewLink}
+                </Link>
+              </>
+            )}
+          </AuthNotice>
         )}
-        {showNewLink && (
-          <Link
-            to="/recover-password"
-            className="text-sm font-semibold text-alivia-primary-mid underline-offset-4 hover:underline"
-          >
-            {t.resetPassword.requestNewLink}
-          </Link>
-        )}
+        {unexpectedSubmitFailure && <AuthNotice tone="error">{t.errors.unknown}</AuthNotice>}
 
-        <AuthField
+        <AuthPasswordField
           id="reset-password"
           label={t.resetPassword.passwordLabel}
-          required
-          requiredLabel={t.common.required}
+          autoComplete="new-password"
+          value={password}
+          describedBy={REQUIREMENTS_ID}
+          onValueChange={(value) => {
+            setPassword(value);
+            setErrors((current) => ({
+              ...current,
+              newPassword: undefined,
+              confirmPassword: undefined,
+            }));
+          }}
           error={passwordError}
-        >
-          <PasswordField
-            id="reset-password"
-            name="password"
-            autoComplete="new-password"
-            required
-            value={password}
-            aria-invalid={passwordError !== undefined}
-            aria-describedby={
-              passwordError ? 'reset-password-error' : undefined
-            }
-            onChange={(event) => {
-              setPassword(event.target.value);
-              setErrors((current) => ({
-                ...current,
-                newPassword: undefined,
-                confirmPassword: undefined,
-              }));
-            }}
-            showPasswordLabel={t.common.showPassword}
-            hidePasswordLabel={t.common.hidePassword}
-          />
-        </AuthField>
-        <PasswordRequirements requirements={requirements} />
+        />
+        <div id={REQUIREMENTS_ID} className="-mt-2">
+          <PasswordRequirements requirements={evaluatePassword(password)} />
+        </div>
 
-        <AuthField
+        <AuthPasswordField
           id="reset-password-confirm"
           label={t.resetPassword.confirmLabel}
-          required
-          requiredLabel={t.common.required}
+          autoComplete="new-password"
+          value={confirmation}
+          onValueChange={(value) => {
+            setConfirmation(value);
+            setErrors((current) => ({ ...current, confirmPassword: undefined }));
+          }}
           error={confirmationError}
-        >
-          <PasswordField
-            id="reset-password-confirm"
-            name="confirmPassword"
-            autoComplete="new-password"
-            required
-            value={confirmation}
-            aria-invalid={confirmationError !== undefined}
-            aria-describedby={
-              confirmationError ? 'reset-password-confirm-error' : undefined
-            }
-            onChange={(event) => {
-              setConfirmation(event.target.value);
-              setErrors((current) => ({ ...current, confirmPassword: undefined }));
-            }}
-            showPasswordLabel={t.common.showPassword}
-            hidePasswordLabel={t.common.hidePassword}
-          />
-        </AuthField>
+        />
 
-        <AuthSubmitButton
+        <AuthButton
           label={t.resetPassword.submit}
-          loading={isSubmitting}
+          loading={status === 'submitting'}
           disabled={!canSubmit}
         />
       </form>
-    </div>
+    </>
   );
 }

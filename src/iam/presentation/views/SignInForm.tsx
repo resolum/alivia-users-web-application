@@ -1,15 +1,11 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import {
-  Checkbox,
-  PasswordField,
-} from '@/shared/presentation/components/base-form/index.ts';
-import { inputBase } from '@/shared/presentation/components/base-form/Inputs.tsx';
 import type { FieldErrors } from '../../domain/model/field-errors.ts';
 import { SignInCommand } from '../../domain/model/sign-in.command.ts';
-import { AuthErrorAlert } from '../components/AuthErrorAlert.tsx';
-import { AuthField } from '../components/AuthField.tsx';
-import { AuthSubmitButton } from '../components/AuthSubmitButton.tsx';
+import { AuthButton } from '../components/AuthButton.tsx';
+import { AuthNotice } from '../components/AuthNotice.tsx';
+import { AuthPasswordField } from '../components/AuthPasswordField.tsx';
+import { AuthTextField } from '../components/AuthTextField.tsx';
 import { useSignIn } from '../hooks/useSignIn.ts';
 import { useIamTranslations } from '../hooks/useIamTranslations.ts';
 
@@ -38,11 +34,6 @@ export function SignInForm() {
   const [errors, setErrors] = useState<
     FieldErrors<'emailAddress' | 'password'>
   >({});
-  const isSubmitting = status === 'submitting';
-
-  function clearError(field: 'emailAddress' | 'password'): void {
-    setErrors((current) => ({ ...current, [field]: undefined }));
-  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
@@ -53,7 +44,10 @@ export function SignInForm() {
     const nextErrors = command.validate();
     setErrors(nextErrors);
 
-    if (Object.keys(nextErrors).length > 0) return;
+    if (Object.keys(nextErrors).length > 0) {
+      document.getElementById(nextErrors.emailAddress ? 'sign-in-email' : 'sign-in-password')?.focus();
+      return;
+    }
 
     setUnexpectedSubmitFailure(false);
     submit(command, remember)
@@ -72,86 +66,65 @@ export function SignInForm() {
         ? t.common.emailInvalid
         : undefined;
   const passwordError =
-    errors.password === 'required'
-      ? t.signIn.errors.passwordRequired
-      : undefined;
+    errors.password === 'required' ? t.signIn.errors.passwordRequired : undefined;
 
   return (
-    <form
-      noValidate
-      onSubmit={handleSubmit}
-      className="flex flex-col gap-4"
-    >
-      {errorKey && <AuthErrorAlert message={t.errors[errorKey]} />}
-      {unexpectedSubmitFailure && (
-        <AuthErrorAlert message={t.errors.unknown} />
-      )}
+    <form noValidate onSubmit={handleSubmit} className="flex flex-col gap-5">
+      {errorKey && <AuthNotice tone="error">{t.errors[errorKey]}</AuthNotice>}
+      {unexpectedSubmitFailure && <AuthNotice tone="error">{t.errors.unknown}</AuthNotice>}
 
-      <AuthField
+      <AuthTextField
         id="sign-in-email"
+        name="email"
+        type="email"
         label={t.common.emailLabel}
-        required
-        requiredLabel={t.common.required}
+        autoComplete="email"
+        autoCapitalize="none"
+        spellCheck={false}
+        placeholder={t.common.emailPlaceholder}
+        value={email}
+        onValueChange={(value) => {
+          setEmail(value);
+          setErrors((current) => ({ ...current, emailAddress: undefined }));
+        }}
         error={emailError}
-      >
-        <input
-          id="sign-in-email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          value={email}
-          placeholder={t.common.emailPlaceholder}
-          aria-invalid={emailError !== undefined}
-          aria-describedby={emailError ? 'sign-in-email-error' : undefined}
-          onChange={(event) => {
-            setEmail(event.target.value);
-            clearError('emailAddress');
-          }}
-          className={[inputBase, 'min-h-12'].join(' ')}
-        />
-      </AuthField>
+      />
 
-      <AuthField
+      <AuthPasswordField
         id="sign-in-password"
         label={t.signIn.credentialLabel}
-        required
-        requiredLabel={t.common.required}
+        autoComplete="current-password"
+        value={password}
+        onValueChange={(value) => {
+          setPassword(value);
+          setErrors((current) => ({ ...current, password: undefined }));
+        }}
         error={passwordError}
-      >
-        <PasswordField
-          id="sign-in-password"
-          name="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          aria-invalid={passwordError !== undefined}
-          aria-describedby={passwordError ? 'sign-in-password-error' : undefined}
-          onChange={(event) => {
-            setPassword(event.target.value);
-            clearError('password');
-          }}
-          showPasswordLabel={t.common.showPassword}
-          hidePasswordLabel={t.common.hidePassword}
-        />
-      </AuthField>
+        action={
+          <Link
+            to="/recover-password"
+            className="-my-3 inline-flex min-h-11 items-center text-sm font-semibold text-alivia-primary-mid underline-offset-4 transition-colors duration-150 ease-out hover:text-alivia-primary hover:underline"
+          >
+            {t.signIn.forgotPassword}
+          </Link>
+        }
+      />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Checkbox
+      <label
+        htmlFor="sign-in-remember"
+        className="-my-1 inline-flex min-h-11 cursor-pointer items-center gap-2.5 self-start text-sm text-alivia-text select-none"
+      >
+        <input
           id="sign-in-remember"
-          label={t.signIn.remember}
+          type="checkbox"
           checked={remember}
           onChange={(event) => setRemember(event.target.checked)}
+          className="size-[1.125rem] cursor-pointer rounded accent-alivia-primary"
         />
-        <Link
-          to="/recover-password"
-          className="inline-flex min-h-11 items-center text-sm font-semibold text-alivia-primary-mid hover:text-alivia-primary"
-        >
-          {t.signIn.forgotPassword}
-        </Link>
-      </div>
+        {t.signIn.remember}
+      </label>
 
-      <AuthSubmitButton label={t.signIn.submit} loading={isSubmitting} />
+      <AuthButton label={t.signIn.submit} loading={status === 'submitting'} />
     </form>
   );
 }

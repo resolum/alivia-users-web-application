@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react';
+import { loadProfile, subscribeToProfile } from '@/profiles/index.ts';
 import { useSession } from '@/shared/presentation/hooks/useSession.ts';
-import type { AccessLevel } from '@/shared/presentation/session/session.types.ts';
 
 export interface ShellData {
   readonly displayName: string;
@@ -15,26 +16,28 @@ const EMPTY_SHELL_DATA: ShellData = {
   unreadNotifications: 0,
 };
 
-const DEMO_SHELL_DATA: Record<AccessLevel, ShellData> = {
-  principal: {
-    displayName: 'María Elena Villanueva',
-    householdLabel: null,
-    assistedPersonName: null,
-    unreadNotifications: 4,
-  },
-  invitado: {
-    displayName: 'Carlos Rodríguez',
-    householdLabel: 'Hogar San Borja',
-    assistedPersonName: 'Alberto',
-    unreadNotifications: 1,
-  },
-};
+/** Name of the signed-in person from their profile; it follows edits made on "Mi perfil". */
+function useProfileName(profileId: string | null): string | null {
+  const [name, setName] = useState<{ id: string; value: string } | null>(null);
+
+  useEffect(() => {
+    if (profileId === null) return;
+    const unsubscribe = subscribeToProfile((profile) => {
+      if (profile.id === profileId) setName({ id: profileId, value: profile.fullName });
+    });
+    // A failed load keeps the fallback name; the profile screen reports the error.
+    loadProfile(profileId).catch(() => undefined);
+    return unsubscribe;
+  }, [profileId]);
+
+  // Ignores a name left over from a previous session's profile.
+  return name !== null && name.id === profileId ? name.value : null;
+}
 
 /** Shell data for the top bar. It must not use the IAM email as name. */
 export function useShellData(): ShellData {
-  const { accessLevel } = useSession();
-  if (import.meta.env.VITE_DEMO_DATA === 'true') {
-    return DEMO_SHELL_DATA[accessLevel];
-  }
-  return EMPTY_SHELL_DATA;
+  const { user } = useSession();
+  const profileName = useProfileName(user?.profileId ?? null);
+  // shortcut: household, assisted person and notifications have no backend source yet, so they stay empty.
+  return profileName === null ? EMPTY_SHELL_DATA : { ...EMPTY_SHELL_DATA, displayName: profileName };
 }

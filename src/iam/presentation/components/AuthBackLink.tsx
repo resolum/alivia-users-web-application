@@ -10,9 +10,12 @@ export function AuthBackLink({ to, label }: AuthBackLinkProps) {
   return (
     <Link
       to={to}
-      className="inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-alivia-primary-mid transition-colors duration-150 hover:text-alivia-primary"
+      className="group inline-flex min-h-11 items-center gap-2 text-base font-semibold text-alivia-primary-mid transition-colors duration-150 ease-out hover:text-alivia-primary"
     >
-      <ArrowLeft aria-hidden="true" className="size-4" />
+      <ArrowLeft
+        aria-hidden="true"
+        className="size-[1.125rem] transition-transform duration-150 ease-out group-hover:-translate-x-0.5"
+      />
       {label}
     </Link>
   );

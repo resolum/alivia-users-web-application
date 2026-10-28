@@ -15,6 +15,7 @@ interface UserSummary {
   readonly id: string;
   readonly emailAddress: string;
   readonly roles: readonly string[];
+  readonly profileId: string | null;
 }
 
 /** Session restored from browser storage, including the non-sensitive user. */
@@ -56,7 +57,9 @@ function parseUserSummary(value: unknown): UserSummary | null {
     return null;
   }
 
-  return { id, emailAddress, roles };
+  // Summaries saved before profileId existed restore with null until the next sign-in.
+  const profileId = typeof value.profileId === 'string' ? value.profileId : null;
+  return { id, emailAddress, roles, profileId };
 }
 
 function readUserSummary(persistence: TokenPersistence): UserSummary | null {
@@ -81,6 +84,7 @@ function writeUserSummary(persistence: TokenPersistence, user: User): void {
     id: user.id.getValue(),
     emailAddress: user.emailAddress.value,
     roles: user.roles.map((role) => role.name),
+    profileId: user.profileId,
   };
 
   try {
@@ -121,6 +125,7 @@ function toUser(summary: UserSummary): User | null {
     status: 'ACTIVE',
     roles,
     emailVerified: true,
+    profileId: summary.profileId,
   });
 }
 

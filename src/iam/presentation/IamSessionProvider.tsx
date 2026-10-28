@@ -22,6 +22,7 @@ export function IamSessionProvider({ children }: IamSessionProviderProps) {
           : {
               id: user.id.getValue(),
               displayName: user.emailAddress.value,
+              profileId: user.profileId,
             },
       accessLevel: user?.portalAccessLevel ?? 'invitado',
       signOut,

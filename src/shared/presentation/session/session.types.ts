@@ -14,6 +14,8 @@ export type SessionStatus = 'loading' | 'authenticated' | 'unauthenticated';
 export interface SessionUser {
   readonly id: string;
   readonly displayName: string;
+  /** Linked person profile, or null when the backend has not linked one. */
+  readonly profileId: string | null;
 }
 
 export interface SessionState {

@@ -1,5 +1,6 @@
 import { useDocumentTitle } from '@/shared/presentation/hooks/useDocumentTitle.ts';
-import { AuthLinkButton } from '../components/AuthLinkButton.tsx';
+import { AuthButton } from '../components/AuthButton.tsx';
+import { AuthHeading } from '../components/AuthHeading.tsx';
 import { AuthSuccessIcon } from '../components/AuthSuccessIcon.tsx';
 import { useIamTranslations } from '../hooks/useIamTranslations.ts';
 
@@ -8,17 +9,15 @@ export function PasswordUpdatedView() {
   useDocumentTitle(t.passwordUpdated.title);
 
   return (
-    <div role="status" className="space-y-6 text-center">
-      <AuthSuccessIcon />
-      <div className="space-y-2">
-        <h1 className="text-2xl leading-tight font-bold text-alivia-primary">
-          {t.passwordUpdated.title}
-        </h1>
-        <p className="text-sm text-alivia-text-muted">
-          {t.passwordUpdated.message}
-        </p>
+    <div role="status">
+      <AuthHeading
+        icon={<AuthSuccessIcon />}
+        title={t.passwordUpdated.title}
+        description={t.passwordUpdated.message}
+      />
+      <div className="mt-8 animate-step-in [animation-delay:60ms]">
+        <AuthButton to="/sign-in" label={t.passwordUpdated.submit} />
       </div>
-      <AuthLinkButton to="/sign-in" label={t.passwordUpdated.submit} />
     </div>
   );
 }
