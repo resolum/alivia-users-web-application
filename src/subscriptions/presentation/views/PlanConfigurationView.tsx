@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router';
 import { ArrowLeft, ArrowRight, BedDouble, CalendarDays, Check, DoorOpen, Grid2x2, Lightbulb, Mic, Plus, Wrench, X, type LucideIcon } from 'lucide-react';
-import { currentChosenSlot, formatLongDate, InstallationDateStep } from '@/support/index.ts';
+import { currentChosenSlot, formatLongDate, InstallationDateStep } from '@/operations/index.ts';
 import { changeDeviceQuantity, loadHomeConfiguration, replaceConfiguredRooms } from '../../application/home-configuration.store.ts';
 import type { DeviceType, HomeConfiguration, RoomConfiguration } from '../../domain/model/home-configuration.ts';
 import { readPlanSelection } from '../../infrastructure/plan-selection.storage.ts';

@@ -28,7 +28,7 @@ export interface ScheduleAppointmentRequest {
 }
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
-const APPOINTMENTS_PATH = import.meta.env.VITE_SUPPORT_APPOINTMENTS_PATH ?? '/api/v1/appointments';
+const APPOINTMENTS_PATH = import.meta.env.VITE_OPERATIONS_APPOINTMENTS_PATH ?? '/api/v1/appointments';
 
 const CONFLICT_MESSAGES: Readonly<Record<AppointmentConflict, string>> = {
   SLOT_TAKEN: 'Ese horario acaba de ocuparse. Elige otra franja.',

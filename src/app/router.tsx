@@ -19,7 +19,7 @@ import { PageNotFoundView } from '@/shared/presentation/views/page-not-found/Pag
 import { AppShell } from './shell/AppShell.tsx';
 import { RequireAccess } from './RequireAccess.tsx';
 import { PlanConfigurationView, PlanSelectionView } from '@/subscriptions/index.ts';
-import { EvaluationView } from '@/support/index.ts';
+import { EvaluationView } from '@/operations/index.ts';
 
 const NAV_VIEWS: Partial<Record<NavItemId, ReactNode>> = {
   home: <HomeView />,
