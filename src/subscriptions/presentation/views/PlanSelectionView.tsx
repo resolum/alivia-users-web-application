@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { Check } from 'lucide-react';
 import { loadActivePlans, selectPreliminaryPlan } from '../../application/plan-catalog.store.ts';
 import type { BillingPeriod, Plan } from '../../domain/model/plan.entity.ts';
+import { ConfigurationDraftRequestError } from '../../infrastructure/configuration-drafts-api.ts';
 import { readPlanSelection } from '../../infrastructure/plan-selection.storage.ts';
 import { ContractBrand } from '../components/ContractBrand.tsx';
 import { ContractProgress } from '../components/ContractProgress.tsx';
@@ -20,7 +21,7 @@ export function PlanSelectionView() {
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>(storedSelection?.billingPeriod ?? 'MONTHLY');
   const [pendingCode, setPendingCode] = useState<Plan['code'] | null>(null);
   const [selectedCode, setSelectedCode] = useState<Plan['code'] | null>(storedSelection?.planCode ?? null);
-  const [selectionError, setSelectionError] = useState(false);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
 
   const refresh = () => {
     setCatalog({ status: 'loading', plans: [] });
@@ -45,15 +46,20 @@ export function PlanSelectionView() {
 
   const handleSelect = (plan: Plan) => {
     setPendingCode(plan.code);
-    setSelectionError(false);
+    setSelectionError(null);
     void selectPreliminaryPlan(plan.code, billingPeriod)
       .then(() => {
         setSelectedCode(plan.code);
-        void navigate(plan.code === 'MINIMUM' ? '/contract/configuration/summary' : '/contract/configuration/rooms');
+        void navigate(plan.code === 'MINIMUM' ? '/contract/configuration/installation' : '/contract/configuration/rooms');
       })
-      .catch(() => {
-        setSelectionError(true);
-        refresh();
+      .catch((error: unknown) => {
+        // Only a 404 means the plan left the catalog; anything else must not be reported as such.
+        if (error instanceof ConfigurationDraftRequestError && error.status === 404) {
+          setSelectionError('El plan seleccionado ya no está disponible. Actualizamos el catálogo con los planes vigentes.');
+          refresh();
+        } else {
+          setSelectionError('No pudimos guardar tu selección. Revisa tu conexión e inténtalo de nuevo.');
+        }
       })
       .finally(() => setPendingCode(null));
   };
@@ -101,11 +107,11 @@ export function PlanSelectionView() {
 
         {selectionError && (
           <div role="alert" className="mx-auto mt-6 max-w-5xl rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-            El plan seleccionado ya no está disponible. Actualizamos el catálogo con los planes vigentes.
+            {selectionError}
           </div>
         )}
 
-        {selectedCode !== null && !selectionError && (
+        {selectedCode !== null && selectionError === null && (
           <div role="status" aria-live="polite" className="mx-auto mt-6 flex max-w-5xl flex-col gap-2 rounded-xl border border-alivia-secondary bg-alivia-mint px-5 py-4 text-left sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="font-bold text-alivia-secondary-deep"><Check aria-hidden="true" className="mr-1 inline size-4 align-[-3px]" />Selección preliminar guardada</p>
