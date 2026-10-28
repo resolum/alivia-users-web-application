@@ -14,6 +14,7 @@ export {
 export { BILLING_PERIODS, PLAN_CODES, Plan } from './domain/model/plan.entity.ts';
 export type { BillingPeriod, PlanCode, PlanProps } from './domain/model/plan.entity.ts';
 export { PlanSelection } from './domain/model/plan-selection.ts';
+export { readPlanSelection } from './infrastructure/plan-selection.storage.ts';
 export type { PlanSelectionProps } from './domain/model/plan-selection.ts';
 export {
   DEVICE_TYPES,
@@ -34,4 +35,5 @@ export type {
 } from './domain/model/payment-authorization.ts';
 
 export { PlanSelectionView } from './presentation/views/PlanSelectionView.tsx';
+export { ContractBrand } from './presentation/components/ContractBrand.tsx';
 export { PlanConfigurationView } from './presentation/views/PlanConfigurationView.tsx';

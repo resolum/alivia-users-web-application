@@ -19,6 +19,7 @@ import { PageNotFoundView } from '@/shared/presentation/views/page-not-found/Pag
 import { AppShell } from './shell/AppShell.tsx';
 import { RequireAccess } from './RequireAccess.tsx';
 import { PlanConfigurationView, PlanSelectionView } from '@/subscriptions/index.ts';
+import { EvaluationView } from '@/support/index.ts';
 
 const NAV_VIEWS: Partial<Record<NavItemId, ReactNode>> = {
   home: <HomeView />,
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
   },
   { path: 'plans', element: <PlanSelectionView /> },
   { path: 'contract/configuration/:substep?', element: <PlanConfigurationView /> },
+  { path: 'contract/evaluation/:substep?', element: <EvaluationView /> },
   {
     element: <GuestOnly />,
     children: [
