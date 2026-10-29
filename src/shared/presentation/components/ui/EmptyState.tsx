@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
 
 interface EmptyStateProps {
-  title: string;
-  description?: string;
-  action?: ReactNode;
+  readonly title: string;
+  readonly description?: string;
+  readonly action?: ReactNode;
 }
 
 /** Shown when a list or section has no data yet. */

@@ -1,0 +1,5 @@
+BOUNDED CONTEXT: assistance
+Nombre en el informe: Asistencia Médica (5.5)
+Aggregates: Relative, AssistedPerson, Invitation, Caregiver, CareActivity, ActivityLog, ActivityAssignment, AgendaItem
+Pantallas de Figma: Persona asistida, Red de cuidado, Actividades
+Nota: Persona asistida, Red de cuidado y Actividades pertenecen a assistance, no a profiles.

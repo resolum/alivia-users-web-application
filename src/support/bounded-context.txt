@@ -1,4 +1,0 @@
-BOUNDED CONTEXT: support
-Nombre en el informe: Soporte Técnico
-Aggregates (PROVISIONAL): Evaluation, Installation, Incident
-Pantallas de Figma: Fecha de evaluación, Seguimiento de la contratación, Incidencias

@@ -1,8 +1,5 @@
 /**
  * Access level for authenticated users.
- *
- * - `principal`: full access to all sections.
- * - `invitado`: restricted access to a subset of sections.
  */
 export type AccessLevel = 'principal' | 'invitado';
 
@@ -15,16 +12,15 @@ export type SessionStatus = 'loading' | 'authenticated' | 'unauthenticated';
  * Minimal user representation for the session.
  */
 export interface SessionUser {
-  id: string;
-  displayName: string;
+  readonly id: string;
+  readonly displayName: string;
+  /** Linked person profile, or null when the backend has not linked one. */
+  readonly profileId: string | null;
 }
 
-/**
- * Shape of the session context value.
- */
 export interface SessionState {
-  status: SessionStatus;
-  user: SessionUser | null;
-  accessLevel: AccessLevel;
-  can: (permission: string) => boolean;
+  readonly status: SessionStatus;
+  readonly user: SessionUser | null;
+  readonly accessLevel: AccessLevel;
+  readonly signOut: () => void;
 }

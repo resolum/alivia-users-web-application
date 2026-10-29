@@ -1,4 +1,0 @@
-BOUNDED CONTEXT: communications
-Nombre en el informe: Comunicaciones
-Aggregates (PROVISIONAL): por definir
-Pantallas de Figma: Notificaciones

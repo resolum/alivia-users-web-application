@@ -1,0 +1,5 @@
+BOUNDED CONTEXT: operations
+Nombre en el informe: Operaciones Técnicas (5.7)
+Aggregates: Evaluation, Installation, Incident
+Pantallas de Figma: Fecha de evaluación, Seguimiento de la contratación, Incidencias
+Nota: el contrato del backend figura como pendiente; los nombres son provisionales.

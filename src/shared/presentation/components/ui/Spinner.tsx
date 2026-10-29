@@ -1,6 +1,6 @@
 interface SpinnerProps {
-  label?: string;
-  size?: 'sm' | 'md' | 'lg';
+  readonly label?: string;
+  readonly size?: 'sm' | 'md' | 'lg';
 }
 
 const sizeClasses = { sm: 'size-4', md: 'size-8', lg: 'size-12' };
