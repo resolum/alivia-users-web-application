@@ -1,16 +1,23 @@
 import { BaseApi } from '@/shared/infrastructure/base-api.ts';
 import type { ForgotPasswordCommand } from '../../domain/model/forgot-password.command.ts';
+import { IamError } from '../../domain/model/iam-error.ts';
 import type { DefinePasswordCommand } from '../../domain/model/reset-password.command.ts';
 import { toIamErrorFromResponse } from '../iam-error.mapper.ts';
-import type {
-  ForgotPasswordRequest,
-  ResetPasswordRequest,
-} from './password-recovery.request.ts';
+import { PasswordRecoveryAssembler } from './password-recovery.assembler.ts';
 
-const forgotPasswordApiUrl =
-  `${import.meta.env.VITE_API_BASE_URL}/${import.meta.env.VITE_IAM_FORGOT_PASSWORD_ENDPOINT_PATH}`;
-const resetPasswordApiUrl =
-  `${import.meta.env.VITE_API_BASE_URL}/${import.meta.env.VITE_IAM_RESET_PASSWORD_ENDPOINT_PATH}`;
+const FORGOT_PASSWORD_PATH = import.meta.env.VITE_IAM_FORGOT_PASSWORD_ENDPOINT_PATH ?? '';
+const RESET_PASSWORD_PATH = import.meta.env.VITE_IAM_RESET_PASSWORD_ENDPOINT_PATH ?? '';
+
+/** PENDING(contract): the backend has no password recovery endpoints yet. */
+function resolveUrl(path: string): string {
+  if (path.trim() === '') {
+    throw new IamError({
+      code: 'configuration',
+      detail: 'The password recovery endpoint is not configured',
+    });
+  }
+  return `${import.meta.env.VITE_API_BASE_URL}/${path}`;
+}
 
 /**
  * Endpoint for the IAM password recovery flow.
@@ -24,15 +31,12 @@ export class PasswordRecoveryApiEndpoint {
    * @returns A promise that resolves when the request is processed.
    */
   async requestPasswordReset(command: ForgotPasswordCommand): Promise<void> {
-    const request: ForgotPasswordRequest = {
-      emailAddress: command.emailAddress,
-    };
     const response = await BaseApi.request(
-      forgotPasswordApiUrl,
+      resolveUrl(FORGOT_PASSWORD_PATH),
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(request),
+        body: JSON.stringify(PasswordRecoveryAssembler.toForgotRequestFromCommand(command)),
       },
       { authenticated: false },
     );
@@ -47,17 +51,12 @@ export class PasswordRecoveryApiEndpoint {
    * @returns A promise that resolves when the password has been updated.
    */
   async resetPassword(command: DefinePasswordCommand): Promise<void> {
-    const request: ResetPasswordRequest = {
-      token: command.token,
-      purpose: command.purpose,
-      newPassword: command.newPassword,
-    };
     const response = await BaseApi.request(
-      resetPasswordApiUrl,
+      resolveUrl(RESET_PASSWORD_PATH),
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(request),
+        body: JSON.stringify(PasswordRecoveryAssembler.toResetRequestFromCommand(command)),
       },
       { authenticated: false },
     );

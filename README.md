@@ -284,7 +284,6 @@ alivia-users-web-application/
     │   │   ├── reset-password/
     │   │   ├── sign-in/
     │   │   ├── iam-api.ts
-    │   │   ├── iam-mock-api.ts
     │   │   ├── iam-session.storage.ts
     │   │   ├── iam.assembler.ts
     │   │   ├── iam.resources.ts

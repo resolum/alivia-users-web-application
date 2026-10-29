@@ -50,7 +50,8 @@ export function PlanSelectionView() {
     void selectPreliminaryPlan(plan.code, billingPeriod)
       .then(() => {
         setSelectedCode(plan.code);
-        void navigate(plan.code === 'MINIMUM' ? '/contract/configuration/installation' : '/contract/configuration/rooms');
+        // Next step of the guided flow: the responsible account (IAM).
+        void navigate('/sign-up');
       })
       .catch((error: unknown) => {
         // Only a 404 means the plan left the catalog; anything else must not be reported as such.

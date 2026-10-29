@@ -1,7 +1,7 @@
 import { BaseApi } from '@/shared/infrastructure/base-api.ts';
 import type { AuthTokens } from '@/shared/infrastructure/token-storage.ts';
 import { toIamErrorFromResponse } from '../iam-error.mapper.ts';
-import type { RefreshRequest } from './refresh.request.ts';
+import { RefreshAssembler } from './refresh.assembler.ts';
 import type { RefreshResponse } from './refresh.response.ts';
 
 const refreshApiUrl =
@@ -17,13 +17,12 @@ export class RefreshApiEndpoint {
    * @returns A promise resolving to the new token pair.
    */
   async refresh(refreshToken: string): Promise<AuthTokens> {
-    const request: RefreshRequest = { refreshToken };
     const response = await BaseApi.request(
       refreshApiUrl,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(request),
+        body: JSON.stringify(RefreshAssembler.toRequestFromToken(refreshToken)),
       },
       { authenticated: false },
     );
@@ -32,9 +31,6 @@ export class RefreshApiEndpoint {
     }
 
     const data: RefreshResponse = await response.json();
-    return {
-      accessToken: data.accessToken,
-      refreshToken: data.refreshToken ?? refreshToken,
-    };
+    return RefreshAssembler.toTokensFromResponse(data, refreshToken);
   }
 }

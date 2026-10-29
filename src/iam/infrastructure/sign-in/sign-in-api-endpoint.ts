@@ -1,9 +1,8 @@
 import { BaseApi } from '@/shared/infrastructure/base-api.ts';
 import type { AuthSession } from '../../domain/model/auth-session.ts';
 import type { SignInCommand } from '../../domain/model/sign-in.command.ts';
-import { toSessionFromResource } from '../iam.assembler.ts';
 import { toIamErrorFromResponse } from '../iam-error.mapper.ts';
-import type { SignInRequest } from './sign-in.request.ts';
+import { SignInAssembler } from './sign-in.assembler.ts';
 import type { SignInResponse } from './sign-in.response.ts';
 
 const signInApiUrl =
@@ -19,16 +18,12 @@ export class SignInApiEndpoint {
    * @returns A promise resolving to the authenticated session.
    */
   async signIn(command: SignInCommand): Promise<AuthSession> {
-    const request: SignInRequest = {
-      emailAddress: command.emailAddress,
-      password: command.password,
-    };
     const response = await BaseApi.request(
       signInApiUrl,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(request),
+        body: JSON.stringify(SignInAssembler.toRequestFromCommand(command)),
       },
       { authenticated: false },
     );
@@ -37,6 +32,6 @@ export class SignInApiEndpoint {
     }
 
     const data: SignInResponse = await response.json();
-    return toSessionFromResource(data);
+    return SignInAssembler.toSessionFromResponse(data);
   }
 }

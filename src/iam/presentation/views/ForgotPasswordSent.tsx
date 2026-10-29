@@ -1,4 +1,5 @@
-import { AuthBackLink } from '../components/AuthBackLink.tsx';
+import { AuthButton } from '../components/AuthButton.tsx';
+import { AuthHeading } from '../components/AuthHeading.tsx';
 import { AuthSuccessIcon } from '../components/AuthSuccessIcon.tsx';
 import { useIamTranslations } from '../hooks/useIamTranslations.ts';
 
@@ -6,18 +7,14 @@ export function ForgotPasswordSent() {
   const t = useIamTranslations();
 
   return (
-    <div role="status" className="space-y-6 text-center">
-      <AuthSuccessIcon />
-      <div className="space-y-2">
-        <h1 className="text-2xl leading-tight font-bold text-alivia-primary">
-          {t.forgotPassword.confirmationTitle}
-        </h1>
-        <p className="text-sm text-alivia-text-muted">
-          {t.forgotPassword.confirmation}
-        </p>
-      </div>
-      <div className="flex justify-center">
-        <AuthBackLink to="/sign-in" label={t.common.backToSignIn} />
+    <div role="status">
+      <AuthHeading
+        icon={<AuthSuccessIcon />}
+        title={t.forgotPassword.confirmationTitle}
+        description={t.forgotPassword.confirmation}
+      />
+      <div className="mt-8 animate-step-in [animation-delay:60ms]">
+        <AuthButton to="/sign-in" variant="secondary" label={t.common.backToSignIn} />
       </div>
     </div>
   );

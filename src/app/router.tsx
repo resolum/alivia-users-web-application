@@ -1,14 +1,6 @@
 import type { ReactNode } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router';
-import {
-  ForgotPasswordView,
-  GuestOnly,
-  IamAuthLayout,
-  PasswordUpdatedView,
-  RequireAuth,
-  ResetPasswordView,
-  SignInView,
-} from '@/iam/index.ts';
+import { iamRoutes, RequireAuth } from '@/iam/index.ts';
 import {
   NAV_ITEMS,
   type NavItemId,
@@ -19,10 +11,11 @@ import { PageNotFoundView } from '@/shared/presentation/views/page-not-found/Pag
 import { AppShell } from './shell/AppShell.tsx';
 import { RequireAccess } from './RequireAccess.tsx';
 import { PlanConfigurationView, PlanSelectionView } from '@/subscriptions/index.ts';
-import { EvaluationView } from '@/operations/index.ts';
+import { ProfileView } from '@/profiles/index.ts';
 
 const NAV_VIEWS: Partial<Record<NavItemId, ReactNode>> = {
   home: <HomeView />,
+  profile: <ProfileView />,
 };
 
 const navRoutes = NAV_ITEMS.map((item) => ({
@@ -42,21 +35,7 @@ export const router = createBrowserRouter([
   },
   { path: 'plans', element: <PlanSelectionView /> },
   { path: 'contract/configuration/:substep?', element: <PlanConfigurationView /> },
-  { path: 'contract/evaluation/:substep?', element: <EvaluationView /> },
-  {
-    element: <GuestOnly />,
-    children: [
-      { path: 'sign-in', element: <SignInView /> },
-      {
-        element: <IamAuthLayout />,
-        children: [
-          { path: 'recover-password', element: <ForgotPasswordView /> },
-          { path: 'reset-password', element: <ResetPasswordView /> },
-          { path: 'password-updated', element: <PasswordUpdatedView /> },
-        ],
-      },
-    ],
-  },
+  ...iamRoutes,
   {
     element: <RequireAuth />,
     children: [

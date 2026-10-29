@@ -5,8 +5,17 @@ export {
   signOut,
   requestPasswordReset,
   resetPassword,
+  createHouseholdAccount,
+  getRegistrationProgress,
+  resendVerification,
+  signUp,
+  verifyEmail,
 } from './application/iam.store.ts';
-export type { IamState, IamStatus } from './application/iam.store.ts';
+export type {
+  IamState,
+  IamStatus,
+  RegistrationProgress,
+} from './application/iam.store.ts';
 
 export { IAM_ERROR_CODES, IamError } from './domain/model/iam-error.ts';
 export type { IamErrorCode } from './domain/model/iam-error.ts';
@@ -38,7 +47,14 @@ export type {
 export { ForgotPasswordCommand } from './domain/model/forgot-password.command.ts';
 export { SignInCommand } from './domain/model/sign-in.command.ts';
 export { VerifyEmailCommand } from './domain/model/verify-email.command.ts';
-export { ResendVerificationCodeCommand } from './domain/model/resend-verification-code.command.ts';
+export { SignUpCommand } from './domain/model/sign-up.command.ts';
+export type { SignUpField } from './domain/model/sign-up.command.ts';
+export { CreateHouseholdAccountCommand } from './domain/model/create-household-account.command.ts';
+export type { HouseholdField } from './domain/model/create-household-account.command.ts';
+export { ResendVerificationCommand } from './domain/model/resend-verification.command.ts';
+export { Account } from './domain/model/account.entity.ts';
+export { HouseholdAccount } from './domain/model/household-account.entity.ts';
+export { PhoneNumber } from './domain/model/valueobjects/phone-number.ts';
 export {
   DefinePasswordCommand,
   createDefinePasswordCommandFromUrl,
@@ -54,10 +70,5 @@ export type {
 } from './domain/model/password-policy.ts';
 
 export { IamSessionProvider } from './presentation/IamSessionProvider.tsx';
-export { IamAuthLayout } from './presentation/IamAuthLayout.tsx';
 export { RequireAuth } from './presentation/guards/RequireAuth.tsx';
-export { GuestOnly } from './presentation/guards/GuestOnly.tsx';
-export { SignInView } from './presentation/views/SignInView.tsx';
-export { ForgotPasswordView } from './presentation/views/ForgotPasswordView.tsx';
-export { ResetPasswordView } from './presentation/views/ResetPasswordView.tsx';
-export { PasswordUpdatedView } from './presentation/views/PasswordUpdatedView.tsx';
+export { iamRoutes } from './presentation/iam.routes.ts';

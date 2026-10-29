@@ -1,14 +1,11 @@
-import { AuthLayout } from '@/shared/presentation/components/layout/AuthLayout.tsx';
-import { useIamTranslations } from './hooks/useIamTranslations.ts';
+import { Outlet } from 'react-router';
+import { AuthFrame } from './components/AuthFrame.tsx';
 
+/** Shared frame of sign-in, password recovery and email verification. */
 export function IamAuthLayout() {
-  const t = useIamTranslations();
-
   return (
-    <AuthLayout
-      brandName={t.auth.brand}
-      portalLabel={t.auth.portalLabel}
-      footerText={t.auth.footer}
-    />
+    <AuthFrame>
+      <Outlet />
+    </AuthFrame>
   );
 }

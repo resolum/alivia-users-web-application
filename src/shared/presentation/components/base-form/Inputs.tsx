@@ -2,7 +2,8 @@ import type { InputHTMLAttributes } from 'react';
 
 const inputBase =
   'w-full rounded-lg border border-transparent bg-alivia-primary-mist/60 px-3 py-2 ' +
-  'text-sm text-alivia-text placeholder:text-alivia-text-soft ' +
+  // 16px on phones so iOS Safari does not zoom into the focused input.
+  'text-base sm:text-sm text-alivia-text placeholder:text-alivia-text-soft ' +
   'transition-colors duration-150 ' +
   'hover:border-alivia-primary-light ' +
   'focus:border-alivia-primary-mid focus:bg-white focus:outline-none ' +

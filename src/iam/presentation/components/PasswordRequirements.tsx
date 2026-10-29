@@ -71,11 +71,11 @@ export function PasswordRequirements({
   return (
     <section
       aria-labelledby={headingId}
-      className="rounded-2xl bg-alivia-primary-mist/60 p-4"
+      className="rounded-lg bg-alivia-primary-mist/50 px-4 py-3.5"
     >
       <h2
         id={headingId}
-        className="text-[11px] font-bold tracking-[0.12em] text-alivia-text-muted uppercase"
+        className="text-sm font-medium text-alivia-text"
       >
         {t.heading}
       </h2>

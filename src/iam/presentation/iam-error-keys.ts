@@ -17,6 +17,8 @@ const IAM_ERROR_KEYS: Readonly<Record<IamErrorCode, IamErrorKey>> = {
   password_token_expired: 'passwordTokenExpired',
   role_not_allowed: 'roleNotAllowed',
   rate_limited: 'rateLimited',
+  validation_failed: 'validationFailed',
+  service_unavailable: 'serviceUnavailable',
   network: 'network',
   configuration: 'configuration',
   unknown: 'unknown',

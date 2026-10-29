@@ -18,6 +18,42 @@
   --color-alivia-text-muted: #3B4A6B;
   --color-alivia-text-soft: #8890A3;
   --color-alivia-danger: #B3261E;
+  /* Ground of the casa.png illustration, so its panel continues the picture. */
+  --color-alivia-sand: #F6EEDF;
+  /* Field outline and hint text: 3.7:1 and 5.4:1 on white. */
+  --color-alivia-field: #7B869F;
+  --color-alivia-hint: #5F6A85;
+
+  /* The success check draws itself once: confirms a rare, finished action. */
+  --animate-check-draw: check-draw 420ms cubic-bezier(0.23, 1, 0.32, 1) 120ms both;
+  /* Notices slide in a few pixels so a new error is noticed without jumping. */
+  --animate-notice-in: notice-in 180ms cubic-bezier(0.23, 1, 0.32, 1) both;
+
+  @keyframes check-draw {
+    from {
+      stroke-dashoffset: 24;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes notice-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+
+  /* Entry of each registration step: signals forward progress, seen once per step. */
+  --animate-step-in: step-in 240ms cubic-bezier(0.23, 1, 0.32, 1) both;
+
+  @keyframes step-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
 }
 
 @layer base {
@@ -32,6 +68,16 @@
   button,
   a {
     -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection {
+    background: var(--color-alivia-primary-mist);
+    color: var(--color-alivia-primary-dark);
+  }
+
+  input,
+  textarea {
+    caret-color: var(--color-alivia-primary-mid);
   }
 
   /* Visible focus ring on all interactive elements */

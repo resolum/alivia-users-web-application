@@ -1,39 +1,35 @@
 import type { FieldErrors } from './field-errors.ts';
-import { EmailAddress } from './valueobjects/email-address.ts';
 
+/**
+ * Command used to verify an email address with the token of the link sent by
+ * email. Backend equivalent: VerifyEmailCommand. Each token works only once.
+ */
 export class VerifyEmailCommand {
-  private readonly _emailAddress: string;
-  private readonly _code: string;
+  private readonly _token: string;
 
   /**
    * Initializes a new VerifyEmailCommand.
-   * @param params - Command payload for email verification.
+   * @param params - Verification token read from the link.
    */
-  constructor(params: { emailAddress: string; code: string }) {
-    this._emailAddress = params.emailAddress;
-    this._code = params.code;
+  constructor(params: { token: string }) {
+    this._token = params.token.trim();
   }
 
-  get emailAddress(): string {
-    return this._emailAddress;
-  }
-
-  get code(): string {
-    return this._code;
+  get token(): string {
+    return this._token;
   }
 
   /**
    * Validates the payload and returns the invalid fields, if any.
    */
-  validate(): FieldErrors<'emailAddress' | 'code'> {
-    const errors: FieldErrors<'emailAddress' | 'code'> = {};
-    const emailError = EmailAddress.check(this._emailAddress);
-    if (emailError) {
-      errors.emailAddress = emailError;
-    }
-    if (this._code.trim() === '') {
-      errors.code = 'required';
-    }
-    return errors;
+  validate(): FieldErrors<'token'> {
+    return this._token === '' ? { token: 'required' } : {};
+  }
+
+  /**
+   * Hides the token so it is never logged.
+   */
+  toString(): string {
+    return 'VerifyEmailCommand(token=***)';
   }
 }
