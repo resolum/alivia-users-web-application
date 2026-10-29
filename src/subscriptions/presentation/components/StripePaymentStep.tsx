@@ -8,8 +8,8 @@ import {
   useStripe,
 } from '@stripe/react-stripe-js';
 import { loadStripe, type StripeElementStyle } from '@stripe/stripe-js';
-import { useNavigate } from 'react-router';
-import { ArrowLeft, Check, Lock } from 'lucide-react';
+import { Link, useNavigate } from 'react-router';
+import { ArrowLeft, ArrowRight, Check, Lock } from 'lucide-react';
 import {
   completePaymentMethodSetup,
   preparePaymentMethod,
@@ -177,7 +177,7 @@ function AuthorizedState({ authorization }: { readonly authorization: Preauthori
       <div className="mt-2 flex justify-between gap-4"><span>Referencia</span><strong>{authorization.stripePaymentIntentId}</strong></div>
       {expiry !== null && <div className="mt-2 flex justify-between gap-4"><span>Capturar antes de</span><strong>{expiry}</strong></div>}
     </div>
-    <p className="mt-5 text-xs text-slate-500">El paso de evaluación se habilitará cuando implementemos la confirmación final del proceso.</p>
+    <Link to="/contract/evaluation/confirm" className="mt-6 inline-flex items-center rounded-lg bg-alivia-primary px-6 py-3 text-sm font-bold text-white">Confirmar evaluación técnica<ArrowRight aria-hidden="true" className="ml-1.5 size-4" /></Link>
   </section>;
 }
 
