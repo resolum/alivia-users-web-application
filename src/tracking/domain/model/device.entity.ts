@@ -113,7 +113,7 @@ export interface HomeConnection {
 }
 
 export function homeConnection(home: HomeDevices, now: Date = new Date()): HomeConnection {
-  const lastUpdateAt = [home.hubLastContactAt, ...home.devices.map((device) => device.lastSyncAt)].sort().at(-1) ?? null;
+  const lastUpdateAt = [home.hubLastContactAt, ...home.devices.map((device) => device.lastSyncAt)].sort((a, b) => a.localeCompare(b)).at(-1) ?? null;
   const stale = lastUpdateAt === null || now.getTime() - new Date(lastUpdateAt).getTime() > STALE_MINUTES * 60_000;
   const allDown = home.devices.length > 0 && home.devices.every((device) => !device.online);
   return { online: home.hubOnline && !stale && !allDown, lastUpdateAt };

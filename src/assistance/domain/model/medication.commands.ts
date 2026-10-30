@@ -46,7 +46,7 @@ export class ScheduleMedicationCommand {
       medication: values.medication.trim(),
       dose: values.dose.trim(),
       indicationRef: values.indicationRef.trim(),
-      times: [...values.times].sort(),
+      times: [...values.times].sort((a, b) => a.localeCompare(b)),
     };
   }
 
@@ -82,7 +82,7 @@ export class UpdateMedicationCommand {
 
   constructor(scheduleId: string, values: UpdateMedicationValues) {
     this.scheduleId = scheduleId;
-    this.values = { ...values, dose: values.dose.trim(), indicationRef: values.indicationRef.trim(), times: [...values.times].sort() };
+    this.values = { ...values, dose: values.dose.trim(), indicationRef: values.indicationRef.trim(), times: [...values.times].sort((a, b) => a.localeCompare(b)) };
   }
 
   validate(today: string): Errors {
