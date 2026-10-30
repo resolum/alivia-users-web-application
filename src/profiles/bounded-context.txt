@@ -1,5 +1,5 @@
 BOUNDED CONTEXT: profiles
 Nombre en el informe: Perfiles (5.3)
 Aggregates: PersonProfile con PersonName {firstName, lastName}
-Pantallas de Figma: Mi perfil
+Pantallas de Figma: Mi perfil, Mi hogar
 Nota: aporta nombre, foto y teléfono. La cuenta IAM se enlaza con el perfil por el correo (PENDING(confirm): endpoint de búsqueda). Persona asistida pertenece a assistance.

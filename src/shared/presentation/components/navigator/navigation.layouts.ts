@@ -40,7 +40,7 @@ const PRINCIPAL_LAYOUT: NavLayout = {
     { labelKey: 'principal', itemIds: ['home'] },
     { labelKey: 'care', itemIds: ['assistedPerson', 'careNetwork', 'activities'] },
     { labelKey: 'home', itemIds: ['household', 'devices'] },
-    { labelKey: 'service', itemIds: ['contracting', 'subscription', 'incidents'] },
+    { labelKey: 'service', itemIds: ['subscription', 'incidents'] },
     { labelKey: 'analytics', itemIds: ['metrics'] },
   ],
   footerItems: ['profile'],

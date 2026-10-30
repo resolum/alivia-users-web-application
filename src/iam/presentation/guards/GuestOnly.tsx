@@ -8,7 +8,7 @@ export function GuestOnly() {
   const t = useIamTranslations();
 
   if (status === 'loading') {
-    return <SessionLoading label={t.common.loading} />;
+    return <SessionLoading label={t.common.loading} variant="auth" />;
   }
   if (status === 'authenticated') {
     return <Navigate to="/home" replace />;

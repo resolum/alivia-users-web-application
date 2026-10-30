@@ -13,3 +13,8 @@ export type { ProfileErrorCode, ProfileFieldErrorCode } from './domain/model/pro
 export { UpdateProfileCommand } from './domain/model/update-profile.command.ts';
 
 export { ProfileView } from './presentation/views/ProfileView.tsx';
+
+export { isHouseholdSample, loadHousehold, updateHousehold } from './application/household.store.ts';
+export { Household } from './domain/model/household.entity.ts';
+export type { HouseholdAddress } from './domain/model/household.entity.ts';
+export { HouseholdView } from './presentation/views/HouseholdView.tsx';

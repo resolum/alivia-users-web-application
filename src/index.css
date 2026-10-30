@@ -18,6 +18,9 @@
   --color-alivia-text-muted: #3B4A6B;
   --color-alivia-text-soft: #8890A3;
   --color-alivia-danger: #B3261E;
+  /* Attention states (low battery, overlap): 5.6:1 text on its soft ground. */
+  --color-alivia-warning: #8A5300;
+  --color-alivia-warning-soft: #FFF3D6;
   /* Ground of the casa.png illustration, so its panel continues the picture. */
   --color-alivia-sand: #F6EEDF;
   /* Field outline and hint text: 3.7:1 and 5.4:1 on white. */
@@ -45,6 +48,28 @@
     }
   }
 
+  /*
+   * Skeletons wait 150ms before showing so fast loads never flash grey, then a
+   * light band sweeps across them. Only opacity and transform move (compositor only).
+   */
+  --animate-skeleton-in: skeleton-in 200ms cubic-bezier(0.23, 1, 0.32, 1) 150ms both;
+  --animate-skeleton-sweep: skeleton-sweep 1.4s linear infinite;
+
+  @keyframes skeleton-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes skeleton-sweep {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+
   /* Entry of each registration step: signals forward progress, seen once per step. */
   --animate-step-in: step-in 240ms cubic-bezier(0.23, 1, 0.32, 1) both;
 
@@ -68,6 +93,15 @@
   button,
   a {
     -webkit-tap-highlight-color: transparent;
+    /* No double-tap zoom on controls, so taps fire without the 300ms wait. */
+    touch-action: manipulation;
+  }
+
+  button,
+  [role="button"],
+  [role="menuitem"] {
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   ::selection {

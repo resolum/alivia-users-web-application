@@ -9,7 +9,6 @@ export const en: Translations = {
       activities: 'Activities',
       household: 'Household',
       devices: 'Devices',
-      contracting: 'Contracting',
       subscription: 'Subscription',
       incidents: 'Incidents',
       metrics: 'Metrics',

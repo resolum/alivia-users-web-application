@@ -11,7 +11,6 @@ export const es = {
       activities: 'Actividades',
       household: 'Hogar',
       devices: 'Dispositivos',
-      contracting: 'Contratación',
       subscription: 'Suscripción',
       incidents: 'Incidencias',
       metrics: 'Métricas',

@@ -7,7 +7,7 @@ export interface PlansApi {
 }
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
-const PLANS_PATH = import.meta.env.VITE_SUBSCRIPTIONS_PLANS_PATH ?? '/api/v1/plans';
+const PLANS_PATH = `/${import.meta.env.VITE_PLANS_ENDPOINT_PATH}`;
 
 const httpPlansApi: PlansApi = {
   async getActivePlans() {
