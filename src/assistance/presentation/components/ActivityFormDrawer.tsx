@@ -64,6 +64,8 @@ interface ActivityFormDrawerProps {
   readonly defaultDate: Date;
   readonly assistedPersonName: string;
   readonly caregivers: readonly Caregiver[];
+  /** Who schedules; the form only opens for someone allowed to manage activities. */
+  readonly actor: Caregiver | null;
   readonly onClose: () => void;
   readonly onSaved: (activity: CareActivity, created: boolean) => void;
 }
@@ -73,6 +75,7 @@ export function ActivityFormDrawer({
   defaultDate,
   assistedPersonName,
   caregivers,
+  actor,
   onClose,
   onSaved,
 }: ActivityFormDrawerProps) {
@@ -102,12 +105,12 @@ export function ActivityFormDrawer({
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setSubmitted(true);
-    if (Object.keys(command.validate()).length > 0) return;
+    if (Object.keys(command.validate()).length > 0 || !actor) return;
     setSaving(true);
     setFailed(false);
     try {
       const caregiver = caregivers.find((item) => item.id === values.caregiverId);
-      onSaved(await scheduleActivity(command, caregiver?.fullName ?? ''), editingId === null);
+      onSaved(await scheduleActivity(command, caregiver?.fullName ?? '', actor), editingId === null);
     } catch {
       setFailed(true);
     } finally {

@@ -12,7 +12,14 @@ import { AppShell } from './shell/AppShell.tsx';
 import { RequireAccess } from './RequireAccess.tsx';
 import { PlanConfigurationView, PlanSelectionView, SubscriptionView } from '@/subscriptions/index.ts';
 import { HouseholdView, ProfileView } from '@/profiles/index.ts';
-import { ActivitiesView, AssistedPersonView, CareNetworkView, InvitationView } from '@/assistance/index.ts';
+import {
+  ActivitiesView,
+  AssistedPersonView,
+  CareNetworkView,
+  InvitationView,
+  MedicationsView,
+  ShiftsView,
+} from '@/assistance/index.ts';
 import { DevicesView } from '@/tracking/index.ts';
 import { IncidentDetailView, IncidentRegisteredView, IncidentsView } from '@/operations/index.ts';
 import { MetricsView } from '@/analytics/index.ts';
@@ -23,6 +30,8 @@ const NAV_VIEWS: Partial<Record<NavItemId, ReactNode>> = {
   assistedPerson: <AssistedPersonView />,
   careNetwork: <CareNetworkView />,
   activities: <ActivitiesView />,
+  shifts: <ShiftsView />,
+  medications: <MedicationsView />,
   household: <HouseholdView />,
   devices: <DevicesView />,
   subscription: <SubscriptionView />,

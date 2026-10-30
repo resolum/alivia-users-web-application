@@ -5,6 +5,7 @@ export interface NotificationsApi {
   readonly isSample: boolean;
   list(): Promise<CaregiverNotification[]>;
   markRead(ids: readonly string[]): Promise<void>;
+  publish(notification: CaregiverNotification): Promise<void>;
 }
 
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
@@ -41,6 +42,10 @@ const localNotificationsApi: NotificationsApi = {
   list: () => respond(notifications.all()),
   markRead: async (ids) => {
     notifications.replaceAll(notifications.all().map((item) => (ids.includes(item.id) ? { ...item, read: true } : item)));
+    return respond(undefined);
+  },
+  publish: async (notification) => {
+    notifications.save(notification);
     return respond(undefined);
   },
 };

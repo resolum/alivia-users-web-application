@@ -11,6 +11,10 @@ import {
 import type { StatusTone } from '@/shared/presentation/components/ui/index.ts';
 import type { ActivityState, ActivityType, Repetition } from '../domain/model/care-activity.entity.ts';
 import type { CaregiverLinkStatus, Relationship, Responsibility } from '../domain/model/caregiver.entity.ts';
+import type { HandoverStatus } from '../domain/model/handover.entity.ts';
+import type { AdministrationState } from '../domain/model/medication-administration.entity.ts';
+import type { Frequency } from '../domain/model/medication-schedule.entity.ts';
+import type { MedicationFieldError } from '../domain/model/medication.commands.ts';
 
 export const RESPONSIBILITY_LABELS: Record<Responsibility, string> = {
   view_activities: 'Consultar actividades',
@@ -18,6 +22,8 @@ export const RESPONSIBILITY_LABELS: Record<Responsibility, string> = {
   receive_notifications: 'Recibir notificaciones',
   view_devices: 'Consultar dispositivos',
   receive_device_alerts: 'Recibir alertas de dispositivos',
+  manage_medications: 'Programar medicamentos',
+  record_medications: 'Registrar administración de medicamentos',
 };
 
 export const RELATIONSHIP_LABELS: Record<Relationship, string> = {
@@ -47,7 +53,7 @@ export const ACTIVITY_STATE: Record<ActivityState, { label: string; tone: Status
   completed: { label: 'Completada', tone: 'success' },
   pending: { label: 'Pendiente', tone: 'info' },
   scheduled: { label: 'Programada', tone: 'info' },
-  overdue: { label: 'Vencida', tone: 'danger' },
+  overdue: { label: 'Pendiente, vencida', tone: 'danger' },
   cancelled: { label: 'Cancelada', tone: 'neutral' },
 };
 
@@ -75,4 +81,39 @@ export function formatSince(isoDate: string): string {
     month: 'long',
     year: 'numeric',
   });
+}
+
+export const MEDICATION_ERROR_TEXT: Record<MedicationFieldError, string> = {
+  required: 'Este dato es obligatorio.',
+  invalid_time: 'Usa horas válidas, por ejemplo 08:00.',
+  duplicate_time: 'Hay horarios repetidos.',
+  end_before_start: 'La vigencia debe terminar después de empezar.',
+  in_past: 'Elige hoy o una fecha posterior.',
+};
+
+export const FREQUENCY_LABELS: Record<Frequency, string> = {
+  daily: 'Todos los días',
+  every_other_day: 'Interdiario',
+  weekly: 'Una vez por semana',
+};
+
+export const ADMINISTRATION_STATE: Record<AdministrationState, { label: string; tone: StatusTone }> = {
+  pending: { label: 'Pendiente', tone: 'info' },
+  overdue: { label: 'Vencida sin confirmar', tone: 'danger' },
+  given: { label: 'Administrado', tone: 'success' },
+  omitted: { label: 'Omitido', tone: 'warning' },
+};
+
+export const HANDOVER_STATUS: Record<HandoverStatus, { label: string; tone: StatusTone }> = {
+  pending: { label: 'Esperando aceptación', tone: 'info' },
+  declined: { label: 'Rechazado, falta sustituto', tone: 'danger' },
+  accepted: { label: 'Aceptado', tone: 'success' },
+  reassigned: { label: 'Asumido por sustituto', tone: 'success' },
+};
+
+/** "8:00 a. m. – 4:00 p. m.", with the end day when the shift crosses midnight. */
+export function formatRange(start: Date, end: Date): string {
+  const time = (date: Date) => date.toLocaleTimeString('es-PE', { hour: 'numeric', minute: '2-digit' });
+  const sameDay = start.toDateString() === end.toDateString();
+  return `${time(start)} – ${sameDay ? '' : `${end.toLocaleDateString('es-PE', { weekday: 'short' })} `}${time(end)}`;
 }

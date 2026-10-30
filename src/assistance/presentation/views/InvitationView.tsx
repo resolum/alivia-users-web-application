@@ -14,6 +14,7 @@ import { useLoad } from '@/shared/presentation/hooks/useLoad.ts';
 import { useSession } from '@/shared/presentation/hooks/useSession.ts';
 import { answerInvitation, loadInvitation } from '../../application/assistance.store.ts';
 import type { Invitation } from '../../domain/model/invitation.ts';
+import { AssistanceApiError } from '../../infrastructure/assistance-api-error.ts';
 import { RESPONSIBILITY_LABELS } from '../assistance-labels.ts';
 
 const CLOSED_TEXT: Record<Exclude<Invitation['status'], 'active'>, { title: string; body: string }> = {
@@ -63,8 +64,10 @@ export function InvitationView() {
       await answerInvitation(token, true);
       void navigate('/home', { replace: true });
     } catch (caught) {
-      setError(signInMessage(caught));
       setBusy(null);
+      // It lapsed or was answered while the page was open: show its current state.
+      if (caught instanceof AssistanceApiError && caught.code === 'invitation_closed') retry();
+      else setError(signInMessage(caught));
     }
   };
 
@@ -72,8 +75,9 @@ export function InvitationView() {
     setBusy('reject');
     try {
       setData(await answerInvitation(token, false));
-    } catch {
-      setError('No pudimos registrar tu respuesta. Inténtalo de nuevo.');
+    } catch (caught) {
+      if (caught instanceof AssistanceApiError && caught.code === 'invitation_closed') retry();
+      else setError('No pudimos registrar tu respuesta. Inténtalo de nuevo.');
     } finally {
       setBusy(null);
     }

@@ -86,30 +86,27 @@ export function ActivityDetailDrawer({
       }
       footer={
         activity &&
-        isOpen && (
+        isOpen &&
+        canManage && (
           <div className="flex w-full flex-col gap-2">
             <Button onClick={complete} loading={completing} className="w-full">
               <CircleCheck className="size-4" aria-hidden="true" />
               Marcar como completada
             </Button>
-            {canManage && (
-              <>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button variant="soft" onClick={() => onEdit(activity)}>
-                    <CalendarClock className="size-4" aria-hidden="true" />
-                    Reprogramar
-                  </Button>
-                  <Button variant="soft" onClick={() => onEdit(activity)}>
-                    <Pencil className="size-4" aria-hidden="true" />
-                    Editar
-                  </Button>
-                </div>
-                <Button variant="ghost" onClick={() => onCancel(activity)} className="self-center text-alivia-text-muted">
-                  <X className="size-4" aria-hidden="true" />
-                  Cancelar actividad
-                </Button>
-              </>
-            )}
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="soft" onClick={() => onEdit(activity)}>
+                <CalendarClock className="size-4" aria-hidden="true" />
+                Reprogramar
+              </Button>
+              <Button variant="soft" onClick={() => onEdit(activity)}>
+                <Pencil className="size-4" aria-hidden="true" />
+                Editar
+              </Button>
+            </div>
+            <Button variant="ghost" onClick={() => onCancel(activity)} className="self-center text-alivia-text-muted">
+              <X className="size-4" aria-hidden="true" />
+              Cancelar actividad
+            </Button>
           </div>
         )
       }
@@ -133,8 +130,9 @@ export function ActivityDetailDrawer({
               {activity.reminderMinutes ? `${activity.reminderMinutes} min antes` : 'Sin recordatorio'}
             </Row>
             {activity.completedAt && (
-              <Row icon={<CircleCheck className="size-4" aria-hidden="true" />} label="Completada">
-                {new Date(activity.completedAt).toLocaleTimeString('es-PE', { hour: 'numeric', minute: '2-digit' })}
+              <Row icon={<CircleCheck className="size-4" aria-hidden="true" />} label="Atendida">
+                {new Date(activity.completedAt).toLocaleString('es-PE', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}
+                {activity.completedByName && ` · ${activity.completedByName}`}
               </Row>
             )}
           </dl>

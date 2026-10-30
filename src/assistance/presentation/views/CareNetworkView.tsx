@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDateTime } from '@/shared/domain/model/valueobjects/relative-time.ts';
 import { Eye, Plus, RotateCw } from 'lucide-react';
 import {
   ActionMenu,
@@ -20,9 +21,12 @@ import { useLoad } from '@/shared/presentation/hooks/useLoad.ts';
 import {
   isAssistanceSample,
   loadCareNetwork,
+  loadNetworkLog,
+  loadPendingDuties,
   removeCaregiver,
   resendInvitation,
 } from '../../application/assistance.store.ts';
+import { AssistanceApiError } from '../../infrastructure/assistance-api-error.ts';
 import type { Caregiver, CareNetwork } from '../../domain/model/caregiver.entity.ts';
 import { LINK_STATUS } from '../assistance-labels.ts';
 import { CaregiverDetailDrawer } from '../components/CaregiverDetailDrawer.tsx';
@@ -45,10 +49,26 @@ export function CareNetworkView() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [detail, setDetail] = useState<Caregiver | null>(null);
   const [removing, setRemoving] = useState<Caregiver | null>(null);
+  // null while checking; the removal stays blocked while the list has items.
+  const [duties, setDuties] = useState<string[] | null>(null);
+  const log = useLoad(loadNetworkLog, []);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [notice, notify] = useToast();
 
   const network = state.status === 'ready' ? state.data : null;
+
+  const askRemove = async (caregiver: Caregiver) => {
+    setRemoving(caregiver);
+    setDuties(caregiver.status === 'active' ? null : []);
+    if (caregiver.status === 'active') {
+      try {
+        setDuties(await loadPendingDuties(caregiver.id));
+      } catch {
+        setRemoving(null);
+        notify('No pudimos revisar sus responsabilidades. Inténtalo de nuevo.');
+      }
+    }
+  };
 
   const apply = (caregiver: Caregiver, message: string) => {
     if (!network) return;
@@ -71,11 +91,16 @@ export function CareNetworkView() {
     if (!network || !removing) return;
     setBusyId(removing.id);
     try {
-      await removeCaregiver(removing.id);
+      await removeCaregiver(removing.id, network.principal.fullName);
       setData({ ...network, additional: network.additional.filter((item) => item.id !== removing.id) });
-      notify(removing.status === 'active' ? 'Cuidador retirado de la red' : 'Invitación cancelada');
-    } catch {
-      notify('No pudimos completar la acción. Inténtalo de nuevo.');
+      notify(removing.status === 'active' ? 'Cuidador desvinculado; sus permisos fueron revocados' : 'Invitación cancelada');
+      log.reload();
+    } catch (error) {
+      notify(
+        error instanceof AssistanceApiError && error.code === 'has_pending'
+          ? 'Tiene responsabilidades activas. Reasígnalas antes de desvincularlo.'
+          : 'No pudimos completar la acción. Inténtalo de nuevo.',
+      );
     } finally {
       setBusyId(null);
       setRemoving(null);
@@ -169,7 +194,7 @@ export function CareNetworkView() {
           ) : (
             <ul className="mt-3 divide-y divide-alivia-primary-mist">
               {network.additional.map((caregiver) => {
-                const status = LINK_STATUS[caregiver.status];
+                const status = LINK_STATUS[caregiver.statusAt()];
                 const isActive = caregiver.status === 'active';
                 return (
                   <li key={caregiver.id} className="flex flex-wrap items-center gap-x-4 gap-y-3 py-4">
@@ -203,7 +228,7 @@ export function CareNetworkView() {
                           {
                             label: isActive ? 'Retirar de la red' : 'Cancelar invitación',
                             danger: true,
-                            onSelect: () => setRemoving(caregiver),
+                            onSelect: () => void askRemove(caregiver),
                           },
                         ]}
                       />
@@ -214,13 +239,31 @@ export function CareNetworkView() {
             </ul>
           )}
 
+          {log.state.status === 'ready' && log.state.data.length > 0 && (
+            <>
+              <hr className="my-8 border-alivia-primary-mist" />
+              <h2 className="text-xs font-bold tracking-wide text-alivia-text-muted uppercase">Cambios en la red</h2>
+              <ol className="mt-3 flex flex-col gap-2">
+                {log.state.data.slice(0, 6).map((entry) => (
+                  <li key={entry.id} className="flex flex-wrap justify-between gap-x-4 text-sm">
+                    <span className="text-alivia-text">{entry.text}</span>
+                    <time dateTime={entry.at} className="text-xs text-alivia-hint tabular-nums">
+                      {formatDateTime(entry.at)}
+                    </time>
+                  </li>
+                ))}
+              </ol>
+            </>
+          )}
+
           <InviteCaregiverDrawer
             open={inviteOpen}
             network={network}
             onClose={() => setInviteOpen(false)}
             onInvited={(caregiver) => {
               setInviteOpen(false);
-              apply(caregiver, `Invitación enviada a ${caregiver.email}`);
+              apply(caregiver, `Invitación enviada a ${caregiver.email}; vence en 7 días`);
+              log.reload();
             }}
           />
         </section>
@@ -238,15 +281,29 @@ export function CareNetworkView() {
       <ConfirmDialog
         open={removing !== null}
         title={removing?.status === 'active' ? '¿Retirar a este cuidador?' : '¿Cancelar la invitación?'}
-        confirmLabel={removing?.status === 'active' ? 'Retirar' : 'Cancelar invitación'}
+        confirmLabel={removing?.status === 'active' ? 'Desvincular' : 'Cancelar invitación'}
         danger
-        busy={busyId !== null && busyId === removing?.id}
+        busy={duties === null || (busyId !== null && busyId === removing?.id)}
+        confirmDisabled={(duties?.length ?? 0) > 0}
         onConfirm={confirmRemove}
         onCancel={() => setRemoving(null)}
       >
-        {removing?.status === 'active'
-          ? `${removing.fullName} dejará de ver las actividades y avisos del hogar.`
-          : `El enlace enviado a ${removing?.email ?? ''} dejará de funcionar.`}
+        {removing?.status !== 'active' ? (
+          `El enlace enviado a ${removing?.email ?? ''} dejará de funcionar.`
+        ) : duties === null ? (
+          'Revisando sus responsabilidades…'
+        ) : duties.length > 0 ? (
+          <>
+            <p>No puedes desvincular a {removing.fullName} todavía. Reasigna o resuelve antes:</p>
+            <ul className="mt-2 list-inside list-disc text-alivia-text">
+              {duties.map((duty) => (
+                <li key={duty}>{duty}</li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          `${removing.fullName} dejará de ver las actividades y avisos del hogar, y se revocarán sus permisos.`
+        )}
       </ConfirmDialog>
 
       <Toast message={notice} />

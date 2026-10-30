@@ -38,6 +38,8 @@ export interface CareActivityProps {
   readonly tag: string | null;
   readonly status: ActivityRecordStatus;
   readonly completedAt: string | null;
+  /** Who reported the activity as attended; may differ from the assigned caregiver. */
+  readonly completedByName: string | null;
 }
 
 /** A care task or reminder for the assisted person. Backend equivalent: CareActivity / AgendaItem. */
@@ -56,6 +58,7 @@ export class CareActivity implements BaseEntity {
   readonly tag: string | null;
   readonly status: ActivityRecordStatus;
   readonly completedAt: string | null;
+  readonly completedByName: string | null;
 
   constructor(props: CareActivityProps) {
     this.id = props.id;
@@ -72,6 +75,7 @@ export class CareActivity implements BaseEntity {
     this.tag = props.tag;
     this.status = props.status;
     this.completedAt = props.completedAt;
+    this.completedByName = props.completedByName ?? null;
   }
 
   get startsAt(): Date {

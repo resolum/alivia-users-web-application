@@ -17,21 +17,21 @@ import {
 } from '@/shared/presentation/components/ui/index.ts';
 import { useDocumentTitle } from '@/shared/presentation/hooks/useDocumentTitle.ts';
 import { useLoad } from '@/shared/presentation/hooks/useLoad.ts';
-import { useSession } from '@/shared/presentation/hooks/useSession.ts';
 import {
   cancelActivity,
   completeActivity,
   isAssistanceSample,
-  loadCareNetwork,
   loadWeek,
   startOfWeek,
 } from '../../application/assistance.store.ts';
+import { linkedCaregivers } from '../../application/care-coordination.store.ts';
 import { ACTIVITY_TYPES, type ActivityState, type CareActivity } from '../../domain/model/care-activity.entity.ts';
 import { ACTIVITY_STATE, ACTIVITY_TYPE } from '../assistance-labels.ts';
 import { ActivityDetailDrawer } from '../components/ActivityDetailDrawer.tsx';
 import { ActivityFormDrawer } from '../components/ActivityFormDrawer.tsx';
 import { AgendaRows, DayAgenda } from '../components/DayAgenda.tsx';
 import { WeekCalendar } from '../components/WeekCalendar.tsx';
+import { useCareActor } from '../useCareActor.ts';
 
 type Mode = 'day' | 'week' | 'list';
 
@@ -64,8 +64,6 @@ const initialMode = (): Mode => (typeof window !== 'undefined' && window.matchMe
 
 export function ActivitiesView() {
   useDocumentTitle('Actividades');
-  const { accessLevel } = useSession();
-  const canManage = accessLevel === 'principal';
   const [mode, setMode] = useState<Mode>(initialMode);
   const [anchor, setAnchor] = useState(() => new Date());
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
@@ -73,9 +71,7 @@ export function ActivitiesView() {
   const [detail, setDetail] = useState<CareActivity | null>(null);
   const [params, setParams] = useSearchParams();
   // "Nueva actividad" on Home links here with ?new=1 to open the form directly.
-  const [formTarget, setFormTarget] = useState<CareActivity | 'new' | null>(() =>
-    canManage && params.get('new') === '1' ? 'new' : null,
-  );
+  const [formTarget, setFormTarget] = useState<CareActivity | 'new' | null>(() => (params.get('new') === '1' ? 'new' : null));
   const [cancelling, setCancelling] = useState<CareActivity | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, notify] = useToast();
@@ -83,7 +79,9 @@ export function ActivitiesView() {
   const weekStart = useMemo(() => startOfWeek(anchor), [anchor]);
   const weekKey = toIsoDate(weekStart);
   const { state, retry, setData } = useLoad(() => loadWeek(weekStart), [weekKey]);
-  const network = useLoad(loadCareNetwork, []);
+  const { network, actor } = useCareActor();
+  // The granted responsibility decides, not the account type: an invited caregiver may manage activities too.
+  const canManage = actor?.can('manage_activities') ?? false;
 
   // States like "Pendiente" become "Vencida" as time passes; refresh once a minute.
   useEffect(() => {
@@ -91,8 +89,8 @@ export function ActivitiesView() {
     return () => clearInterval(timer);
   }, []);
 
-  const caregivers = network.state.status === 'ready' ? [network.state.data.principal, ...network.state.data.additional.filter((c) => c.status === 'active')] : [];
-  const assistedPersonName = network.state.status === 'ready' ? network.state.data.assistedPersonName : '';
+  const caregivers = network ? linkedCaregivers(network) : [];
+  const assistedPersonName = network?.assistedPersonName ?? '';
 
   const all = state.status === 'ready' ? state.data : [];
   const visible = all.filter(
@@ -112,19 +110,21 @@ export function ActivitiesView() {
   };
 
   const complete = async (activity: CareActivity) => {
+    if (!actor) return;
     try {
-      upsert(await completeActivity(activity.id));
-      notify(`«${activity.title}» marcada como completada`);
+      // Records who attended it and when, which may not be the assigned caregiver.
+      upsert(await completeActivity(activity.id, actor));
+      notify(`«${activity.title}» registrada como atendida`);
     } catch {
       notify('No pudimos actualizar la actividad. Inténtalo de nuevo.');
     }
   };
 
   const confirmCancel = async () => {
-    if (!cancelling) return;
+    if (!cancelling || !actor) return;
     setBusy(true);
     try {
-      upsert(await cancelActivity(cancelling.id));
+      upsert(await cancelActivity(cancelling.id, actor));
       notify('Actividad cancelada');
     } catch {
       notify('No pudimos cancelar la actividad. Inténtalo de nuevo.');
@@ -306,8 +306,9 @@ export function ActivitiesView() {
       />
 
       <ActivityFormDrawer
-        target={formTarget}
+        target={canManage ? formTarget : null}
         defaultDate={anchor}
+        actor={actor}
         assistedPersonName={assistedPersonName}
         caregivers={caregivers}
         onClose={() => {

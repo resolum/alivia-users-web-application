@@ -8,6 +8,8 @@ interface ConfirmDialogProps {
   readonly confirmLabel: string;
   readonly danger?: boolean;
   readonly busy?: boolean;
+  /** Keeps the dialog informative when the action is not possible yet. */
+  readonly confirmDisabled?: boolean;
   readonly onConfirm: () => void;
   readonly onCancel: () => void;
 }
@@ -20,6 +22,7 @@ export function ConfirmDialog({
   confirmLabel,
   danger = false,
   busy = false,
+  confirmDisabled = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
@@ -56,7 +59,7 @@ export function ConfirmDialog({
             <Button variant="ghost" onClick={onCancel}>
               Volver
             </Button>
-            <Button variant={danger ? 'danger' : 'primary'} onClick={onConfirm} loading={busy}>
+            <Button variant={danger ? 'danger' : 'primary'} onClick={onConfirm} loading={busy} disabled={confirmDisabled || busy}>
               {confirmLabel}
             </Button>
           </div>

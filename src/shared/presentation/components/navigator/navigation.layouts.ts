@@ -38,7 +38,7 @@ const PRINCIPAL_LAYOUT: NavLayout = {
   },
   groups: [
     { labelKey: 'principal', itemIds: ['home'] },
-    { labelKey: 'care', itemIds: ['assistedPerson', 'careNetwork', 'activities'] },
+    { labelKey: 'care', itemIds: ['assistedPerson', 'careNetwork', 'activities', 'shifts', 'medications'] },
     { labelKey: 'home', itemIds: ['household', 'devices'] },
     { labelKey: 'service', itemIds: ['subscription', 'incidents'] },
     { labelKey: 'analytics', itemIds: ['metrics'] },
@@ -57,7 +57,7 @@ const GUEST_LAYOUT: NavLayout = {
   },
   groups: [
     { labelKey: 'principal', itemIds: ['home'] },
-    { labelKey: 'care', itemIds: ['assistedPerson', 'activities'] },
+    { labelKey: 'care', itemIds: ['assistedPerson', 'activities', 'shifts', 'medications', 'devices'] },
     { labelKey: 'account', itemIds: ['profile'] },
   ],
   footerItems: [],

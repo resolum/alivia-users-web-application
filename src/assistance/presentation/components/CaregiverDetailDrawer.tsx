@@ -43,7 +43,7 @@ export function CaregiverDetailDrawer({ caregiver, onClose, onSaved }: Caregiver
     }
   };
 
-  const status = caregiver ? LINK_STATUS[caregiver.status] : null;
+  const status = caregiver ? LINK_STATUS[caregiver.statusAt()] : null;
 
   return (
     <Drawer

@@ -25,6 +25,13 @@ export async function loadNotifications(): Promise<readonly CaregiverNotificatio
   return list;
 }
 
+/** Lets other contexts raise an alert (escalated handover, missed medication). */
+export async function publishNotification(notification: Omit<CaregiverNotification, 'createdAt' | 'read'>): Promise<void> {
+  const created: CaregiverNotification = { ...notification, createdAt: new Date().toISOString(), read: false };
+  await getNotificationsApi().publish(created);
+  publish([created, ...current.filter((item) => item.id !== created.id)]);
+}
+
 export async function markNotificationsRead(ids: readonly string[]): Promise<void> {
   if (ids.length === 0) return;
   // Optimistic: the badge clears at once and the request confirms in the background.

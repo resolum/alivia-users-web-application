@@ -63,7 +63,9 @@ const localTrackingApi: TrackingApi = {
   isSample: true,
   getHomeDevices: async () => {
     const list = await respond(devices.all());
-    return { rooms: ROOMS, devices: list.map((props) => new Device(props)) };
+    // shortcut: the hub heartbeat is not modelled yet; the newest device sync stands in for it.
+    const newest = list.map((props) => props.lastSyncAt).sort().at(-1) ?? new Date(0).toISOString();
+    return { rooms: ROOMS, devices: list.map((props) => new Device(props)), hubOnline: list.some((props) => props.online), hubLastContactAt: newest };
   },
 };
 

@@ -16,6 +16,8 @@ export const es = {
       metrics: 'Métricas',
       profile: 'Mi perfil',
       notifications: 'Notificaciones',
+      shifts: 'Turnos y relevos',
+      medications: 'Medicamentos',
     },
     groups: {
       principal: 'PRINCIPAL',

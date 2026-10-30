@@ -3,6 +3,7 @@ import { LocalCollection } from '@/shared/infrastructure/local-collection.ts';
 import type { AssistedPersonProps } from '../domain/model/assisted-person.entity.ts';
 import type { CareActivityProps } from '../domain/model/care-activity.entity.ts';
 import type { CaregiverProps } from '../domain/model/caregiver.entity.ts';
+import type { Invitation } from '../domain/model/invitation.ts';
 
 /** Example household taken from the Figma screens; replaced by the API once its contract exists. */
 export const SAMPLE_HOUSEHOLD = {
@@ -28,6 +29,12 @@ export const assistedPersons = new LocalCollection<AssistedPersonProps>('alivia.
   },
 ]);
 
+/** Rejected invitations, kept so their link still says it was rejected once the caregiver is gone. */
+export const rejectedInvitations = new LocalCollection<Invitation & { readonly id: string }>(
+  'alivia.assistance.rejected-invitations',
+  () => [],
+);
+
 const daysAgo = (days: number) => addDays(new Date(), -days).toISOString();
 
 export const caregivers = new LocalCollection<CaregiverProps>('alivia.assistance.caregivers', () => [
@@ -40,7 +47,7 @@ export const caregivers = new LocalCollection<CaregiverProps>('alivia.assistance
     relationship: 'family',
     relationshipDetail: 'Hija de la persona asistida',
     status: 'active',
-    responsibilities: ['view_activities', 'manage_activities', 'receive_notifications', 'view_devices', 'receive_device_alerts'],
+    responsibilities: ['view_activities', 'manage_activities', 'receive_notifications', 'view_devices', 'receive_device_alerts', 'manage_medications', 'record_medications'],
     linkedSince: '2024-09-12',
     invitedAt: '2024-09-12',
     photoUrl: null,
@@ -54,7 +61,7 @@ export const caregivers = new LocalCollection<CaregiverProps>('alivia.assistance
     relationship: 'family',
     relationshipDetail: 'Hijo',
     status: 'active',
-    responsibilities: ['view_activities', 'manage_activities', 'receive_notifications'],
+    responsibilities: ['view_activities', 'manage_activities', 'receive_notifications', 'view_devices', 'record_medications'],
     linkedSince: '2024-10-02',
     invitedAt: '2024-09-30',
     photoUrl: null,
@@ -89,7 +96,7 @@ export const caregivers = new LocalCollection<CaregiverProps>('alivia.assistance
   },
 ]);
 
-type Seed = Omit<CareActivityProps, 'id' | 'date' | 'status' | 'completedAt' | 'repetition' | 'reminderMinutes'> &
+type Seed = Omit<CareActivityProps, 'id' | 'date' | 'status' | 'completedAt' | 'completedByName' | 'repetition' | 'reminderMinutes'> &
   Partial<Pick<CareActivityProps, 'repetition' | 'reminderMinutes'>> & {
     readonly day: number;
     readonly done?: boolean;
@@ -133,6 +140,7 @@ export const activities = new LocalCollection<CareActivityProps>('alivia.assista
       reminderMinutes: seed.reminderMinutes ?? null,
       status: done ? 'completed' : cancelled ? 'cancelled' : 'scheduled',
       completedAt: done ? new Date(`${date}T${seed.time}:00`).toISOString() : null,
+      completedByName: done ? seed.caregiverName : null,
     } satisfies CareActivityProps;
   });
 });

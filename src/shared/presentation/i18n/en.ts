@@ -14,6 +14,8 @@ export const en: Translations = {
       metrics: 'Metrics',
       profile: 'My profile',
       notifications: 'Notifications',
+      shifts: 'Shifts and handovers',
+      medications: 'Medications',
     },
     groups: {
       principal: 'PRINCIPAL',

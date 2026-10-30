@@ -10,7 +10,7 @@ import {
   type Responsibility,
 } from '../../domain/model/caregiver.entity.ts';
 import { InviteCaregiverCommand, type InviteFieldError } from '../../domain/model/invite-caregiver.command.ts';
-import { RELATIONSHIP_LABELS } from '../assistance-labels.ts';
+import { LINK_STATUS, RELATIONSHIP_LABELS, RESPONSIBILITY_LABELS } from '../assistance-labels.ts';
 import { ResponsibilityPicker } from './ResponsibilityPicker.tsx';
 
 const ERROR_TEXT: Record<InviteFieldError, string> = {
@@ -41,6 +41,11 @@ export function InviteCaregiverDrawer({ open, network, onClose, onInvited }: Inv
   const taken = [network.principal, ...network.additional].map((caregiver) => caregiver.email);
   const errors = submitted ? command.validate(taken) : {};
   const errorOf = (field: keyof typeof errors) => (errors[field] ? ERROR_TEXT[errors[field]] : null);
+  // Inviting someone already linked is blocked; show what they can already do instead.
+  const existing =
+    errors.email === 'already_in_network'
+      ? [network.principal, ...network.additional].find((caregiver) => caregiver.email.toLowerCase() === command.email)
+      : undefined;
 
   const reset = () => {
     setEmail('');
@@ -113,6 +118,20 @@ export function InviteCaregiverDrawer({ open, network, onClose, onInvited }: Inv
             </div>
           )}
         </Field>
+
+        {existing && (
+          <div role="status" className="rounded-xl border border-alivia-primary-mist bg-alivia-page px-4 py-3 text-sm">
+            <p className="font-semibold text-alivia-primary-dark">
+              {existing.fullName} · {LINK_STATUS[existing.statusAt()].label}
+            </p>
+            <p className="mt-1 text-alivia-text-muted">Responsabilidades actuales:</p>
+            <ul className="mt-1 list-inside list-disc text-alivia-text">
+              {existing.responsibilities.map((item) => (
+                <li key={item}>{RESPONSIBILITY_LABELS[item]}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         <Field id="invite-relationship" label="Relación con la persona asistida" required error={errorOf('relationship')}>
           {(describedBy) => (

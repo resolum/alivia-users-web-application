@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Asterisk, BatteryWarning, CalendarClock, ChevronRight, Wrench, type LucideIcon } from 'lucide-react';
+import { ArrowRightLeft, Asterisk, BatteryWarning, CalendarClock, ChevronRight, Pill, Wrench, type LucideIcon } from 'lucide-react';
 import { formatRelative } from '@/shared/domain/model/valueobjects/relative-time.ts';
 import {
   Bone,
@@ -15,6 +15,8 @@ const KIND: Record<NotificationKind, { icon: LucideIcon; tone: string }> = {
   low_battery: { icon: BatteryWarning, tone: 'bg-alivia-warning-soft text-alivia-warning' },
   upcoming_activity: { icon: CalendarClock, tone: 'bg-alivia-primary-mist text-alivia-primary' },
   incident_update: { icon: Wrench, tone: 'bg-alivia-mint text-alivia-secondary-deep' },
+  handover_escalated: { icon: ArrowRightLeft, tone: 'bg-alivia-danger/10 text-alivia-danger' },
+  medication_overdue: { icon: Pill, tone: 'bg-alivia-warning-soft text-alivia-warning' },
 };
 
 interface NotificationListProps {

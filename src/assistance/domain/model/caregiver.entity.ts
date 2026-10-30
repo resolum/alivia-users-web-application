@@ -6,6 +6,8 @@ export const RESPONSIBILITIES = [
   'receive_notifications',
   'view_devices',
   'receive_device_alerts',
+  'manage_medications',
+  'record_medications',
 ] as const;
 export type Responsibility = (typeof RESPONSIBILITIES)[number];
 
@@ -17,6 +19,9 @@ export type CaregiverRole = 'principal' | 'additional';
 
 /** active: linked; pending: invitation sent; expired: invitation lapsed without an answer. */
 export type CaregiverLinkStatus = 'active' | 'pending' | 'expired';
+
+/** Days an invitation stays valid after it is sent. */
+export const INVITATION_VALID_DAYS = 7;
 
 export interface CaregiverProps {
   readonly id: string;
@@ -69,9 +74,23 @@ export class Caregiver implements BaseEntity {
     return this.role === 'principal';
   }
 
+  /** The principal holds every permission; the rest only what was granted. */
+  can(responsibility: Responsibility): boolean {
+    return this.isPrincipal || (this.status === 'active' && this.responsibilities.includes(responsibility));
+  }
+
+  get invitationExpiresAt(): Date {
+    return new Date(new Date(this.invitedAt).getTime() + INVITATION_VALID_DAYS * 86_400_000);
+  }
+
+  /** A pending invitation lapses on its own once its validity runs out. */
+  statusAt(now: Date = new Date()): CaregiverLinkStatus {
+    return this.status === 'pending' && this.invitationExpiresAt < now ? 'expired' : this.status;
+  }
+
   /** Only lapsed invitations can be sent again; pending ones are still valid. */
   get canResendInvitation(): boolean {
-    return this.status === 'expired';
+    return this.statusAt() === 'expired';
   }
 }
 

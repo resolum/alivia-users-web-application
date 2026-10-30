@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { ArrowRight, BedDouble, Flag, Plug, RefreshCw } from 'lucide-react';
-import { formatRelative } from '@/shared/domain/model/valueobjects/relative-time.ts';
+import { ArrowRight, BedDouble, Flag, Plug, RefreshCw, WifiOff } from 'lucide-react';
+import { useCareActor } from '@/assistance/index.ts';
+import { formatDateTime, formatRelative, formatTime } from '@/shared/domain/model/valueobjects/relative-time.ts';
 import {
   EmptyState,
   ErrorState,
@@ -11,8 +13,9 @@ import {
 } from '@/shared/presentation/components/ui/index.ts';
 import { useDocumentTitle } from '@/shared/presentation/hooks/useDocumentTitle.ts';
 import { useLoad } from '@/shared/presentation/hooks/useLoad.ts';
-import { isTrackingSample, loadHomeDevices } from '../../application/tracking.store.ts';
-import type { Device, DeviceHealth } from '../../domain/model/device.entity.ts';
+import { useSession } from '@/shared/presentation/hooks/useSession.ts';
+import { isTrackingSample, loadSupervision } from '../../application/tracking.store.ts';
+import { homeConnection, recentEvents, type Device, type DeviceHealth, type HomeEvent } from '../../domain/model/device.entity.ts';
 import { HEALTH, KIND_ICON } from '../device-presentation.ts';
 import { DeviceDetailDrawer } from '../components/DeviceDetailDrawer.tsx';
 
@@ -97,14 +100,80 @@ const SUMMARY_LABEL: Record<DeviceHealth, (count: number) => string> = {
   offline: (count) => `${count} sin conexión`,
 };
 
+const EVENT_TONE: Record<HomeEvent['tone'], { label: string; tone: 'success' | 'info' | 'warning' }> = {
+  ok: { label: 'Acción', tone: 'success' },
+  info: { label: 'Acción', tone: 'info' },
+  warning: { label: 'Alerta', tone: 'warning' },
+};
+
+/** What happened, when, and on which device: the timeline a caregiver checks from outside the home. */
+function RecentEvents({ events, onOpen }: { readonly events: readonly HomeEvent[]; readonly onOpen: (deviceId: string) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const shown = expanded ? events : events.slice(0, 5);
+  return (
+    <section aria-labelledby="recent-events" className="rounded-2xl border border-alivia-primary-mist bg-white p-5">
+      <h2 id="recent-events" className="text-lg font-bold text-alivia-primary-dark">
+        Eventos recientes
+      </h2>
+      {events.length === 0 ? (
+        <p className="mt-2 text-sm text-alivia-text-muted">Todavía no hay acciones ni alertas registradas.</p>
+      ) : (
+        <ol className="mt-3 divide-y divide-alivia-primary-mist">
+          {shown.map((event) => (
+            <li key={`${event.deviceId}-${event.at}`} className="flex flex-wrap items-start gap-x-4 gap-y-1 py-3">
+              <time dateTime={event.at} title={formatDateTime(event.at)} className="w-20 shrink-0 text-sm font-semibold text-alivia-primary-dark tabular-nums">
+                {formatTime(event.at)}
+                <span className="block text-xs font-normal text-alivia-hint">{formatRelative(event.at)}</span>
+              </time>
+              <div className="min-w-0 flex-1 basis-48">
+                <p className="flex flex-wrap items-center gap-2 font-semibold text-alivia-text">
+                  {event.title}
+                  <StatusDot tone={EVENT_TONE[event.tone].tone}>{EVENT_TONE[event.tone].label}</StatusDot>
+                </p>
+                <p className="text-sm text-alivia-text-muted">{event.detail}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => onOpen(event.deviceId)}
+                className="min-h-11 rounded-lg px-2 text-left text-sm font-semibold text-alivia-primary-mid hover:bg-alivia-primary-mist sm:text-right"
+              >
+                {event.deviceName}
+                <span className="block text-xs font-normal text-alivia-hint">{event.roomName}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+      )}
+      {events.length > 5 && (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
+          className="mt-2 min-h-11 rounded-lg px-3 text-sm font-semibold text-alivia-primary-mid hover:bg-alivia-primary-mist"
+        >
+          {expanded ? 'Ver menos' : `Ver los ${events.length} eventos`}
+        </button>
+      )}
+    </section>
+  );
+}
+
 export function DevicesView() {
   useDocumentTitle('Dispositivos');
-  const { state, retry } = useLoad(loadHomeDevices, []);
+  const { accessLevel } = useSession();
+  const { actor, status: actorStatus, retry: retryActor } = useCareActor();
+  const allowed = actor?.can('view_devices') ?? false;
+  // Waits for the caregiver; the load itself refuses anyone without the permission.
+  const { state, retry } = useLoad(
+    () => (actor && allowed ? loadSupervision(actor) : new Promise<never>(() => {})),
+    [actor?.id, allowed],
+  );
   const [params, setParams] = useSearchParams();
   const selectedId = params.get('device');
   const home = state.status === 'ready' ? state.data : null;
   const selected = home?.devices.find((device) => device.id === selectedId) ?? null;
-  const lastSync = home?.devices.map((device) => device.lastSyncAt).sort().at(-1);
+  const connection = home ? homeConnection(home) : null;
+  const lastSync = connection?.lastUpdateAt;
 
   const select = (id: string | null) =>
     setParams(
@@ -134,7 +203,7 @@ export function DevicesView() {
           </span>
         }
         actions={
-          <Link
+          accessLevel === 'principal' && <Link
             to="/incidents?report=1"
             className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-alivia-primary-light/70 bg-white px-4 text-sm font-semibold text-alivia-primary-dark transition-colors hover:bg-alivia-primary-mist/60"
           >
@@ -145,13 +214,38 @@ export function DevicesView() {
       />
       {isTrackingSample() && <SampleDataNotice />}
 
-      {state.status === 'loading' && <SkeletonCards label="Consultando tus dispositivos…" count={5} />}
+      {actorStatus === 'error' && (
+        <ErrorState title="No pudimos comprobar tus permisos" message="Revisa tu conexión e inténtalo de nuevo." onRetry={retryActor} />
+      )}
+      {actor && !allowed && (
+        <EmptyState
+          title="No tienes acceso a la supervisión remota"
+          description="Pide al cuidador principal que te asigne «Consultar dispositivos» en la red de cuidado."
+        />
+      )}
+
+      {allowed && state.status === 'loading' && <SkeletonCards label="Consultando tus dispositivos…" count={5} />}
       {state.status === 'error' && (
         <ErrorState title="No pudimos consultar los dispositivos" message="Revisa tu conexión e inténtalo de nuevo." onRetry={retry} />
       )}
 
       {home && home.devices.length === 0 && (
         <EmptyState title="Aún no hay dispositivos instalados" description="Aparecerán aquí cuando el técnico termine la instalación." />
+      )}
+
+      {connection && !connection.online && (
+        <div role="alert" className="flex items-start gap-3 rounded-2xl border border-alivia-warning/40 bg-alivia-warning-soft px-4 py-3 text-sm">
+          <WifiOff className="mt-0.5 size-5 shrink-0 text-alivia-warning" aria-hidden="true" />
+          <div>
+            <p className="font-semibold text-alivia-text">La vivienda perdió la conexión</p>
+            <p className="text-alivia-text-muted">
+              {connection.lastUpdateAt
+                ? `Lo que ves es la última actualización recibida (${formatDateTime(connection.lastUpdateAt)}).`
+                : 'Aún no recibimos datos de la vivienda.'}{' '}
+              Puede haber eventos pendientes que aparecerán cuando vuelva la conexión.
+            </p>
+          </div>
+        </div>
       )}
 
       {home && home.devices.length > 0 && (
@@ -165,6 +259,8 @@ export function DevicesView() {
               </li>
             ))}
           </ul>
+
+          <RecentEvents events={recentEvents(home.devices)} onOpen={select} />
 
           {home.rooms.map((room) => {
             const devices = home.devices.filter((device) => device.roomId === room.id);

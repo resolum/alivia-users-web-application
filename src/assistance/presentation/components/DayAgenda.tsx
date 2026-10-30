@@ -22,7 +22,7 @@ function stateText(activity: CareActivity, now: Date): string {
   const state = activity.stateAt(now);
   if (state === 'completed' && activity.completedAt) {
     const time = new Date(activity.completedAt).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' });
-    return `Completada a las ${time}`;
+    return activity.completedByName ? `Atendida a las ${time} por ${activity.completedByName}` : `Completada a las ${time}`;
   }
   return ACTIVITY_STATE[state].label;
 }
@@ -66,7 +66,7 @@ export function AgendaRows({ activities, now, canManage, onOpen, onComplete, onR
             </button>
             <div className="ml-auto flex items-center gap-2">
               <StatusDot tone={ACTIVITY_STATE[state].tone}>{stateText(activity, now)}</StatusDot>
-              {state === 'pending' || state === 'scheduled' ? (
+              {canManage && (state === 'pending' || state === 'scheduled') ? (
                 <Button variant="ghost" onClick={() => onComplete(activity)} className="text-alivia-primary-dark">
                   Completar
                 </Button>

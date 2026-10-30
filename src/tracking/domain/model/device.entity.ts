@@ -98,4 +98,37 @@ export interface Room {
 export interface HomeDevices {
   readonly rooms: readonly Room[];
   readonly devices: readonly Device[];
+  /** Whether the home hub is reaching the platform, and when it last did. */
+  readonly hubOnline: boolean;
+  readonly hubLastContactAt: string;
+}
+
+/** Without news from the home for this long, events may be waiting to sync. */
+export const STALE_MINUTES = 15;
+
+export interface HomeConnection {
+  readonly online: boolean;
+  /** Latest moment anything from the home was received. */
+  readonly lastUpdateAt: string | null;
+}
+
+export function homeConnection(home: HomeDevices, now: Date = new Date()): HomeConnection {
+  const lastUpdateAt = [home.hubLastContactAt, ...home.devices.map((device) => device.lastSyncAt)].sort().at(-1) ?? null;
+  const stale = lastUpdateAt === null || now.getTime() - new Date(lastUpdateAt).getTime() > STALE_MINUTES * 60_000;
+  const allDown = home.devices.length > 0 && home.devices.every((device) => !device.online);
+  return { online: home.hubOnline && !stale && !allDown, lastUpdateAt };
+}
+
+export interface HomeEvent extends DeviceEvent {
+  readonly deviceId: string;
+  readonly deviceName: string;
+  readonly roomName: string;
+}
+
+/** Actions and alerts of every device, newest first. */
+export function recentEvents(devices: readonly Device[], limit = 12): HomeEvent[] {
+  return devices
+    .flatMap((device) => device.history.map((event) => ({ ...event, deviceId: device.id, deviceName: device.name, roomName: device.roomName })))
+    .sort((a, b) => b.at.localeCompare(a.at))
+    .slice(0, limit);
 }

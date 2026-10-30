@@ -7,7 +7,7 @@ const activity = (id: string, time: string, changes: Partial<CareActivityProps> 
   new CareActivity({
     id, title: 'Aseo', type: 'hygiene', date: '2026-10-29', time, durationMinutes: 30, repetition: 'none',
     caregiverId: 'c1', caregiverName: 'María', reminderMinutes: null, notes: '', tag: null,
-    status: 'scheduled', completedAt: null, ...changes,
+    status: 'scheduled', completedAt: null, completedByName: null, ...changes,
   });
 
 describe('CareActivity', () => {

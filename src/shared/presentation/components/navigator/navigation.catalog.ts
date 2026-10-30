@@ -52,6 +52,22 @@ export const NAV_ITEMS = [
     icon: 'activities',
     accessLevels: BOTH_ACCESS_LEVELS,
   },
+  // assistance
+  {
+    id: 'shifts',
+    labelKey: 'shifts',
+    route: '/shifts',
+    icon: 'shifts',
+    accessLevels: BOTH_ACCESS_LEVELS,
+  },
+  // assistance
+  {
+    id: 'medications',
+    labelKey: 'medications',
+    route: '/medications',
+    icon: 'medications',
+    accessLevels: BOTH_ACCESS_LEVELS,
+  },
   // profiles (household data; PENDING(confirm) once the backend owns it)
   {
     id: 'household',
@@ -66,7 +82,8 @@ export const NAV_ITEMS = [
     labelKey: 'devices',
     route: '/devices',
     icon: 'devices',
-    accessLevels: PRINCIPAL_ACCESS_LEVELS,
+    // Guests reach it too; the screen checks their "view devices" responsibility.
+    accessLevels: BOTH_ACCESS_LEVELS,
   },
   // subscriptions
   {

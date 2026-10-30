@@ -5,7 +5,7 @@ import { statusOf } from './home-data-source.ts';
 const at = (time: string, status: 'scheduled' | 'completed' = 'scheduled') =>
   new CareActivity({
     id: 'a', title: 'Almuerzo', type: 'nutrition', date: '2026-10-29', time, durationMinutes: 60, repetition: 'none',
-    caregiverId: 'c', caregiverName: 'Carlos', reminderMinutes: null, notes: '', tag: null, status, completedAt: null,
+    caregiverId: 'c', caregiverName: 'Carlos', reminderMinutes: null, notes: '', tag: null, status, completedAt: null, completedByName: null,
   });
 
 describe('Home agenda status', () => {

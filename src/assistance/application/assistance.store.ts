@@ -27,7 +27,9 @@ export function inviteCaregiver(network: CareNetwork, command: InviteCaregiverCo
 }
 
 export const resendInvitation = (caregiverId: string) => api().resendInvitation(caregiverId);
-export const removeCaregiver = (caregiverId: string) => api().removeCaregiver(caregiverId);
+export const removeCaregiver = (caregiverId: string, actorName: string) => api().removeCaregiver(caregiverId, actorName);
+export const loadPendingDuties = (caregiverId: string) => api().pendingDutiesOf(caregiverId);
+export const loadNetworkLog = () => api().listNetworkLog();
 export const updateResponsibilities = (caregiverId: string, responsibilities: readonly Responsibility[]) =>
   api().updateResponsibilities(caregiverId, responsibilities);
 
@@ -39,13 +41,13 @@ export function loadWeek(weekStart: Date): Promise<CareActivity[]> {
   return api().listActivities(toIsoDate(weekStart), toIsoDate(addDays(weekStart, 6)));
 }
 
-export function scheduleActivity(command: ScheduleActivityCommand, caregiverName: string): Promise<CareActivity> {
+export function scheduleActivity(command: ScheduleActivityCommand, caregiverName: string, actor: Caregiver): Promise<CareActivity> {
   if (Object.keys(command.validate()).length > 0) return Promise.reject(new Error('validation_failed'));
-  return api().scheduleActivity(command, caregiverName);
+  return api().scheduleActivity(command, caregiverName, actor);
 }
 
-export const completeActivity = (activityId: string) => api().completeActivity(activityId);
-export const cancelActivity = (activityId: string) => api().cancelActivity(activityId);
+export const completeActivity = (activityId: string, actor: Caregiver) => api().completeActivity(activityId, actor);
+export const cancelActivity = (activityId: string, actor: Caregiver) => api().cancelActivity(activityId, actor);
 
 /** Monday of the week containing `date`. */
 export function startOfWeek(date: Date): Date {
