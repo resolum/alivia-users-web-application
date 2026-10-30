@@ -1,9 +1,13 @@
 import {
   Bath,
+  CircleCheck,
+  CircleX,
+  Clock,
   Footprints,
   GlassWater,
   Music,
   Pill,
+  TriangleAlert,
   Users,
   Utensils,
   type LucideIcon,
@@ -55,6 +59,15 @@ export const ACTIVITY_STATE: Record<ActivityState, { label: string; tone: Status
   scheduled: { label: 'Programada', tone: 'info' },
   overdue: { label: 'Pendiente, vencida', tone: 'danger' },
   cancelled: { label: 'Cancelada', tone: 'neutral' },
+};
+
+/** The guest's agenda names states shortly; the icon repeats the meaning for color-blind readers. */
+export const GUEST_STATE: Record<ActivityState, { label: string; icon: LucideIcon; tone: string }> = {
+  completed: { label: 'Completada', icon: CircleCheck, tone: 'border-alivia-secondary/40 bg-alivia-mint text-alivia-secondary-deep' },
+  pending: { label: 'Pendiente', icon: Clock, tone: 'border-alivia-primary-light/50 bg-alivia-primary-mist text-alivia-primary' },
+  overdue: { label: 'Vencida', icon: TriangleAlert, tone: 'border-alivia-warning/40 bg-alivia-warning-soft text-alivia-warning' },
+  scheduled: { label: 'Programada', icon: Clock, tone: 'border-alivia-primary-mist bg-alivia-page text-alivia-text-muted' },
+  cancelled: { label: 'Cancelada', icon: CircleX, tone: 'border-alivia-primary-mist bg-white text-alivia-text-muted' },
 };
 
 export const REPETITION_LABELS: Record<Repetition, string> = {

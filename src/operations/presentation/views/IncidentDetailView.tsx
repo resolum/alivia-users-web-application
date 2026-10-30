@@ -227,7 +227,7 @@ export function IncidentDetailView() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-5xl animate-reveal flex-col gap-5">
       {back}
 
       <header className="flex flex-wrap items-start justify-between gap-4">

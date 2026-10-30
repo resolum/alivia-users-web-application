@@ -12,11 +12,17 @@ export type LoadState<T> =
 export function useLoad<T>(load: () => Promise<T>, deps: readonly unknown[]) {
   const [state, setState] = useState<LoadState<T>>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
+  // Dependencies of the data on screen, so a screen can tell it is still showing the previous result.
+  const [loadedDeps, setLoadedDeps] = useState(deps);
 
   useEffect(() => {
     let active = true;
     load().then(
-      (data) => active && setState({ status: 'ready', data }),
+      (data) => {
+        if (!active) return;
+        setState({ status: 'ready', data });
+        setLoadedDeps(deps);
+      },
       () => active && setState({ status: 'error' }),
     );
     return () => {
@@ -32,5 +38,7 @@ export function useLoad<T>(load: () => Promise<T>, deps: readonly unknown[]) {
 
   const setData = useCallback((data: T) => setState({ status: 'ready', data }), []);
 
-  return { state, retry, setData, reload: () => setAttempt((count) => count + 1) } as const;
+  const stale = state.status === 'ready' && deps.some((dep, index) => !Object.is(dep, loadedDeps[index]));
+
+  return { state, stale, retry, setData, reload: () => setAttempt((count) => count + 1) } as const;
 }

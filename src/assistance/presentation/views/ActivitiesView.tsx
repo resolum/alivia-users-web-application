@@ -3,19 +3,18 @@ import { useSearchParams } from 'react-router';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { addDays, toIsoDate } from '@/shared/domain/model/valueobjects/relative-time.ts';
 import {
-  Bone,
   Button,
   ConfirmDialog,
   EmptyState,
   ErrorState,
   PageHeader,
   SampleDataNotice,
-  Skeleton,
   SkeletonRows,
   Toast,
   useToast,
 } from '@/shared/presentation/components/ui/index.ts';
 import { useDocumentTitle } from '@/shared/presentation/hooks/useDocumentTitle.ts';
+import { useSession } from '@/shared/presentation/hooks/useSession.ts';
 import { useLoad } from '@/shared/presentation/hooks/useLoad.ts';
 import {
   cancelActivity,
@@ -30,8 +29,9 @@ import { ACTIVITY_STATE, ACTIVITY_TYPE } from '../assistance-labels.ts';
 import { ActivityDetailDrawer } from '../components/ActivityDetailDrawer.tsx';
 import { ActivityFormDrawer } from '../components/ActivityFormDrawer.tsx';
 import { AgendaRows, DayAgenda } from '../components/DayAgenda.tsx';
-import { WeekCalendar } from '../components/WeekCalendar.tsx';
+import { WeekCalendar, WeekCalendarSkeleton } from '../components/WeekCalendar.tsx';
 import { useCareActor } from '../useCareActor.ts';
+import { GuestActivitiesView } from './GuestActivitiesView.tsx';
 
 type Mode = 'day' | 'week' | 'list';
 
@@ -62,7 +62,13 @@ function rangeLabel(mode: Mode, anchor: Date, weekStart: Date): string {
 /** Narrow screens open on the day view: the week grid needs a desktop width. */
 const initialMode = (): Mode => (typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches ? 'week' : 'day');
 
+/** Guests consult their own assignments; the principal organizes the whole agenda. */
 export function ActivitiesView() {
+  const { accessLevel } = useSession();
+  return accessLevel === 'invitado' ? <GuestActivitiesView /> : <AgendaView />;
+}
+
+function AgendaView() {
   useDocumentTitle('Actividades');
   const [mode, setMode] = useState<Mode>(initialMode);
   const [anchor, setAnchor] = useState(() => new Date());
@@ -78,7 +84,7 @@ export function ActivitiesView() {
 
   const weekStart = useMemo(() => startOfWeek(anchor), [anchor]);
   const weekKey = toIsoDate(weekStart);
-  const { state, retry, setData } = useLoad(() => loadWeek(weekStart), [weekKey]);
+  const { state, stale, retry, setData } = useLoad(() => loadWeek(weekStart), [weekKey]);
   const { network, actor } = useCareActor();
   // The granted responsibility decides, not the account type: an invited caregiver may manage activities too.
   const canManage = actor?.can('manage_activities') ?? false;
@@ -244,19 +250,7 @@ export function ActivitiesView() {
       </div>
 
       {state.status === 'loading' && (mode === 'week' ? (
-          <Skeleton label="Cargando actividades…" className="h-[34rem] overflow-hidden rounded-2xl border border-alivia-primary-mist bg-white">
-            <div className="grid h-full grid-cols-[56px_repeat(7,minmax(0,1fr))]">
-              {Array.from({ length: 8 }, (_, column) => (
-                <div key={column} className="border-l border-alivia-primary-mist p-1.5 first:border-0">
-                  <Bone className="mx-auto mb-4 h-8 w-10" />
-                  {column > 0 &&
-                    [0, 1].map((card) => (
-                      <Bone key={card} className={(column + card) % 3 ? 'mt-10 h-12 w-full rounded-lg' : 'mt-24 h-12 w-full rounded-lg'} />
-                    ))}
-                </div>
-              ))}
-            </div>
-          </Skeleton>
+          <WeekCalendarSkeleton label="Cargando actividades…" />
         ) : (
           <SkeletonRows label="Cargando actividades…" rows={5} />
         ))}
@@ -264,35 +258,46 @@ export function ActivitiesView() {
         <ErrorState title="No pudimos cargar las actividades" message="Revisa tu conexión e inténtalo de nuevo." onRetry={retry} />
       )}
 
-      {state.status === 'ready' && mode === 'week' && <WeekCalendar weekStart={weekStart} activities={visible} now={now} onOpen={setDetail} />}
+      {state.status === 'ready' && (
+        // The previous range dims while the next one loads, instead of sitting there unchanged.
+        <div aria-busy={stale} className={`transition-opacity duration-200 ease-out ${stale ? 'opacity-50' : ''}`}>
+          {mode === 'week' && (
+            <div className="animate-reveal">
+              <WeekCalendar weekStart={weekStart} activities={visible} now={now} onOpen={setDetail} />
+            </div>
+          )}
 
-      {state.status === 'ready' && mode === 'day' &&
-        (dayItems.length === 0 ? (
-          empty
-        ) : (
-          <DayAgenda activities={dayItems} now={now} canManage={canManage} onOpen={setDetail} onComplete={complete} onReschedule={openEdit} />
-        ))}
+          {mode === 'day' &&
+            (dayItems.length === 0 ? (
+              empty
+            ) : (
+              <div className="animate-reveal">
+                <DayAgenda activities={dayItems} now={now} canManage={canManage} onOpen={setDetail} onComplete={complete} onReschedule={openEdit} />
+              </div>
+            ))}
 
-      {state.status === 'ready' && mode === 'list' &&
-        (visible.length === 0 ? (
-          empty
-        ) : (
-          <div className="flex flex-col gap-4">
-            {Array.from({ length: 7 }, (_, index) => toIsoDate(addDays(weekStart, index))).map((iso) => {
-              const items = visible.filter((activity) => activity.date === iso).sort((a, b) => a.startMinute - b.startMinute);
-              if (items.length === 0) return null;
-              const label = new Date(`${iso}T12:00:00`).toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
-              return (
-                <section key={iso} className="overflow-hidden rounded-2xl border border-alivia-primary-mist bg-white">
-                  <h3 className="bg-alivia-page px-5 py-2.5 text-sm font-bold text-alivia-primary-dark first-letter:uppercase">
-                    {label}
-                  </h3>
-                  <AgendaRows activities={items} now={now} canManage={canManage} onOpen={setDetail} onComplete={complete} onReschedule={openEdit} />
-                </section>
-              );
-            })}
-          </div>
-        ))}
+          {mode === 'list' &&
+            (visible.length === 0 ? (
+              empty
+            ) : (
+              <div className="reveal-stagger flex flex-col gap-4">
+                {Array.from({ length: 7 }, (_, index) => toIsoDate(addDays(weekStart, index))).map((iso) => {
+                  const items = visible.filter((activity) => activity.date === iso).sort((a, b) => a.startMinute - b.startMinute);
+                  if (items.length === 0) return null;
+                  const label = new Date(`${iso}T12:00:00`).toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
+                  return (
+                    <section key={iso} className="overflow-hidden rounded-2xl border border-alivia-primary-mist bg-white">
+                      <h3 className="bg-alivia-page px-5 py-2.5 text-sm font-bold text-alivia-primary-dark first-letter:uppercase">
+                        {label}
+                      </h3>
+                      <AgendaRows activities={items} now={now} canManage={canManage} onOpen={setDetail} onComplete={complete} onReschedule={openEdit} />
+                    </section>
+                  );
+                })}
+              </div>
+            ))}
+        </div>
+      )}
 
       <ActivityDetailDrawer
         activity={detail}

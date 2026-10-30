@@ -55,3 +55,40 @@ export function HomeLoadingState() {
     </Skeleton>
   );
 }
+
+/** Skeleton of the guest Home: date, greeting, two intro lines, the person chip and the next-activity card. */
+export function HomeGuestLoadingState() {
+  const t = useTranslations();
+
+  return (
+    <Skeleton label={t.home.states.loading} className="space-y-5">
+      <div className="space-y-3">
+        <Bone className="h-3 w-44" />
+        <Bone className="h-9 w-56" />
+        <div className="space-y-2">
+          <Bone className="h-3.5 w-4/5" />
+          <Bone className="h-3.5 w-3/5" />
+        </div>
+        <Bone className="h-9 w-48 rounded-full" />
+      </div>
+      <div className="space-y-4 rounded-2xl border border-alivia-primary-mist bg-white p-5">
+        <div className="flex items-center justify-between">
+          <Bone className="h-3 w-32" />
+          <Bone className="h-6 w-24 rounded-full" />
+        </div>
+        <Bone className="h-px w-full" />
+        <div className="space-y-2">
+          <Bone className="h-4 w-36" />
+          <Bone className="h-6 w-3/5" />
+          <Bone className="h-3.5 w-28" />
+          <Bone className="h-3.5 w-4/5" />
+        </div>
+        <Bone className="h-px w-full" />
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Bone className="h-11 flex-1 rounded-xl" />
+          <Bone className="h-11 w-40 rounded-xl" />
+        </div>
+      </div>
+    </Skeleton>
+  );
+}

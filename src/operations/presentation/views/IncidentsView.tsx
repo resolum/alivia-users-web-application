@@ -145,7 +145,7 @@ export function IncidentsView() {
       )}
 
       {shown.length > 0 && (
-        <ul className="flex flex-col gap-3">
+        <ul className="reveal-stagger flex flex-col gap-3">
           {shown.map((incident) => {
             const Icon = DEVICE_ICON[incident.deviceKind];
             return (

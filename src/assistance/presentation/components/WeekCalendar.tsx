@@ -1,5 +1,6 @@
 import { Clock, TriangleAlert } from 'lucide-react';
 import { addDays, toIsoDate } from '@/shared/domain/model/valueobjects/relative-time.ts';
+import { Bone, Skeleton } from '@/shared/presentation/components/ui/index.ts';
 import { clashingIds, overlapGroups, type CareActivity, type ActivityState } from '../../domain/model/care-activity.entity.ts';
 import { ACTIVITY_STATE, ACTIVITY_TYPE, formatClock } from '../assistance-labels.ts';
 
@@ -22,11 +23,13 @@ interface WeekCalendarProps {
   readonly activities: readonly CareActivity[];
   readonly now: Date;
   readonly onOpen: (activity: CareActivity) => void;
+  /** Second line of each card; the assigned caregiver unless the screen says otherwise. */
+  readonly caption?: (activity: CareActivity) => string;
 }
 
 const minuteToPx = (minute: number) => ((minute - FIRST_HOUR * 60) / 60) * HOUR_PX;
 
-export function WeekCalendar({ weekStart, activities, now, onOpen }: WeekCalendarProps) {
+export function WeekCalendar({ weekStart, activities, now, onOpen, caption = (activity) => activity.caregiverName }: WeekCalendarProps) {
   const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
   const hours = Array.from({ length: LAST_HOUR - FIRST_HOUR }, (_, index) => FIRST_HOUR + index);
   const clashes = clashingIds(activities);
@@ -118,7 +121,7 @@ export function WeekCalendar({ weekStart, activities, now, onOpen }: WeekCalenda
                           <type.icon className="size-3.5 shrink-0 text-alivia-primary" aria-hidden="true" />
                         )}
                       </span>
-                      <span className="mt-0.5 block truncate text-[11px] text-alivia-text-muted">{activity.caregiverName}</span>
+                      <span className="mt-0.5 block truncate text-[11px] text-alivia-text-muted">{caption(activity)}</span>
                       <span className="mt-0.5 block truncate text-[10px] font-semibold text-alivia-primary-dark">
                         {clash ? 'Superposición de horario' : ACTIVITY_STATE[state].label}
                       </span>
@@ -137,5 +140,24 @@ export function WeekCalendar({ weekStart, activities, now, onOpen }: WeekCalenda
         })}
       </div>
     </div>
+  );
+}
+
+/** The week grid's outline while it loads: hour gutter, seven day columns and a few cards. */
+export function WeekCalendarSkeleton({ label }: { readonly label: string }) {
+  return (
+    <Skeleton label={label} className="h-[34rem] overflow-hidden rounded-2xl border border-alivia-primary-mist bg-white">
+      <div className="grid h-full grid-cols-[56px_repeat(7,minmax(0,1fr))]">
+        {Array.from({ length: 8 }, (_, column) => (
+          <div key={column} className="border-l border-alivia-primary-mist p-1.5 first:border-0">
+            <Bone className="mx-auto mb-4 h-8 w-10" />
+            {column > 0 &&
+              [0, 1].map((card) => (
+                <Bone key={card} className={(column + card) % 3 ? 'mt-10 h-12 w-full rounded-lg' : 'mt-24 h-12 w-full rounded-lg'} />
+              ))}
+          </div>
+        ))}
+      </div>
+    </Skeleton>
   );
 }

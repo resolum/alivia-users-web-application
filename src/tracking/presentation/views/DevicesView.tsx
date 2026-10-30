@@ -250,7 +250,7 @@ export function DevicesView() {
 
       {home && home.devices.length > 0 && (
         <>
-          <ul className="flex flex-wrap gap-2" aria-label="Resumen de estado">
+          <ul className="flex animate-reveal flex-wrap gap-2" aria-label="Resumen de estado">
             {SUMMARY.map((health) => (
               <li key={health}>
                 <StatusDot tone={HEALTH[health].tone} className="px-3 py-1 text-sm">
@@ -262,11 +262,17 @@ export function DevicesView() {
 
           <RecentEvents events={recentEvents(home.devices)} onOpen={select} />
 
-          {home.rooms.map((room) => {
+          {home.rooms.map((room, index) => {
             const devices = home.devices.filter((device) => device.roomId === room.id);
             if (devices.length === 0) return null;
             return (
-              <section key={room.id} aria-labelledby={`room-${room.id}`} className="flex flex-col gap-4">
+              <section
+                key={room.id}
+                aria-labelledby={`room-${room.id}`}
+                className="flex animate-reveal flex-col gap-4"
+                // Rooms follow the summary in reading order; capped so a large home never waits on its tail.
+                style={{ animationDelay: `${Math.min(index + 1, 3) * 50}ms` }}
+              >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h2 id={`room-${room.id}`} className="flex items-center gap-2 text-xl font-bold text-alivia-primary-dark">
                     <BedDouble className="size-5 text-alivia-secondary-deep" aria-hidden="true" />

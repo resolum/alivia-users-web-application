@@ -194,7 +194,7 @@ export function MedicationsView() {
       )}
 
       {!loading && !failed && actor && network && tab === 'today' && (
-        <section id="panel-today" role="tabpanel" aria-labelledby="tab-today" className="flex flex-col gap-4">
+        <section id="panel-today" role="tabpanel" aria-labelledby="tab-today" className="reveal-stagger flex flex-col gap-4">
           {overdue.length > 0 && (
             <div role="alert" className="flex items-start gap-3 rounded-2xl border border-alivia-danger/30 bg-alivia-danger/5 px-4 py-3 text-sm">
               <BellRing className="mt-0.5 size-5 shrink-0 text-alivia-danger" aria-hidden="true" />

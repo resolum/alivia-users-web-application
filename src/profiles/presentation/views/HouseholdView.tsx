@@ -53,7 +53,7 @@ export function HouseholdView() {
       )}
 
       {household && (
-        <article className="overflow-hidden rounded-3xl border border-alivia-primary-mist bg-white shadow-sm">
+        <article className="animate-reveal overflow-hidden rounded-3xl border border-alivia-primary-mist bg-white shadow-sm">
           <header className="flex flex-wrap items-center gap-4 border-b border-alivia-primary-mist bg-alivia-page/50 px-5 py-4 sm:px-6">
             <span aria-hidden="true" className="grid size-12 place-items-center rounded-xl bg-alivia-primary-mist text-alivia-primary">
               <House className="size-6" />

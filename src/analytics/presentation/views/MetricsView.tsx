@@ -135,7 +135,7 @@ export function MetricsView() {
 
       {summary && share && percent !== null && (
         <>
-          <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+          <div className="reveal-stagger grid gap-5 lg:grid-cols-[1fr_320px]">
             <section className="rounded-2xl border border-alivia-primary-mist bg-white p-5 sm:p-6">
               <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
                 <h2 className="text-lg font-bold text-alivia-primary-dark">{rangeInfo.chart}</h2>

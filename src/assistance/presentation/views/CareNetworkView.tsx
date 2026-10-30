@@ -149,7 +149,7 @@ export function CareNetworkView() {
       )}
 
       {network && (
-        <section className="rounded-3xl border border-alivia-primary-mist bg-white p-5 shadow-sm sm:p-8">
+        <section className="animate-reveal rounded-3xl border border-alivia-primary-mist bg-white p-5 shadow-sm sm:p-8">
           <div className="flex items-center justify-between gap-3">
             <h2 className="text-xs font-bold tracking-wide text-alivia-text-muted uppercase">Cuidador principal</h2>
             <span className="text-xs font-semibold text-alivia-text-muted">Titular del servicio</span>

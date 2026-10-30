@@ -57,7 +57,8 @@ const GUEST_LAYOUT: NavLayout = {
   },
   groups: [
     { labelKey: 'principal', itemIds: ['home'] },
-    { labelKey: 'care', itemIds: ['assistedPerson', 'activities', 'shifts', 'medications', 'devices'] },
+    // Shifts, medications and devices stay routable for guests (notifications link there) but are not listed.
+    { labelKey: 'care', itemIds: ['assistedPerson', 'activities'] },
     { labelKey: 'account', itemIds: ['profile'] },
   ],
   footerItems: [],

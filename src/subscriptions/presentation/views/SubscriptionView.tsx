@@ -159,7 +159,7 @@ export function SubscriptionView() {
       )}
 
       {subscription && (
-        <div className="grid gap-5 lg:grid-cols-[1.15fr_1fr]">
+        <div className="reveal-stagger grid gap-5 lg:grid-cols-[1.15fr_1fr]">
           <section className="flex flex-col gap-5 rounded-2xl border border-alivia-primary-mist bg-white p-5 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-3 border-b border-alivia-primary-mist pb-5">
               <div>

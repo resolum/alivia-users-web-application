@@ -103,15 +103,20 @@ export function ProfileView() {
 
       {view.status === 'ready' && (
         <>
-          <ProfileHeaderCard
-            profile={view.profile}
-            accessLevel={accessLevel}
-            onChangePhoto={() => setPhotoOpen(true)}
-          />
-          <PersonalDataForm
-            profile={view.profile}
-            onSaved={(profile) => apply(profile, t.form.saved)}
-          />
+          {/* Header then form settle in reading order where the skeleton stood. */}
+          <div className="animate-reveal">
+            <ProfileHeaderCard
+              profile={view.profile}
+              accessLevel={accessLevel}
+              onChangePhoto={() => setPhotoOpen(true)}
+            />
+          </div>
+          <div className="animate-reveal [animation-delay:60ms]">
+            <PersonalDataForm
+              profile={view.profile}
+              onSaved={(profile) => apply(profile, t.form.saved)}
+            />
+          </div>
           <PhotoUploadDialog
             open={photoOpen}
             profile={view.profile}

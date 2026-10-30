@@ -20,7 +20,7 @@ export function ErrorState({
   return (
     <div
       role="alert"
-      className="flex flex-col items-center justify-center gap-4 py-16 text-center"
+      className="flex animate-reveal flex-col items-center justify-center gap-4 py-16 text-center"
     >
       <div
         aria-hidden="true"

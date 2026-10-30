@@ -54,7 +54,7 @@ export function ShiftsView() {
 
   const weekStart = useMemo(() => startOfWeek(anchor), [anchor]);
   const weekKey = toIsoDate(weekStart);
-  const { state, retry, reload } = useLoad(() => loadShiftBoard(weekStart), [weekKey]);
+  const { state, stale, retry, reload } = useLoad(() => loadShiftBoard(weekStart), [weekKey]);
 
   // Holdovers and escalations depend on the clock, so the board re-reads it every minute.
   useEffect(() => {
@@ -140,7 +140,7 @@ export function ShiftsView() {
 
       {board && network && actor && (
         <>
-          <section aria-labelledby="in-charge" className="grid gap-5 rounded-3xl border border-alivia-primary-mist bg-white p-5 shadow-sm sm:p-7 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <section aria-labelledby="in-charge" className="animate-reveal grid gap-5 rounded-3xl border border-alivia-primary-mist bg-white p-5 shadow-sm sm:p-7 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
             <div className="flex flex-col gap-3">
               <h2 id="in-charge" className="text-sm font-semibold text-alivia-text-muted">
                 A cargo ahora
@@ -216,7 +216,8 @@ export function ShiftsView() {
             </div>
           </section>
 
-          <section aria-labelledby="week" className="flex flex-col gap-4">
+          {/* The previous week dims while the next one loads, instead of sitting there unchanged. */}
+          <section aria-labelledby="week" aria-busy={stale} className={`flex flex-col gap-4 transition-opacity duration-200 ease-out ${stale ? 'opacity-50' : ''}`}>
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-1 rounded-xl bg-white p-1 ring-1 ring-alivia-primary-mist">
                 <button type="button" aria-label="Semana anterior" onClick={() => setAnchor((date) => addDays(date, -7))} className="grid size-10 place-items-center rounded-lg text-alivia-primary-dark hover:bg-alivia-page">

@@ -58,7 +58,7 @@ export function AssistedPersonView() {
       )}
 
       {person && (
-        <article className="rounded-3xl border border-alivia-primary-mist bg-white p-5 shadow-sm sm:p-8">
+        <article className="animate-reveal rounded-3xl border border-alivia-primary-mist bg-white p-5 shadow-sm sm:p-8">
           <header className="flex flex-wrap items-center gap-4 border-b border-alivia-primary-mist pb-6">
             <Avatar name={person.fullName} src={person.photoUrl ?? undefined} size="lg" className="ring-4 ring-alivia-primary-mist" />
             <div className="min-w-0 flex-1 basis-60 space-y-1">
