@@ -17,7 +17,7 @@ const PRINCIPAL_ACCESS_LEVELS = ['principal'] as const;
 /**
  * Unique navigation catalog.
  * Bounded context is noted above each item because items may aggregate
- * destinations owned by different contexts (for example, contracting).
+ * destinations owned by different contexts.
  */
 export const NAV_ITEMS = [
   // app composition
@@ -52,7 +52,23 @@ export const NAV_ITEMS = [
     icon: 'activities',
     accessLevels: BOTH_ACCESS_LEVELS,
   },
-  // shell (no bounded-context owner yet; PENDING(confirm))
+  // assistance
+  {
+    id: 'shifts',
+    labelKey: 'shifts',
+    route: '/shifts',
+    icon: 'shifts',
+    accessLevels: BOTH_ACCESS_LEVELS,
+  },
+  // assistance
+  {
+    id: 'medications',
+    labelKey: 'medications',
+    route: '/medications',
+    icon: 'medications',
+    accessLevels: BOTH_ACCESS_LEVELS,
+  },
+  // profiles (household data; PENDING(confirm) once the backend owns it)
   {
     id: 'household',
     labelKey: 'household',
@@ -66,15 +82,8 @@ export const NAV_ITEMS = [
     labelKey: 'devices',
     route: '/devices',
     icon: 'devices',
-    accessLevels: PRINCIPAL_ACCESS_LEVELS,
-  },
-  // subscriptions and support
-  {
-    id: 'contracting',
-    labelKey: 'contracting',
-    route: '/contracting',
-    icon: 'contracting',
-    accessLevels: PRINCIPAL_ACCESS_LEVELS,
+    // Guests reach it too; the screen checks their "view devices" responsibility.
+    accessLevels: BOTH_ACCESS_LEVELS,
   },
   // subscriptions
   {

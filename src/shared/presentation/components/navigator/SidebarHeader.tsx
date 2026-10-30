@@ -14,12 +14,14 @@ export function SidebarHeader({ header }: SidebarHeaderProps) {
 
   return (
     <div className="flex items-center gap-3 border-b border-alivia-primary-mist px-4 py-5">
-      <span
-        aria-hidden="true"
-        className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-alivia-primary text-base font-bold text-white"
-      >
-        {title.charAt(0)}
-      </span>
+      {/* Decorative: the product name is already written next to it. */}
+      <img
+        src="/logo.webp"
+        alt=""
+        width={36}
+        height={36}
+        className="size-9 shrink-0 rounded-lg border border-alivia-primary-mist bg-white object-contain"
+      />
       <div className="min-w-0">
         {badge ? (
           <>

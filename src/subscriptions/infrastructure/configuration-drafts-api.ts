@@ -20,7 +20,7 @@ export class ConfigurationDraftRequestError extends Error {
 }
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
-const DRAFTS_PATH = import.meta.env.VITE_SUBSCRIPTIONS_DRAFTS_PATH ?? '/api/v1/configuration-drafts';
+const DRAFTS_PATH = `/${import.meta.env.VITE_CONFIGURATION_DRAFTS_ENDPOINT_PATH}`;
 
 async function request(url: string, init?: RequestInit): Promise<HomeConfiguration> {
   const response = await fetch(url, {

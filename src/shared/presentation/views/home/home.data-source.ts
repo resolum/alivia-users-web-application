@@ -32,10 +32,14 @@ const emptyHomeDataSource: HomeDataSource = {
   },
 };
 
-/**
- * Returns the Home data source.
- * shortcut: Home has no backend read model yet, so it shows its empty states; plug the HTTP source in here.
- */
+let registered: HomeDataSource | null = null;
+
+/** The app composes Home from the bounded contexts and registers it here, so shared imports none of them. */
+export function registerHomeDataSource(source: HomeDataSource): void {
+  registered = source;
+}
+
+/** Returns the registered Home data source, or one that shows the empty states. */
 export function getHomeDataSource(): Promise<HomeDataSource> {
-  return Promise.resolve(emptyHomeDataSource);
+  return Promise.resolve(registered ?? emptyHomeDataSource);
 }

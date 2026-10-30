@@ -62,7 +62,7 @@ export function HomePrincipalView() {
 
   return (
     <div className={PAGE_CLASSES}>
-      <div className="space-y-6">
+      <div className="reveal-stagger space-y-6">
         <HomeHeader
           greeting={data.greeting}
           dateLabel={formatLongDate(today, locale)}

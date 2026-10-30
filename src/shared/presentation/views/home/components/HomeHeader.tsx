@@ -13,13 +13,13 @@ interface HomeHeaderProps {
 const secondaryActionClasses = [
   'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl',
   'border border-alivia-primary-mist bg-white px-4 py-2 text-sm font-semibold',
-  'text-alivia-text-muted transition-colors hover:bg-alivia-primary-mist',
+  'text-alivia-text-muted transition-[background-color,scale] duration-150 hover:bg-alivia-primary-mist active:scale-[0.97]',
 ].join(' ');
 
 const primaryActionClasses = [
   'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl',
   'bg-alivia-primary px-4 py-2 text-sm font-semibold text-white',
-  'transition-colors hover:bg-alivia-primary-mid',
+  'transition-[background-color,scale] duration-150 hover:bg-alivia-primary-mid active:scale-[0.97]',
 ].join(' ');
 
 /** Greeting, page date and the two primary actions of the principal Home. */
@@ -43,11 +43,11 @@ export function HomeHeader({ greeting, dateLabel }: HomeHeaderProps) {
           <p className="text-sm text-alivia-text-soft">{dateLabel}</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Link to={incidentsRoute} className={secondaryActionClasses}>
+          <Link to={`${incidentsRoute}?report=1`} className={secondaryActionClasses}>
             <Icon name="alert-triangle" className="size-4" />
             {t.home.principal.reportIncident}
           </Link>
-          <Link to={activitiesRoute} className={primaryActionClasses}>
+          <Link to={`${activitiesRoute}?new=1`} className={primaryActionClasses}>
             <Icon name="plus" className="size-4" />
             {t.home.principal.newActivity}
           </Link>
