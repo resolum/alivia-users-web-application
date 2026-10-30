@@ -73,7 +73,7 @@ export function NotificationList({ items, status, onRetry, onNavigate }: Notific
   const open = (item: CaregiverNotification) => {
     markNotificationsRead([item.id]).catch(() => undefined);
     onNavigate?.();
-    navigate(item.route);
+    void navigate(item.route);
   };
 
   return (

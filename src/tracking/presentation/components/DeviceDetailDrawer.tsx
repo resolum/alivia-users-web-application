@@ -23,7 +23,7 @@ export function DeviceDetailDrawer({ device, onClose }: { readonly device: Devic
     if (!device) return;
     const params = new URLSearchParams({ report: '1', device: device.id });
     if (type) params.set('type', type);
-    navigate(`/incidents?${params}`);
+    void navigate(`/incidents?${params}`);
   };
 
   return (

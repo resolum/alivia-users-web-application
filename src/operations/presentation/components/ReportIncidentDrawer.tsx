@@ -25,7 +25,7 @@ function readPhoto(file: File): Promise<ReportPhoto> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve({ name: file.name, type: file.type, size: file.size, dataUrl: String(reader.result) });
-    reader.onerror = () => reject(reader.error);
+    reader.onerror = () => reject(reader.error ?? new Error('No se pudo leer la imagen.'));
     reader.readAsDataURL(file);
   });
 }

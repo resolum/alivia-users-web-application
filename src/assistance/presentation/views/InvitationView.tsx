@@ -61,7 +61,7 @@ export function InvitationView() {
     try {
       if (!signedIn) await signIn(new SignInCommand({ emailAddress: invitation.email, password }), false);
       await answerInvitation(token, true);
-      navigate('/home', { replace: true });
+      void navigate('/home', { replace: true });
     } catch (caught) {
       setError(signInMessage(caught));
       setBusy(null);

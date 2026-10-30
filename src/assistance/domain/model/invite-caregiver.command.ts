@@ -3,7 +3,7 @@ import type { Relationship, Responsibility } from './caregiver.entity.ts';
 export type InviteField = 'email' | 'relationship' | 'responsibilities';
 export type InviteFieldError = 'required' | 'invalid_email' | 'already_in_network' | 'none_selected';
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+\.[^\s@]+$/;
 
 export class InviteCaregiverCommand {
   readonly email: string;

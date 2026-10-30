@@ -2,7 +2,7 @@ export type HouseholdField = 'alias' | 'phone' | 'email';
 export type HouseholdFieldError = 'required' | 'too_long' | 'invalid_phone' | 'invalid_email';
 
 export const ALIAS_MAX = 50;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@.]+\.[^\s@]+$/;
 /** Peruvian mobile: 9 digits starting with 9. */
 const LOCAL_PHONE = /^9\d{8}$/;
 
