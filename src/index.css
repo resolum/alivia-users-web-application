@@ -105,17 +105,17 @@
 }
 
 /* Children of a freshly loaded list or grid rise in 50ms apart; the fourth and later share one beat. */
-@utility reveal-stagger {
-  & > * {
+@layer utilities {
+  .reveal-stagger > * {
     animation: var(--animate-reveal);
   }
-  & > :nth-child(2) {
+  .reveal-stagger > :nth-child(2) {
     animation-delay: 50ms;
   }
-  & > :nth-child(3) {
+  .reveal-stagger > :nth-child(3) {
     animation-delay: 100ms;
   }
-  & > :nth-child(n + 4) {
+  .reveal-stagger > :nth-child(n + 4) {
     animation-delay: 150ms;
   }
 }
