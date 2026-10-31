@@ -23,7 +23,7 @@ export function DeviceAlertBanner({ alert }: DeviceAlertBannerProps) {
 
   return (
     <Card className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
-      <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-alivia-primary-mist text-alivia-primary">
+      <span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-alivia-warning-soft text-alivia-warning">
         <Icon name="battery" className="size-6" />
       </span>
       <div className="min-w-0 flex-1">
@@ -37,7 +37,7 @@ export function DeviceAlertBanner({ alert }: DeviceAlertBannerProps) {
         </div>
         <p className="mt-0.5 text-sm text-alivia-text-soft">{alert.detail}</p>
       </div>
-      <ArrowLink to={devicesRoute} className="shrink-0">
+      <ArrowLink to={alert.route ?? devicesRoute} className="shrink-0">
         {t.home.alert.viewDevice}
       </ArrowLink>
     </Card>

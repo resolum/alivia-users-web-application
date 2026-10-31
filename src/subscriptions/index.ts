@@ -37,3 +37,8 @@ export type {
 export { PlanSelectionView } from './presentation/views/PlanSelectionView.tsx';
 export { ContractBrand } from './presentation/components/ContractBrand.tsx';
 export { PlanConfigurationView } from './presentation/views/PlanConfigurationView.tsx';
+
+export { loadSubscription } from './application/subscription.store.ts';
+export { Subscription } from './domain/model/subscription.entity.ts';
+export type { SubscriptionStatus } from './domain/model/subscription.entity.ts';
+export { SubscriptionView } from './presentation/views/SubscriptionView.tsx';

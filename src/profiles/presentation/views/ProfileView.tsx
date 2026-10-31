@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { ChevronRight } from 'lucide-react';
-import { ErrorState, Spinner } from '@/shared/presentation/components/ui/index.ts';
+import {
+  ErrorState,
+  SkeletonDetail,
+} from '@/shared/presentation/components/ui/index.ts';
 import { useDocumentTitle } from '@/shared/presentation/hooks/useDocumentTitle.ts';
 import { useSession } from '@/shared/presentation/hooks/useSession.ts';
 import { useTranslations } from '@/shared/presentation/i18n/index.ts';
@@ -87,7 +90,7 @@ export function ProfileView() {
         <p className="text-sm text-alivia-text-muted">{t.subtitle}</p>
       </header>
 
-      {view.status === 'loading' && <Spinner label={t.states.loading} />}
+      {view.status === 'loading' && <SkeletonDetail label={t.states.loading} rows={5} />}
 
       {view.status === 'error' && (
         <ErrorState
@@ -100,15 +103,20 @@ export function ProfileView() {
 
       {view.status === 'ready' && (
         <>
-          <ProfileHeaderCard
-            profile={view.profile}
-            accessLevel={accessLevel}
-            onChangePhoto={() => setPhotoOpen(true)}
-          />
-          <PersonalDataForm
-            profile={view.profile}
-            onSaved={(profile) => apply(profile, t.form.saved)}
-          />
+          {/* Header then form settle in reading order where the skeleton stood. */}
+          <div className="animate-reveal">
+            <ProfileHeaderCard
+              profile={view.profile}
+              accessLevel={accessLevel}
+              onChangePhoto={() => setPhotoOpen(true)}
+            />
+          </div>
+          <div className="animate-reveal [animation-delay:60ms]">
+            <PersonalDataForm
+              profile={view.profile}
+              onSaved={(profile) => apply(profile, t.form.saved)}
+            />
+          </div>
           <PhotoUploadDialog
             open={photoOpen}
             profile={view.profile}

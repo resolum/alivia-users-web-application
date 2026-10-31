@@ -108,7 +108,8 @@ export function NextActivityCard({
           className={[
             'inline-flex min-h-11 flex-1 items-center justify-center gap-2',
             'rounded-xl bg-alivia-secondary-deep px-4 py-2 text-sm font-semibold',
-            'text-white transition-colors hover:bg-alivia-secondary-dark',
+            'text-white transition-[background-color,scale] duration-150 ease-out',
+            'hover:bg-alivia-secondary-dark active:scale-[0.97]',
           ].join(' ')}
         >
           {t.home.guest.viewActivity}

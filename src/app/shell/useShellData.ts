@@ -6,14 +6,12 @@ export interface ShellData {
   readonly displayName: string;
   readonly householdLabel: string | null;
   readonly assistedPersonName: string | null;
-  readonly unreadNotifications: number;
 }
 
 const EMPTY_SHELL_DATA: ShellData = {
   displayName: '',
   householdLabel: null,
   assistedPersonName: null,
-  unreadNotifications: 0,
 };
 
 /** Name of the signed-in person from their profile; it follows edits made on "Mi perfil". */
@@ -38,6 +36,6 @@ function useProfileName(profileId: string | null): string | null {
 export function useShellData(): ShellData {
   const { user } = useSession();
   const profileName = useProfileName(user?.profileId ?? null);
-  // shortcut: household, assisted person and notifications have no backend source yet, so they stay empty.
+  // shortcut: household and assisted person have no backend source yet, so they stay empty.
   return profileName === null ? EMPTY_SHELL_DATA : { ...EMPTY_SHELL_DATA, displayName: profileName };
 }

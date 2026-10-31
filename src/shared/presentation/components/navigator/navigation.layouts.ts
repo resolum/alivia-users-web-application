@@ -38,9 +38,9 @@ const PRINCIPAL_LAYOUT: NavLayout = {
   },
   groups: [
     { labelKey: 'principal', itemIds: ['home'] },
-    { labelKey: 'care', itemIds: ['assistedPerson', 'careNetwork', 'activities'] },
+    { labelKey: 'care', itemIds: ['assistedPerson', 'careNetwork', 'activities', 'shifts', 'medications'] },
     { labelKey: 'home', itemIds: ['household', 'devices'] },
-    { labelKey: 'service', itemIds: ['contracting', 'subscription', 'incidents'] },
+    { labelKey: 'service', itemIds: ['subscription', 'incidents'] },
     { labelKey: 'analytics', itemIds: ['metrics'] },
   ],
   footerItems: ['profile'],
@@ -57,6 +57,7 @@ const GUEST_LAYOUT: NavLayout = {
   },
   groups: [
     { labelKey: 'principal', itemIds: ['home'] },
+    // Shifts, medications and devices stay routable for guests (notifications link there) but are not listed.
     { labelKey: 'care', itemIds: ['assistedPerson', 'activities'] },
     { labelKey: 'account', itemIds: ['profile'] },
   ],

@@ -1,7 +1,7 @@
 import { Icon } from '@/shared/presentation/components/navigator/Icon.tsx';
 import { ErrorState } from '@/shared/presentation/components/ui/index.ts';
 import { useLocale } from '@/shared/presentation/i18n/index.ts';
-import { HomeLoadingState } from './components/HomeLoadingState.tsx';
+import { HomeGuestLoadingState } from './components/HomeLoadingState.tsx';
 import { NextActivityCard } from './components/NextActivityCard.tsx';
 import { formatLongDate, todayInBusinessZone } from './home.dates.ts';
 import {
@@ -25,7 +25,7 @@ export function HomeGuestView() {
     return (
       <div className={PAGE_CLASSES}>
         <div className={CONTENT_CLASSES}>
-          <HomeLoadingState />
+          <HomeGuestLoadingState />
         </div>
       </div>
     );
@@ -60,7 +60,8 @@ export function HomeGuestView() {
   return (
     <div className={PAGE_CLASSES}>
       <div className={`${CONTENT_CLASSES} space-y-5`}>
-        <header className="space-y-3">
+        {/* Greeting first, then the card: the skeleton's two blocks settle in reading order. */}
+        <header className="animate-reveal space-y-3">
           <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.18em] text-alivia-text-soft uppercase">
             <Icon name="calendar" className="size-4 shrink-0" />
             <span>{formatLongDate(today, locale).toLocaleUpperCase(locale)}</span>
@@ -77,10 +78,12 @@ export function HomeGuestView() {
             </p>
           )}
         </header>
-        <NextActivityCard
-          activity={data.nextActivity}
-          assistedPersonName={assistedPersonName}
-        />
+        <div className="animate-reveal [animation-delay:60ms]">
+          <NextActivityCard
+            activity={data.nextActivity}
+            assistedPersonName={assistedPersonName}
+          />
+        </div>
       </div>
     </div>
   );

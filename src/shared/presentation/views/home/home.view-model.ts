@@ -60,6 +60,8 @@ export interface HomeDeviceAlert {
   readonly title: string;
   readonly detail: string;
   readonly extraSituations: number;
+  /** Where "Ver dispositivo" leads; the devices list when absent. */
+  readonly route?: string;
 }
 
 export interface HomeUpcomingEvent {
@@ -68,6 +70,8 @@ export interface HomeUpcomingEvent {
   readonly date: string;
   readonly timeRange: HomeTimeRange;
   readonly technicianName: string | null;
+  /** Where "Ver seguimiento" leads; the incidents list when absent. */
+  readonly route?: string;
 }
 
 export interface HomeSharedOptionalData {

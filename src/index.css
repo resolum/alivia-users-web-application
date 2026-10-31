@@ -18,6 +18,9 @@
   --color-alivia-text-muted: #3B4A6B;
   --color-alivia-text-soft: #8890A3;
   --color-alivia-danger: #B3261E;
+  /* Attention states (low battery, overlap): 5.6:1 text on its soft ground. */
+  --color-alivia-warning: #8A5300;
+  --color-alivia-warning-soft: #FFF3D6;
   /* Ground of the casa.png illustration, so its panel continues the picture. */
   --color-alivia-sand: #F6EEDF;
   /* Field outline and hint text: 3.7:1 and 5.4:1 on white. */
@@ -45,6 +48,28 @@
     }
   }
 
+  /*
+   * Skeletons wait 150ms before showing so fast loads never flash grey, then a
+   * light band sweeps across them. Only opacity and transform move (compositor only).
+   */
+  --animate-skeleton-in: skeleton-in 200ms cubic-bezier(0.23, 1, 0.32, 1) 150ms both;
+  --animate-skeleton-sweep: skeleton-sweep 1.4s linear infinite;
+
+  @keyframes skeleton-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes skeleton-sweep {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+
   /* Entry of each registration step: signals forward progress, seen once per step. */
   --animate-step-in: step-in 240ms cubic-bezier(0.23, 1, 0.32, 1) both;
 
@@ -53,6 +78,45 @@
       opacity: 0;
       transform: translateY(8px);
     }
+  }
+
+  /*
+   * Loaded content takes the skeleton's place with a short rise, so the swap reads
+   * as one surface settling. Callers stagger blocks with animation-delay (≤ 3 × 50ms).
+   * Fill is backwards only: a transform held after the end would trap fixed drawers and toasts inside.
+   */
+  --animate-reveal: reveal 260ms cubic-bezier(0.23, 1, 0.32, 1) backwards;
+  /* A state pill that just changed pops once: confirms the guest's own action. */
+  --animate-pill-in: pill-in 220ms cubic-bezier(0.34, 1.36, 0.64, 1) both;
+
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+
+  @keyframes pill-in {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+  }
+}
+
+/* Children of a freshly loaded list or grid rise in 50ms apart; the fourth and later share one beat. */
+@layer utilities {
+  .reveal-stagger > * {
+    animation: var(--animate-reveal);
+  }
+  .reveal-stagger > :nth-child(2) {
+    animation-delay: 50ms;
+  }
+  .reveal-stagger > :nth-child(3) {
+    animation-delay: 100ms;
+  }
+  .reveal-stagger > :nth-child(n + 4) {
+    animation-delay: 150ms;
   }
 }
 
@@ -68,6 +132,15 @@
   button,
   a {
     -webkit-tap-highlight-color: transparent;
+    /* No double-tap zoom on controls, so taps fire without the 300ms wait. */
+    touch-action: manipulation;
+  }
+
+  button,
+  [role="button"],
+  [role="menuitem"] {
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   ::selection {

@@ -67,7 +67,7 @@ export function UpcomingEventCard({ event }: UpcomingEventCardProps) {
         </div>
       )}
       <Link
-        to={incidentsRoute}
+        to={event.route ?? incidentsRoute}
         className={[
           'mt-4 inline-flex min-h-11 w-full items-center justify-between gap-2',
           'rounded-xl bg-white px-4 py-2 text-sm font-semibold text-alivia-primary',
