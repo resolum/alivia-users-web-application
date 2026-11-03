@@ -7,7 +7,7 @@ export interface EvaluationSlotProps {
   readonly availableTechnicians: number;
 }
 
-/** A two-hour window in which a technician of Alivia can visit the home for the evaluation. */
+/** A two-hour window in which one technician of Alivia can visit the home for the evaluation. */
 export class EvaluationSlot {
   readonly date: string;
   readonly startTime: string;
@@ -27,7 +27,13 @@ export class EvaluationSlot {
     this.availableTechnicians = props.availableTechnicians;
   }
 
+  /** The window and the technician: what the family picks. */
   get key(): string {
+    return `${this.windowKey}#${String(this.technicianId)}`;
+  }
+
+  /** The window alone, shared by every technician free in it. */
+  get windowKey(): string {
     return `${this.date}T${this.startTime}`;
   }
 
@@ -53,6 +59,27 @@ export function groupByDate(slots: readonly EvaluationSlot[]): ReadonlyMap<strin
   const groups = new Map<string, EvaluationSlot[]>();
   for (const slot of slots) groups.set(slot.date, [...(groups.get(slot.date) ?? []), slot]);
   return groups;
+}
+
+/** One arrival window of a day with the technicians free in it, least busy first. */
+export interface SlotWindow {
+  readonly key: string;
+  readonly startTime: string;
+  readonly endTime: string;
+  readonly period: 'Mañana' | 'Tarde';
+  readonly technicians: readonly EvaluationSlot[];
+}
+
+/** The slots of one day grouped by window, in time order. */
+export function groupByWindow(slots: readonly EvaluationSlot[]): readonly SlotWindow[] {
+  const windows = new Map<string, EvaluationSlot[]>();
+  for (const slot of slots) windows.set(slot.windowKey, [...(windows.get(slot.windowKey) ?? []), slot]);
+  return [...windows.entries()]
+    .map(([key, technicians]) => {
+      const first = technicians[0] as EvaluationSlot;
+      return { key, startTime: first.startTime, endTime: first.endTime, period: first.period, technicians };
+    })
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
 }
 
 const LONG_DATE = new Intl.DateTimeFormat('es-PE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
