@@ -1,4 +1,5 @@
 export { EvaluationView } from './presentation/views/EvaluationView.tsx';
+export { ContractingTrackingView } from './presentation/views/ContractingTrackingView.tsx';
 export { confirmEvaluation, currentChosenSlot, loadAvailableSlots, renewChosenSlot } from './application/evaluation.store.ts';
 export { InstallationDateStep } from './presentation/components/InstallationDateStep.tsx';
 export { formatLongDate } from './domain/model/evaluation-slot.ts';

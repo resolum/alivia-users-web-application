@@ -36,6 +36,8 @@ export type {
 
 export { PlanSelectionView } from './presentation/views/PlanSelectionView.tsx';
 export { ContractBrand } from './presentation/components/ContractBrand.tsx';
+export { ContractFooter } from './presentation/components/ContractFooter.tsx';
+export { CONTRACTING_STAGES } from './presentation/components/contracting-stages.ts';
 export { PlanConfigurationView } from './presentation/views/PlanConfigurationView.tsx';
 
 export { loadSubscription } from './application/subscription.store.ts';

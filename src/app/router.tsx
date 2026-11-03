@@ -21,7 +21,13 @@ import {
   ShiftsView,
 } from '@/assistance/index.ts';
 import { DevicesView } from '@/tracking/index.ts';
-import { IncidentDetailView, IncidentRegisteredView, IncidentsView } from '@/operations/index.ts';
+import {
+  ContractingTrackingView,
+  EvaluationView,
+  IncidentDetailView,
+  IncidentRegisteredView,
+  IncidentsView,
+} from '@/operations/index.ts';
 import { MetricsView } from '@/analytics/index.ts';
 import { NotificationsView } from '@/communication/index.ts';
 
@@ -63,6 +69,8 @@ export const router = createBrowserRouter([
   },
   { path: 'plans', element: <PlanSelectionView /> },
   { path: 'contract/configuration/:substep?', element: <PlanConfigurationView /> },
+  { path: 'contract/evaluation/:substep?', element: <EvaluationView /> },
+  { path: 'contract/tracking', element: <ContractingTrackingView /> },
   // Opened from the invitation e-mail, with or without a session.
   { path: 'invitations/:token', element: <InvitationView /> },
   ...iamRoutes,

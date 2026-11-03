@@ -1,12 +1,12 @@
-const STEPS = ['Plan', 'Cuenta', 'Hogar', 'Configuración', 'Evaluación'] as const;
+import { CONTRACTING_STAGES as STEPS } from './contracting-stages.ts';
 
 export function ContractProgress() {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-[0_8px_28px_rgba(15,42,107,0.05)]" aria-label="Progreso de contratación">
       <p className="mb-4 text-xs font-bold tracking-[0.08em] text-alivia-secondary-dark">
-        CONTRATACIÓN GUIADA <span className="font-medium text-slate-400">· Paso 1 de 5</span>
+        CONTRATACIÓN GUIADA <span className="font-medium text-slate-400">· Paso 1 de {STEPS.length}</span>
       </p>
-      <ol className="grid grid-cols-5 gap-2">
+      <ol className="grid grid-cols-6 gap-2">
         {STEPS.map((step, index) => (
           <li key={step} className="min-w-0">
             <div className={`mb-2 h-1 rounded-full ${index === 0 ? 'bg-alivia-secondary-dark' : 'bg-alivia-primary-mist'}`} />
