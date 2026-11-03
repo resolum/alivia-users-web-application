@@ -1,9 +1,11 @@
 export { EvaluationView } from './presentation/views/EvaluationView.tsx';
-export { confirmEvaluation, currentChosenSlot, loadAvailableSlots } from './application/evaluation.store.ts';
+export { ContractingTrackingView } from './presentation/views/ContractingTrackingView.tsx';
+export { confirmEvaluation, currentChosenSlot, loadAvailableSlots, renewChosenSlot } from './application/evaluation.store.ts';
 export { InstallationDateStep } from './presentation/components/InstallationDateStep.tsx';
 export { formatLongDate } from './domain/model/evaluation-slot.ts';
 export { EvaluationSlot } from './domain/model/evaluation-slot.ts';
 export { Appointment } from './domain/model/appointment.ts';
+export { AppointmentRequestError } from './infrastructure/appointments-api.ts';
 
 export { loadIncidents } from './application/incidents.store.ts';
 export { Incident } from './domain/model/incident.entity.ts';

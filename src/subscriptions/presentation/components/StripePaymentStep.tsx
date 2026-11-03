@@ -8,14 +8,15 @@ import {
   useStripe,
 } from '@stripe/react-stripe-js';
 import { loadStripe, type StripeElementStyle } from '@stripe/stripe-js';
-import { Link, useNavigate } from 'react-router';
-import { ArrowLeft, ArrowRight, Check, Lock } from 'lucide-react';
+import { useNavigate } from 'react-router';
+import { ArrowLeft, ArrowRight, CalendarX, Check, Lock } from 'lucide-react';
 import {
   completePaymentMethodSetup,
   preparePaymentMethod,
   refreshPreauthorization,
   requestPreauthorization,
 } from '../../application/payment-authorization.store.ts';
+import { AppointmentRequestError, confirmEvaluation, currentChosenSlot, renewChosenSlot } from '@/operations/index.ts';
 import type { HomeConfiguration } from '../../domain/model/home-configuration.ts';
 import type { PaymentSetup, Preauthorization } from '../../domain/model/payment-authorization.ts';
 
@@ -23,6 +24,13 @@ interface StripeFormProps {
   readonly configuration: HomeConfiguration;
   readonly setup: PaymentSetup;
   readonly onAuthorized: (authorization: Preauthorization) => void;
+  /** The held window was lost: the card is not touched until the family picks another. */
+  readonly slotTaken: boolean;
+  readonly onSlotTaken: () => void;
+}
+
+function isSlotTaken(reason: unknown): boolean {
+  return reason instanceof AppointmentRequestError && reason.conflict === 'SLOT_TAKEN';
 }
 
 const cardStyle: StripeElementStyle = {
@@ -43,7 +51,7 @@ function messageFrom(error: unknown): string {
   return error instanceof Error ? error.message : 'No pudimos completar la preautorización. Inténtalo nuevamente.';
 }
 
-function StripeForm({ configuration, setup, onAuthorized }: StripeFormProps) {
+function StripeForm({ configuration, setup, onAuthorized, slotTaken, onSlotTaken }: StripeFormProps) {
   const stripe = useStripe();
   const elements = useElements();
   const navigate = useNavigate();
@@ -55,7 +63,7 @@ function StripeForm({ configuration, setup, onAuthorized }: StripeFormProps) {
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (stripe === null || elements === null || !accepted || submitting) return;
+    if (stripe === null || elements === null || !accepted || submitting || slotTaken) return;
     if (cardholderName.trim() === '' || billingEmail.trim() === '') {
       setError('Ingresa el nombre del titular y el correo de facturación.');
       return;
@@ -64,6 +72,16 @@ function StripeForm({ configuration, setup, onAuthorized }: StripeFormProps) {
     setSubmitting(true);
     setError(null);
     try {
+      // The window is held for 30 minutes; it is renewed now, so nobody takes it between the card and the booking.
+      try {
+        await renewChosenSlot(configuration.draftId);
+      } catch (reason) {
+        if (isSlotTaken(reason)) {
+          onSlotTaken();
+          return;
+        }
+        throw reason;
+      }
       const card = elements.getElement(CardNumberElement);
       if (card === null) throw new Error('El formulario seguro de tarjeta aún no está listo.');
 
@@ -156,28 +174,55 @@ function StripeForm({ configuration, setup, onAuthorized }: StripeFormProps) {
 
     <div className="mt-6 flex flex-wrap justify-between gap-3">
       <button type="button" onClick={() => navigate('/contract/configuration/summary')} className="rounded-lg bg-alivia-primary-mist px-5 py-3 text-sm font-bold text-alivia-primary"><ArrowLeft aria-hidden="true" className="mr-1.5 inline size-4 align-[-3px]" />Volver al resumen</button>
-      <button type="submit" disabled={stripe === null || !accepted || submitting} className="rounded-lg bg-alivia-primary px-6 py-3 text-sm font-bold text-white disabled:opacity-50">
+      <button type="submit" disabled={stripe === null || !accepted || submitting || slotTaken} className="rounded-lg bg-alivia-primary px-6 py-3 text-sm font-bold text-white disabled:opacity-50">
         {submitting ? 'Autorizando con Stripe…' : 'Autorizar temporalmente'}
       </button>
     </div>
   </form>;
 }
 
-function AuthorizedState({ authorization }: { readonly authorization: Preauthorization }) {
-  const expiry = authorization.captureBefore === null
-    ? null
-    : new Intl.DateTimeFormat('es-PE', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(authorization.captureBefore));
+type Booking = { readonly state: 'booking' } | { readonly state: 'failed'; readonly message: string; readonly slotTaken: boolean };
+
+/**
+ * The card is held: the window picked in "Instalación" is booked with its technician right away and the family
+ * goes to the tracking of the request. Only a window taken meanwhile, or a missing one, asks for another.
+ */
+export function AuthorizedState({ draftId }: { readonly draftId: string }) {
+  const navigate = useNavigate();
+  const [booking, setBooking] = useState<Booking>({ state: 'booking' });
+  useEffect(() => {
+    const slot = currentChosenSlot();
+    if (slot === null) {
+      void navigate('/contract/evaluation/schedule', { replace: true });
+      return;
+    }
+    let active = true;
+    confirmEvaluation(draftId, slot, { directions: '' })
+      .then(() => { if (active) void navigate('/contract/tracking', { replace: true }); })
+      .catch((reason: unknown) => {
+        if (!active) return;
+        if (reason instanceof AppointmentRequestError && reason.conflict === 'ALREADY_SCHEDULED') {
+          void navigate('/contract/tracking', { replace: true });
+          return;
+        }
+        setBooking({
+          state: 'failed',
+          message: reason instanceof Error ? reason.message : 'No pudimos reservar tu visita.',
+          slotTaken: reason instanceof AppointmentRequestError && reason.conflict === 'SLOT_TAKEN',
+        });
+      });
+    return () => { active = false; };
+  }, [draftId, navigate]);
   return <section className="mx-auto mt-7 max-w-3xl rounded-2xl border border-emerald-200 bg-white p-6 text-center shadow-[0_12px_32px_rgba(15,42,107,0.07)] sm:p-9">
     <div className="mx-auto grid size-14 place-items-center rounded-full bg-emerald-100 text-emerald-700"><Check aria-hidden="true" className="size-7" /></div>
     <p className="mt-4 text-xs font-extrabold tracking-[0.1em] text-alivia-secondary-deep">PREAUTORIZACIÓN CONFIRMADA</p>
     <h1 className="mt-1 text-3xl font-extrabold text-alivia-primary">Tu tarjeta quedó autorizada</h1>
-    <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-alivia-text-muted">Stripe registró una retención temporal. No hemos realizado el cobro y la suscripción continúa pendiente hasta la evaluación técnica.</p>
-    <div className="mx-auto mt-6 max-w-lg rounded-xl bg-alivia-primary-mist/70 p-4 text-left text-sm">
-      <div className="flex justify-between gap-4"><span>Estado</span><strong className="text-emerald-700">Retención activa</strong></div>
-      <div className="mt-2 flex justify-between gap-4"><span>Referencia</span><strong>{authorization.stripePaymentIntentId}</strong></div>
-      {expiry !== null && <div className="mt-2 flex justify-between gap-4"><span>Capturar antes de</span><strong>{expiry}</strong></div>}
-    </div>
-    <Link to="/contract/evaluation/confirm" className="mt-6 inline-flex items-center rounded-lg bg-alivia-primary px-6 py-3 text-sm font-bold text-white">Confirmar evaluación técnica<ArrowRight aria-hidden="true" className="ml-1.5 size-4" /></Link>
+    {booking.state === 'booking'
+      ? <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-alivia-text-muted">Estamos reservando tu visita técnica…</p>
+      : <>
+        <p role="alert" className="mx-auto mt-4 max-w-xl rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{booking.message}</p>
+        <button type="button" onClick={() => void navigate(booking.slotTaken ? '/contract/evaluation/schedule' : '/contract/evaluation/confirm')} className="mt-6 inline-flex items-center rounded-lg bg-alivia-primary px-6 py-3 text-sm font-bold text-white">{booking.slotTaken ? 'Elegir otra franja' : 'Reintentar la reserva'}<ArrowRight aria-hidden="true" className="ml-1.5 size-4" /></button>
+      </>}
   </section>;
 }
 
@@ -185,6 +230,16 @@ export function StripePaymentStep({ configuration }: { readonly configuration: H
   const [setup, setSetup] = useState<PaymentSetup | null>(null);
   const [authorization, setAuthorization] = useState<Preauthorization | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [slotTaken, setSlotTaken] = useState(false);
+  const navigate = useNavigate();
+
+  // Before the card is asked for, the chosen window must still be the family's.
+  useEffect(() => {
+    let active = true;
+    renewChosenSlot(configuration.draftId)
+      .catch((reason: unknown) => { if (active && isSlotTaken(reason)) setSlotTaken(true); });
+    return () => { active = false; };
+  }, [configuration.draftId]);
 
   useEffect(() => {
     let active = true;
@@ -199,7 +254,7 @@ export function StripePaymentStep({ configuration }: { readonly configuration: H
     [setup],
   );
 
-  if (authorization !== null) return <AuthorizedState authorization={authorization} />;
+  if (authorization !== null) return <AuthorizedState draftId={configuration.draftId} />;
 
   if (error !== null) {
     return <section className="mx-auto mt-7 max-w-2xl rounded-2xl border border-red-200 bg-white p-7 text-center">
@@ -220,6 +275,12 @@ export function StripePaymentStep({ configuration }: { readonly configuration: H
         <p className="text-xs font-extrabold tracking-[0.1em] text-alivia-secondary-deep">CONFIGURACIÓN — PAGO</p>
         <h1 className="mt-1 text-3xl font-extrabold text-alivia-primary">Registra tu medio de pago</h1>
         <p className="mt-2 text-sm text-alivia-text-muted">Realizaremos una preautorización temporal. El cobro definitivo se confirmará después de la evaluación.</p>
+        {slotTaken && (
+          <div role="alert" className="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5 text-sm text-amber-900">
+            <span className="flex items-start gap-2"><CalendarX aria-hidden="true" className="mt-0.5 size-4 shrink-0" />El horario que elegiste ya no está disponible. Elige otro antes de autorizar tu tarjeta; no hicimos ninguna retención.</span>
+            <button type="button" onClick={() => void navigate('/contract/configuration/installation')} className="rounded-lg bg-alivia-primary px-4 py-2 text-xs font-bold text-white">Elegir otro horario</button>
+          </div>
+        )}
         <Elements
           stripe={stripe}
           options={{
@@ -231,7 +292,7 @@ export function StripePaymentStep({ configuration }: { readonly configuration: H
             },
           }}
         >
-          <StripeForm configuration={configuration} setup={setup} onAuthorized={setAuthorization} />
+          <StripeForm configuration={configuration} setup={setup} onAuthorized={setAuthorization} slotTaken={slotTaken} onSlotTaken={() => setSlotTaken(true)} />
         </Elements>
       </div>
 

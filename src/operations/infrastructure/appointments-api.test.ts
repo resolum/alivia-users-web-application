@@ -1,9 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AppointmentRequestError, appointmentsApi } from './appointments-api.ts';
 
+// The API module reads its paths when it loads, so they are set before the import runs.
+vi.hoisted(() => {
+  vi.stubEnv('VITE_API_BASE_URL', '');
+  vi.stubEnv('VITE_APPOINTMENTS_ENDPOINT_PATH', 'api/v1/appointments');
+});
+
 const request = {
   draftId: 'd1', date: '2026-10-29', startTime: '10:00', endTime: '12:00', technicianId: 7,
-  contactName: 'María', contactPhone: '+51984123456', directions: null,
+  contactName: null, contactPhone: null, directions: null,
 };
 
 function reply(status: number, body: unknown) {
@@ -28,6 +34,24 @@ describe('appointmentsApi', () => {
     expect(await conflictFor('The card must be preauthorized before booking the technical evaluation.')).toBe('NOT_PREAUTHORIZED');
     expect(await conflictFor('This configuration already has a technical evaluation scheduled.')).toBe('ALREADY_SCHEDULED');
     expect(await conflictFor('The selected window is no longer available. Choose another one.')).toBe('SLOT_TAKEN');
+  });
+
+  it('lists the slots of a request and holds or releases its window', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response('[]', { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ draftId: 'd 1', technicianName: 'Ana', expiresAt: '2026-10-28T15:30:00Z' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const slot = (await import('../domain/model/evaluation-slot.ts')).EvaluationSlot;
+
+    expect(await appointmentsApi.listAvailableSlots('d 1')).toEqual([]);
+    expect((await appointmentsApi.hold('d 1', new slot({ date: '2026-10-29', startTime: '10:00', endTime: '12:00', technicianId: 7, technicianName: 'Ana', availableTechnicians: 2 }))).expiresAt).toBe('2026-10-28T15:30:00Z');
+    await appointmentsApi.release('d 1');
+
+    expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/v1/appointments/available-slots?draftId=d%201');
+    expect(fetchMock.mock.calls[1]?.[0]).toBe('/api/v1/appointments/holds/d%201');
+    expect(fetchMock.mock.calls[1]?.[1]).toMatchObject({ method: 'PUT', body: JSON.stringify({ date: '2026-10-29', startTime: '10:00', endTime: '12:00', technicianId: 7 }) });
+    expect(fetchMock.mock.calls[2]?.[1]).toMatchObject({ method: 'DELETE' });
   });
 
   it('reports network failures', async () => {

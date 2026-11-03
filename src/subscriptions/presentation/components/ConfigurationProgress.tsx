@@ -1,14 +1,14 @@
 import { Check } from 'lucide-react';
 
-const STEPS = ['Plan', 'Cuenta', 'Hogar', 'Configuración', 'Evaluación'] as const;
+import { CONTRACTING_STAGES as STEPS } from './contracting-stages.ts';
 
 export function ConfigurationProgress() {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white px-5 py-5 shadow-[0_8px_28px_rgba(15,42,107,0.05)]" aria-label="Progreso de contratación">
-      <ol className="grid grid-cols-5 gap-2">
+      <ol className="grid grid-cols-6 gap-2">
         {STEPS.map((step, index) => {
-          const completed = index < 3;
-          const current = index === 3;
+          const completed = index < 1;
+          const current = index === 1;
           return (
             <li key={step} className="min-w-0">
               <div className={`mb-2 h-1 rounded-full ${completed ? 'bg-alivia-primary' : current ? 'bg-alivia-secondary-dark' : 'bg-alivia-primary-mist'}`} />
@@ -23,7 +23,7 @@ export function ConfigurationProgress() {
         })}
       </ol>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-4 text-xs font-semibold">
-        <span className="text-alivia-primary">Configuración — Paso 4 de 5</span>
+        <span className="text-alivia-primary">Configuración — Paso 2 de {STEPS.length}</span>
         <span className="text-alivia-secondary-deep"><Check aria-hidden="true" className="mr-1 inline size-4 align-[-3px]" />Guardado automático</span>
       </div>
     </section>

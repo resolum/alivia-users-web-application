@@ -1,17 +1,34 @@
-import { toInternationalPhone, type Appointment, type EvaluationContact } from '../domain/model/appointment.ts';
+import type { Appointment, EvaluationContact } from '../domain/model/appointment.ts';
 import type { EvaluationSlot } from '../domain/model/evaluation-slot.ts';
 import { appointmentsApi } from '../infrastructure/appointments-api.ts';
 import { readChosenSlot, saveBookedAppointment, saveChosenSlot } from '../infrastructure/evaluation.storage.ts';
 
-export function loadAvailableSlots(): Promise<readonly EvaluationSlot[]> {
-  return appointmentsApi.listAvailableSlots();
+export function loadAvailableSlots(draftId: string | null = null): Promise<readonly EvaluationSlot[]> {
+  return appointmentsApi.listAvailableSlots(draftId);
 }
 
 export function chooseSlot(slot: EvaluationSlot): void {
   saveChosenSlot(slot);
 }
 
-/** The window picked in the "Instalación" substep, not booked until the evaluation is confirmed. */
+/**
+ * Holds the window and technician for this request before paying, so no other family can take them.
+ * Throws an {@link AppointmentRequestError} with the SLOT_TAKEN conflict when someone got there first.
+ */
+export async function holdSlot(draftId: string, slot: EvaluationSlot): Promise<void> {
+  await appointmentsApi.hold(draftId, slot);
+  saveChosenSlot(slot);
+}
+
+/** Renews the hold of the chosen window right before paying; false when there is no chosen window. */
+export async function renewChosenSlot(draftId: string): Promise<boolean> {
+  const slot = readChosenSlot();
+  if (slot === null) return false;
+  await appointmentsApi.hold(draftId, slot);
+  return true;
+}
+
+/** The window picked in the "Instalación" substep: held while paying, booked when the payment is authorized. */
 export function currentChosenSlot(): EvaluationSlot | null {
   return readChosenSlot();
 }
@@ -24,8 +41,8 @@ export async function confirmEvaluation(draftId: string, slot: EvaluationSlot, c
     startTime: slot.startTime,
     endTime: slot.endTime,
     technicianId: slot.technicianId,
-    contactName: contact.name.trim(),
-    contactPhone: toInternationalPhone(contact.phone),
+    contactName: null,
+    contactPhone: null,
     directions: contact.directions.trim() === '' ? null : contact.directions.trim(),
   });
   saveBookedAppointment(appointment);
