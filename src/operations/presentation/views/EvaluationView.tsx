@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate, useParams } from 'react-router';
 import { ContractBrand, readPlanSelection } from '@/subscriptions/index.ts';
-import { chooseSlot, confirmEvaluation } from '../../application/evaluation.store.ts';
+import { confirmEvaluation, holdSlot } from '../../application/evaluation.store.ts';
 import type { Appointment, EvaluationContact } from '../../domain/model/appointment.ts';
 import type { EvaluationSlot } from '../../domain/model/evaluation-slot.ts';
 import { AppointmentRequestError } from '../../infrastructure/appointments-api.ts';
 import { readBookedAppointment, readChosenSlot } from '../../infrastructure/evaluation.storage.ts';
-import { BookedState } from '../components/BookedState.tsx';
 import { ConfirmStep } from '../components/ConfirmStep.tsx';
 import { EvaluationProgress, type EvaluationSubstep } from '../components/EvaluationProgress.tsx';
 import { ScheduleStep } from '../components/ScheduleStep.tsx';
@@ -25,19 +24,37 @@ export function EvaluationView() {
   const [submitting, setSubmitting] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
 
-  const { slots, error: loadError, retry } = useAvailableSlots(substep === 'schedule' && booked === null);
+  const [holding, setHolding] = useState(false);
+  const [holdError, setHoldError] = useState<string | null>(null);
+
+  const { slots, error: loadError, retry } = useAvailableSlots(selection?.draftId ?? null, substep === 'schedule' && booked === null);
 
   if (selection === null) return <Navigate to="/plans" replace />;
+  // Once booked, the family follows the request in the tracking: evaluation, confirmation and installation.
+  if (booked !== null) return <Navigate to="/contract/tracking" replace />;
   // The window is normally picked in the "Instalación" substep, so the evaluation opens on its confirmation.
   if (substep === null || (substep === 'confirm' && chosen === null && booked === null)) {
     return <Navigate to={chosen === null ? '/contract/evaluation/schedule' : '/contract/evaluation/confirm'} replace />;
   }
 
   const goToConfirm = (slot: EvaluationSlot) => {
-    chooseSlot(slot);
-    setChosen(slot);
-    setConfirmError(null);
-    void navigate('/contract/evaluation/confirm');
+    setHolding(true);
+    setHoldError(null);
+    holdSlot(selection.draftId, slot)
+      .then(() => {
+        setChosen(slot);
+        setConfirmError(null);
+        void navigate('/contract/evaluation/confirm');
+      })
+      .catch((reason: unknown) => {
+        if (reason instanceof AppointmentRequestError && reason.conflict === 'SLOT_TAKEN') {
+          setHoldError('Otra familia acaba de separar ese horario. Elige otro técnico o franja.');
+          retry();
+        } else {
+          setHoldError(reason instanceof Error ? reason.message : 'No pudimos separar el horario.');
+        }
+      })
+      .finally(() => setHolding(false));
   };
 
   const confirm = (contact: EvaluationContact) => {
@@ -66,10 +83,8 @@ export function EvaluationView() {
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-5 py-7 lg:px-8 lg:py-9">
-        <EvaluationProgress current={booked !== null ? 'confirm' : substep} />
-        {booked !== null ? (
-          <BookedState appointment={booked} />
-        ) : substep === 'schedule' || chosen === null ? (
+        <EvaluationProgress current={substep} />
+        {substep === 'schedule' || chosen === null ? (
           <ScheduleStep
             slots={slots}
             error={loadError}
@@ -77,6 +92,8 @@ export function EvaluationView() {
             eyebrow="EVALUACIÓN — CAMBIAR HORARIO"
             paymentNote="No cobramos hoy: solo mantenemos la preautorización de tu tarjeta."
             continueLabel="Continuar"
+            submitting={holding}
+            submitError={holdError}
             onRetry={retry}
             onContinue={goToConfirm}
           />

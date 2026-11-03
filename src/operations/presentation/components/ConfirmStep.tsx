@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { ArrowLeft, BellRing, Briefcase, CalendarDays, Check, Clock, PieChart, ShieldCheck, UserRound, Wrench } from 'lucide-react';
-import { isValidPeruvianMobile, type EvaluationContact } from '../../domain/model/appointment.ts';
+import { ArrowLeft, Briefcase, CalendarDays, Check, Clock, PieChart, ShieldCheck, Wrench } from 'lucide-react';
+import type { EvaluationContact } from '../../domain/model/appointment.ts';
 import { formatLongDate, initials, type EvaluationSlot } from '../../domain/model/evaluation-slot.ts';
 
 interface ConfirmStepProps {
@@ -11,14 +11,15 @@ interface ConfirmStepProps {
   readonly onConfirm: (contact: EvaluationContact) => void;
 }
 
-function Card({ icon, eyebrow, title, children }: {
+function Card({ icon, eyebrow, title, children, wide = false }: {
   readonly icon: ReactNode;
   readonly eyebrow: string;
   readonly title: ReactNode;
   readonly children?: ReactNode;
+  readonly wide?: boolean;
 }) {
   return (
-    <article className="rounded-2xl bg-alivia-primary-mist/45 p-5">
+    <article className={`rounded-2xl bg-alivia-primary-mist/45 p-5 ${wide ? 'md:col-span-2' : ''}`}>
       <div className="flex items-start gap-3.5">
         <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-alivia-primary-mist text-alivia-primary">{icon}</span>
         <div className="min-w-0">
@@ -32,24 +33,21 @@ function Card({ icon, eyebrow, title, children }: {
 }
 
 export function ConfirmStep({ slot, submitting, error, onChangeSlot, onConfirm }: ConfirmStepProps) {
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
   const [directions, setDirections] = useState('');
   const [adultPresent, setAdultPresent] = useState(false);
   const [touched, setTouched] = useState(false);
-  const phoneValid = isValidPeruvianMobile(phone);
-  const valid = name.trim() !== '' && phoneValid && adultPresent;
+  const valid = adultPresent;
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setTouched(true);
-    if (valid && !submitting) onConfirm({ name, phone, directions });
+    if (valid && !submitting) onConfirm({ directions });
   };
 
   return (
     <form onSubmit={submit} className="mx-auto mt-8 max-w-5xl" noValidate>
       <div className="flex flex-wrap items-center gap-3">
-        <span className="rounded-md bg-alivia-primary-mist px-2.5 py-1 text-xs font-extrabold tracking-wide text-alivia-primary">ÚLTIMO PASO</span>
+        <span className="rounded-md bg-alivia-primary-mist px-2.5 py-1 text-xs font-extrabold tracking-wide text-alivia-primary">RESERVA DE EVALUACIÓN</span>
         <span className="inline-flex items-center gap-1 text-sm font-bold text-alivia-secondary-deep"><ShieldCheck aria-hidden="true" className="size-4" />Garantía Alivia</span>
       </div>
       <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-alivia-primary">Confirma tu visita</h1>
@@ -75,7 +73,7 @@ export function ConfirmStep({ slot, submitting, error, onChangeSlot, onConfirm }
             <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500"><ShieldCheck aria-hidden="true" className="size-3.5" />Llegará identificado con su credencial de Alivia.</p>
           </Card>
 
-          <Card icon={<Briefcase aria-hidden="true" className="size-5" />} eyebrow="TIPO DE SERVICIO" title="Evaluación técnica presencial">
+          <Card icon={<Briefcase aria-hidden="true" className="size-5" />} eyebrow="TIPO DE SERVICIO" title="Evaluación técnica presencial" wide>
             <div className="mt-4 flex flex-wrap gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm font-bold text-alivia-primary"><PieChart aria-hidden="true" className="size-4" />Duración: 45 a 60 minutos</span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-alivia-mint px-3 py-1.5 text-sm font-bold text-alivia-secondary-deep"><span className="size-2 rounded-full bg-alivia-secondary-deep" />Importe preautorizado (S/ 0 cobrados hoy)</span>
@@ -83,21 +81,6 @@ export function ConfirmStep({ slot, submitting, error, onChangeSlot, onConfirm }
             <p className="mt-3 flex items-start gap-2 rounded-xl bg-white px-4 py-3 text-sm text-alivia-text-muted"><ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0" />No se realizará ningún cobro definitivo hasta validar la viabilidad técnica en tu hogar.</p>
           </Card>
 
-          <Card icon={<UserRound aria-hidden="true" className="size-5" />} eyebrow="RECEPTOR DE LA VISITA" title={name.trim() === '' ? 'Quién recibirá al técnico' : name}>
-            <div className="mt-4 grid gap-3">
-              <label className="block rounded-xl bg-white px-4 py-2.5">
-                <span className="text-xs font-bold text-alivia-text">Nombre completo</span>
-                <input value={name} onChange={(event) => setName(event.target.value)} maxLength={100} autoComplete="name" placeholder="Ej. María Elena Villanueva" className="mt-0.5 w-full bg-transparent text-base font-bold text-alivia-primary outline-none placeholder:font-medium placeholder:text-slate-400" />
-              </label>
-              <label className="block rounded-xl bg-white px-4 py-2.5">
-                <span className="text-xs font-bold text-alivia-text">Teléfono de contacto</span>
-                <input value={phone} onChange={(event) => setPhone(event.target.value)} inputMode="tel" autoComplete="tel" placeholder="+51 984 123 456" className="mt-0.5 w-full bg-transparent text-base font-bold text-alivia-primary outline-none placeholder:font-medium placeholder:text-slate-400" />
-              </label>
-              {touched && name.trim() === '' && <p className="text-xs font-semibold text-alivia-danger">Ingresa el nombre de quien recibirá la visita.</p>}
-              {touched && !phoneValid && <p className="text-xs font-semibold text-alivia-danger">Ingresa un celular peruano de 9 dígitos.</p>}
-            </div>
-            <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500"><BellRing aria-hidden="true" className="size-3.5" />Se enviará un recordatorio SMS 2 horas antes de la cita.</p>
-          </Card>
         </div>
 
 

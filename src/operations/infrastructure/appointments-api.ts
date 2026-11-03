@@ -22,13 +22,23 @@ export interface ScheduleAppointmentRequest {
   readonly startTime: string;
   readonly endTime: string;
   readonly technicianId: number;
-  readonly contactName: string;
-  readonly contactPhone: string;
+  readonly contactName: string | null;
+  readonly contactPhone: string | null;
   readonly directions: string | null;
 }
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 const APPOINTMENTS_PATH = `/${import.meta.env.VITE_APPOINTMENTS_ENDPOINT_PATH}`;
+
+export interface SlotHold {
+  readonly draftId: string;
+  readonly date: string;
+  readonly startTime: string;
+  readonly endTime: string;
+  readonly technicianId: number;
+  readonly technicianName: string;
+  readonly expiresAt: string;
+}
 
 const CONFLICT_MESSAGES: Readonly<Record<AppointmentConflict, string>> = {
   SLOT_TAKEN: 'Ese horario acaba de ocuparse. Elige otra franja.',
@@ -43,6 +53,11 @@ function conflictOf(detail: string | undefined): AppointmentConflict {
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await send(url, init);
+  return await response.json() as T;
+}
+
+async function send(url: string, init?: RequestInit): Promise<Response> {
   let response: Response;
   try {
     response = await fetch(url, { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });
@@ -57,13 +72,27 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
     }
     throw new AppointmentRequestError(response.status, problem?.detail ?? 'No pudimos completar la solicitud.');
   }
-  return await response.json() as T;
+  return response;
 }
 
 export const appointmentsApi = {
-  async listAvailableSlots(): Promise<readonly EvaluationSlot[]> {
-    const slots = await request<EvaluationSlotProps[]>(`${API_BASE_URL}${APPOINTMENTS_PATH}/available-slots`);
+  /** Every free technician of each window; the window {@code draftId} holds is still listed for it. */
+  async listAvailableSlots(draftId: string | null = null): Promise<readonly EvaluationSlot[]> {
+    const query = draftId === null ? '' : `?draftId=${encodeURIComponent(draftId)}`;
+    const slots = await request<EvaluationSlotProps[]>(`${API_BASE_URL}${APPOINTMENTS_PATH}/available-slots${query}`);
     return slots.map((slot) => new EvaluationSlot(slot));
+  },
+
+  /** Holds the window and technician for 30 minutes, or renews the hold; 409 when someone else took it. */
+  async hold(draftId: string, slot: EvaluationSlot): Promise<SlotHold> {
+    return await request<SlotHold>(`${API_BASE_URL}${APPOINTMENTS_PATH}/holds/${encodeURIComponent(draftId)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ date: slot.date, startTime: slot.startTime, endTime: slot.endTime, technicianId: slot.technicianId }),
+    });
+  },
+
+  async release(draftId: string): Promise<void> {
+    await send(`${API_BASE_URL}${APPOINTMENTS_PATH}/holds/${encodeURIComponent(draftId)}`, { method: 'DELETE' });
   },
 
   async schedule(body: ScheduleAppointmentRequest): Promise<Appointment> {

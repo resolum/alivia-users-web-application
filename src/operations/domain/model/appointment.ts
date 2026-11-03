@@ -6,8 +6,8 @@ export interface AppointmentProps {
   readonly endTime: string;
   readonly technicianId: number;
   readonly technicianName: string;
-  readonly contactName: string;
-  readonly contactPhone: string;
+  readonly contactName: string | null;
+  readonly contactPhone: string | null;
   readonly directions: string | null;
 }
 
@@ -20,8 +20,8 @@ export class Appointment {
   readonly endTime: string;
   readonly technicianId: number;
   readonly technicianName: string;
-  readonly contactName: string;
-  readonly contactPhone: string;
+  readonly contactName: string | null;
+  readonly contactPhone: string | null;
   readonly directions: string | null;
 
   constructor(props: AppointmentProps) {
@@ -38,9 +38,8 @@ export class Appointment {
   }
 }
 
+/** What the family adds when confirming the visit: how to reach the home. */
 export interface EvaluationContact {
-  readonly name: string;
-  readonly phone: string;
   readonly directions: string;
 }
 
