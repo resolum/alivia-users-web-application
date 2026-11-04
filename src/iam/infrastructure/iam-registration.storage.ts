@@ -46,6 +46,11 @@ function parse(value: unknown): RegistrationProgress | null {
 }
 
 /** Reads the stored progress, or null when there is none. */
+/** Forgets the registration of this browser (after signing out). */
+export function clearRegistrationProgress(): void {
+  window.localStorage.removeItem(REGISTRATION_KEY);
+}
+
 export function readRegistrationProgress(): RegistrationProgress | null {
   try {
     const raw = window.localStorage.getItem(REGISTRATION_KEY);

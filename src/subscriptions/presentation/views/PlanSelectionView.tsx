@@ -8,6 +8,7 @@ import { readPlanSelection } from '../../infrastructure/plan-selection.storage.t
 import { ContractBrand } from '../components/ContractBrand.tsx';
 import { ContractProgress } from '../components/ContractProgress.tsx';
 import { PlanCard } from '../components/PlanCard.tsx';
+import { useSession } from '@/shared/presentation/hooks/useSession.ts';
 
 type CatalogState =
   | { readonly status: 'loading'; readonly plans: readonly Plan[] }
@@ -16,6 +17,7 @@ type CatalogState =
 
 export function PlanSelectionView() {
   const navigate = useNavigate();
+  const { status: sessionStatus, signOut } = useSession();
   const storedSelection = readPlanSelection();
   const [catalog, setCatalog] = useState<CatalogState>({ status: 'loading', plans: [] });
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>(storedSelection?.billingPeriod ?? 'MONTHLY');
@@ -50,8 +52,9 @@ export function PlanSelectionView() {
     void selectPreliminaryPlan(plan.code, billingPeriod)
       .then(() => {
         setSelectedCode(plan.code);
-        // Next step of the guided flow: the responsible account (IAM).
-        void navigate('/sign-up');
+        // A signed-in family already has its account and household: it goes on to configure the new plan.
+        // Otherwise the next step of the guided flow is the responsible account (IAM).
+        void navigate(sessionStatus === 'authenticated' ? '/contract/configuration' : '/sign-up');
       })
       .catch((error: unknown) => {
         // Only a 404 means the plan left the catalog; anything else must not be reported as such.
@@ -70,10 +73,17 @@ export function PlanSelectionView() {
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex min-h-18 max-w-6xl items-center justify-between gap-4 px-5 py-3 lg:px-8">
           <ContractBrand />
-          <div className="flex items-center gap-3 text-sm">
-            <span className="hidden text-slate-500 sm:inline">¿Ya tienes una cuenta?</span>
-            <Link to="/sign-in" className="font-bold text-alivia-primary hover:underline">Iniciar sesión</Link>
-          </div>
+          {sessionStatus === 'authenticated' ? (
+            // Signed in, "Iniciar sesión" would only bounce back here: signing out starts a new contracting.
+            <button type="button" onClick={signOut} className="text-sm font-bold text-alivia-primary hover:underline">
+              Cerrar sesión
+            </button>
+          ) : (
+            <div className="flex items-center gap-3 text-sm">
+              <span className="hidden text-slate-500 sm:inline">¿Ya tienes una cuenta?</span>
+              <Link to="/sign-in" className="font-bold text-alivia-primary hover:underline">Iniciar sesión</Link>
+            </div>
+          )}
         </div>
       </header>
 

@@ -1,6 +1,8 @@
 export {
   iamStore,
   initIam,
+  onSignedOut,
+  refreshCurrentSession,
   signIn,
   signOut,
   requestPasswordReset,

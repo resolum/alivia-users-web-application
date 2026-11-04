@@ -15,6 +15,7 @@ import type { User } from '../domain/model/user.entity.ts';
 import type { VerifyEmailCommand } from '../domain/model/verify-email.command.ts';
 import { getIamApi } from '../infrastructure/iam-api.ts';
 import {
+  clearRegistrationProgress,
   readRegistrationProgress,
   saveRegistrationProgress,
   startRegistrationProgress,
@@ -80,6 +81,22 @@ async function refreshStoredSession(): Promise<void> {
   const api = await getIamApi();
   const tokens = await api.refreshSession(stored.tokens.refreshToken);
   saveRefreshedTokens(tokens);
+}
+
+/** Renews the browser session before entering a protected area after a long contracting flow. */
+export async function refreshCurrentSession(): Promise<void> {
+  const stored = readStoredSession();
+  if (stored === null || stored.user === null) {
+    handleSessionExpired();
+    throw new IamError({ code: 'unknown', detail: 'Missing stored session' });
+  }
+  try {
+    await refreshStoredSession();
+    setState({ status: 'authenticated', user: stored.user });
+  } catch (error) {
+    handleSessionExpired();
+    throw error;
+  }
 }
 
 function handleSessionExpired(): void {
@@ -158,10 +175,27 @@ export async function signIn(
  * Clears the session locally and invalidates the refresh token in the
  * backend. Route guards perform the redirect.
  */
+const signOutListeners = new Set<() => void>();
+
+/**
+ * Runs `listener` every time the user signs out on purpose, so other contexts can drop what they keep in the
+ * browser for that account (for example, an unfinished contracting). Returns the function that unregisters it.
+ */
+export function onSignedOut(listener: () => void): () => void {
+  signOutListeners.add(listener);
+  return () => signOutListeners.delete(listener);
+}
+
+/**
+ * Closes the session and forgets the registration in progress, so "Conoce nuestros planes" starts a new
+ * contracting from the plan instead of resuming the previous account's one.
+ */
 export function signOut(): void {
   const refreshToken = readStoredSession()?.tokens.refreshToken ?? null;
   clearSessionTokens();
+  clearRegistrationProgress();
   setUnauthenticated();
+  signOutListeners.forEach((listener) => listener());
   if (refreshToken === null) return;
 
   // The local session is already closed; a failed logout only leaves the
@@ -226,8 +260,27 @@ export function verifyEmail(command: VerifyEmailCommand): Promise<void> {
   const request = (async () => {
     assertValid(command.validate());
     const api = await getIamApi();
-    const account = await api.verifyEmail(command);
-    saveRegistrationProgress({ accountId: account.accountId, emailVerified: true });
+    const session = await api.verifyEmail(command);
+    const refreshToken = session.refreshToken;
+    if (refreshToken === null) {
+      throw new IamError({
+        code: 'unknown',
+        detail: 'The email verification response did not include a refresh token',
+      });
+    }
+
+    // Email verification is the authentication hand-off for the contracting
+    // flow. Persist it so a new tab and the later activation step can renew it.
+    saveSession(
+      { accessToken: session.accessToken, refreshToken },
+      true,
+      session.user,
+    );
+    setState({ status: 'authenticated', user: session.user });
+    saveRegistrationProgress({
+      accountId: session.user.id.getValue(),
+      emailVerified: true,
+    });
   })();
   verifications.set(command.token, request);
   return request;
