@@ -10,6 +10,7 @@ import { NavPlaceholderPage } from '@/shared/presentation/views/placeholder-page
 import { PageNotFoundView } from '@/shared/presentation/views/page-not-found/PageNotFoundView.tsx';
 import { AppShell } from './shell/AppShell.tsx';
 import { RequireAccess } from './RequireAccess.tsx';
+import { RequireActiveService } from './RequireActiveService.tsx';
 import { PlanConfigurationView, PlanSelectionView, SubscriptionView } from '@/subscriptions/index.ts';
 import { HouseholdView, ProfileView } from '@/profiles/index.ts';
 import {
@@ -81,8 +82,14 @@ export const router = createBrowserRouter([
         element: <RequireAccess />,
         children: [
           {
-            element: <AppShell />,
-            children: navRoutes,
+            // The family that contracts enters the platform once its request reached Activación.
+            element: <RequireActiveService />,
+            children: [
+              {
+                element: <AppShell />,
+                children: navRoutes,
+              },
+            ],
           },
         ],
       },

@@ -19,8 +19,12 @@ function resolveOrigin(state: unknown): string {
     return '/home';
   }
 
-  return from.startsWith('/sign-in') ? '/home' : from;
+  // The contracting screens are not a destination to return to: /home asks the backend where the account
+  // stands (plans, configuration, tracking or the platform) instead of reopening a stale step.
+  return CONTRACTING_PREFIXES.some((prefix) => from.startsWith(prefix)) ? '/home' : from;
 }
+
+const CONTRACTING_PREFIXES = ['/sign-in', '/sign-up', '/verify-email', '/plans', '/contract'] as const;
 
 export function SignInForm() {
   const t = useIamTranslations();

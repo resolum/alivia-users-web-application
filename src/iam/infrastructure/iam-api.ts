@@ -27,7 +27,7 @@ import { VerifyEmailApiEndpoint } from './verify-email/verify-email-api-endpoint
  */
 export interface IamApi {
   readonly signUp: (command: SignUpCommand) => Promise<Account>;
-  readonly verifyEmail: (command: VerifyEmailCommand) => Promise<Account>;
+  readonly verifyEmail: (command: VerifyEmailCommand) => Promise<AuthSession>;
   readonly resendVerification: (command: ResendVerificationCommand) => Promise<void>;
   readonly signIn: (command: SignInCommand) => Promise<AuthSession>;
   readonly refreshSession: (refreshToken: string) => Promise<AuthTokens>;

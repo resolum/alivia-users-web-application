@@ -1,10 +1,27 @@
-import type { ReactNode } from 'react';
-import { CircleX, PartyPopper, Wrench } from 'lucide-react';
+import { useState, type ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router';
+import { ArrowRight, CircleX, PartyPopper, Wrench } from 'lucide-react';
+import { refreshCurrentSession } from '@/iam/index.ts';
 import type { ContractingTracking } from '../../domain/model/contracting-tracking.ts';
 import { formatLongDate } from '../../domain/model/evaluation-slot.ts';
 
 /** The stages after the confirmation, and the closed request of a home that is not viable. */
 export function TrackingStatusCard({ tracking }: { readonly tracking: ContractingTracking }) {
+  const navigate = useNavigate();
+  const [openingDashboard, setOpeningDashboard] = useState(false);
+  const [sessionError, setSessionError] = useState(false);
+
+  const openDashboard = () => {
+    setOpeningDashboard(true);
+    setSessionError(false);
+    // Keep the local draft until /home checks it: that check links the request
+    // created before sign-in to the authenticated family account.
+    void refreshCurrentSession()
+      .then(() => navigate('/home', { replace: true }))
+      .catch(() => setSessionError(true))
+      .finally(() => setOpeningDashboard(false));
+  };
+
   if (tracking.stage === 'NOT_VIABLE') {
     return (
       <Card icon={<CircleX aria-hidden="true" className="size-7" />} tone="danger" eyebrow="EVALUACIÓN COMPLETADA" title="Tu hogar no es compatible por ahora">
@@ -15,7 +32,13 @@ export function TrackingStatusCard({ tracking }: { readonly tracking: Contractin
   if (tracking.stage === 'ACTIVATION') {
     return (
       <Card icon={<PartyPopper aria-hidden="true" className="size-7" />} tone="success" eyebrow="INSTALACIÓN APROBADA" title="Estamos activando tu servicio">
-        La instalación terminó con éxito. En breve tu hogar quedará en servicio con el monitoreo de Alivia.
+        La instalación terminó con éxito. Tu hogar ya está en servicio con el monitoreo de Alivia.
+        <span className="mt-5 flex justify-center">
+          <button type="button" onClick={openDashboard} disabled={openingDashboard} className="inline-flex items-center gap-1.5 rounded-lg bg-alivia-primary px-5 py-2.5 text-sm font-bold text-white hover:bg-alivia-primary-dark disabled:cursor-wait disabled:opacity-60">
+            {openingDashboard ? 'Preparando dashboard…' : 'Ir al dashboard'}<ArrowRight aria-hidden="true" className="size-4" />
+          </button>
+        </span>
+        {sessionError && <span role="alert" className="mt-3 block text-sm text-red-700">No encontramos una sesión activa o no pudimos renovarla. <Link to="/sign-in" state={{ from: '/home' }} className="font-bold underline">Inicia sesión para continuar</Link>.</span>}
       </Card>
     );
   }

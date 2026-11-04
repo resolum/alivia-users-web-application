@@ -1,7 +1,8 @@
 import { BaseApi } from '@/shared/infrastructure/base-api.ts';
-import type { Account } from '../../domain/model/account.entity.ts';
+import type { AuthSession } from '../../domain/model/auth-session.ts';
 import type { VerifyEmailCommand } from '../../domain/model/verify-email.command.ts';
 import { toIamErrorFromResponse } from '../iam-error.mapper.ts';
+import { SignInAssembler } from '../sign-in/sign-in.assembler.ts';
 import { VerifyEmailAssembler } from './verify-email.assembler.ts';
 import type { VerifyEmailResponse } from './verify-email.response.ts';
 
@@ -15,9 +16,9 @@ export class VerifyEmailApiEndpoint {
   /**
    * Verifies the email address bound to the token. Each token works once.
    * @param command - The verify-email command.
-   * @returns A promise resolving to the verified account.
+   * @returns A promise resolving to the session opened for the verified account.
    */
-  async verifyEmail(command: VerifyEmailCommand): Promise<Account> {
+  async verifyEmail(command: VerifyEmailCommand): Promise<AuthSession> {
     const response = await BaseApi.request(
       verifyEmailApiUrl,
       {
@@ -32,6 +33,6 @@ export class VerifyEmailApiEndpoint {
     }
 
     const data: VerifyEmailResponse = await response.json();
-    return VerifyEmailAssembler.toEntityFromResponse(data);
+    return SignInAssembler.toSessionFromResponse(data);
   }
 }
