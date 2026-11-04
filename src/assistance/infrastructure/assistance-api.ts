@@ -10,6 +10,7 @@ import { AssistanceApiError } from './assistance-api-error.ts';
 import { activities, assistedPersons, caregivers, rejectedInvitations, SAMPLE_HOUSEHOLD } from './assistance.local-data.ts';
 import { logNetworkChange, networkLog, type NetworkLogEntry } from './care-coordination.local-data.ts';
 import { pendingDutiesOf } from './care-coordination-api.ts';
+import { careAgendaApi, isCareAgendaConfigured } from './care-agenda-api.ts';
 
 export { AssistanceApiError } from './assistance-api-error.ts';
 export type { NetworkLogEntry } from './care-coordination.local-data.ts';
@@ -203,6 +204,33 @@ const localAssistanceApi: AssistanceApi = {
   },
 };
 
+/**
+ * The agenda comes from GET /care-agenda; the rest of the port is still the browser copy.
+ * shortcut: the backend has no endpoint to create, cancel or complete activities, only to
+ * record a medication outcome, so those calls reject with `unavailable` until it does.
+ */
+const backendAgendaApi: AssistanceApi = {
+  ...localAssistanceApi,
+
+  listActivities: (from, to) => careAgendaApi.list(from, to),
+
+  scheduleActivity: () => Promise.reject(new AssistanceApiError('unavailable')),
+
+  completeActivity: async (activityId, actor) => {
+    allowActivities(actor);
+    const [stamp] = activityId.split('-').slice(-1);
+    const date = `${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6, 8)}`;
+    const current = (await careAgendaApi.list(date, date)).find((item) => item.id === activityId);
+    if (!current) throw new AssistanceApiError('not_found');
+    if (current.type !== 'medication') throw new AssistanceApiError('unavailable');
+    if (current.status !== 'scheduled') return current;
+    await careAgendaApi.recordAdministered(activityId);
+    return current.with({ status: 'completed', completedAt: new Date().toISOString(), completedByName: actor.fullName });
+  },
+
+  cancelActivity: () => Promise.reject(new AssistanceApiError('unavailable')),
+};
+
 export function getAssistanceApi(): AssistanceApi {
-  return localAssistanceApi;
+  return isCareAgendaConfigured() ? backendAgendaApi : localAssistanceApi;
 }

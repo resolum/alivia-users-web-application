@@ -11,7 +11,10 @@ export class TrackingRequestError extends Error {
 }
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
-const DRAFTS_PATH = '/api/v1/configuration-drafts';
+const TRACKING_PATH = import.meta.env.VITE_CONFIGURATION_DRAFT_TRACKING_ENDPOINT_PATH ?? 'configuration-drafts/{draftId}/tracking';
+const CONFIRMATION_PATH = import.meta.env.VITE_CONFIGURATION_DRAFT_CONFIRMATION_ENDPOINT_PATH ?? 'configuration-drafts/{draftId}/confirmation';
+
+const urlFor = (path: string, draftId: string) => `${API_BASE_URL}/${path.replace('{draftId}', encodeURIComponent(draftId))}`;
 
 const MESSAGES: Readonly<Record<number, string>> = {
   404: 'No encontramos tu solicitud de contratación.',
@@ -33,11 +36,11 @@ async function request(url: string, init?: RequestInit): Promise<ContractingTrac
 
 export const contractingTrackingApi = {
   get(draftId: string): Promise<ContractingTracking> {
-    return request(`${API_BASE_URL}${DRAFTS_PATH}/${encodeURIComponent(draftId)}/tracking`);
+    return request(urlFor(TRACKING_PATH, draftId));
   },
 
   /** The family confirms the configuration the technician validated; the request moves to installation. */
   confirm(draftId: string): Promise<ContractingTracking> {
-    return request(`${API_BASE_URL}${DRAFTS_PATH}/${encodeURIComponent(draftId)}/confirmation`, { method: 'POST' });
+    return request(urlFor(CONFIRMATION_PATH, draftId), { method: 'POST' });
   },
 };

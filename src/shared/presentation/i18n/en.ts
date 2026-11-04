@@ -397,6 +397,7 @@ export const en: Translations = {
       forbidden: 'You are not allowed to change this profile.',
       not_found: 'We could not find your profile.',
       photo_upload_unavailable: 'Photo upload is not available yet.',
+      photo_removal_unavailable: 'The photo cannot be removed yet; you can replace it with another one.',
       network: 'We could not reach the server. Check your connection.',
       unknown: 'Something went wrong. Please try again.',
     },

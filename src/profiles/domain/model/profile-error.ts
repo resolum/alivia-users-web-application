@@ -15,6 +15,7 @@ export const PROFILE_ERROR_CODES = [
   'forbidden',
   'not_found',
   'photo_upload_unavailable',
+  'photo_removal_unavailable',
   'network',
   'unknown',
 ] as const;

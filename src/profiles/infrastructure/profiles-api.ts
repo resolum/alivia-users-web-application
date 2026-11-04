@@ -23,14 +23,10 @@ function toErrorCode(status: number): ProfileErrorCode {
   return 'unknown';
 }
 
-async function send(profileId: string, init: RequestInit): Promise<PersonProfile> {
+async function send(url: string, init: RequestInit): Promise<PersonProfile> {
   let response: Response;
   try {
-    response = await BaseApi.request(
-      `${personProfilesUrl}/${encodeURIComponent(profileId)}`,
-      init,
-      { authenticated: true },
-    );
+    response = await BaseApi.request(url, init, { authenticated: true });
   } catch (error) {
     throw error instanceof TypeError ? new ProfileError('network') : error;
   }
@@ -39,21 +35,24 @@ async function send(profileId: string, init: RequestInit): Promise<PersonProfile
   return PersonProfileAssembler.toEntity(resource);
 }
 
-const put = (profile: PersonProfile, body: UpdatePersonProfileRequest) =>
-  send(profile.id, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+const profileUrl = (profileId: string) => `${personProfilesUrl}/${encodeURIComponent(profileId)}`;
+
+// The backend reads PUT as multipart/form-data; fetch sets the boundary when the body is FormData.
+const put = (profile: PersonProfile, request: UpdatePersonProfileRequest, photo?: File) => {
+  const body = new FormData();
+  Object.entries(request).forEach(([field, value]) => body.append(field, value));
+  if (photo) body.append('photo', photo);
+  return send(profileUrl(profile.id), { method: 'PUT', body });
+};
 
 const httpProfilesApi: ProfilesApi = {
-  getProfile: (profileId) => send(profileId, { method: 'GET' }),
+  getProfile: (profileId) => send(profileUrl(profileId), { method: 'GET' }),
   updateProfile: (profile, command) =>
     put(profile, PersonProfileAssembler.toUpdateRequestFromCommand(profile, command)),
-  // shortcut: the API only uploads photos on sign-up; wire this once person-profiles exposes a photo upload.
-  uploadPhoto: () => Promise.reject(new ProfileError('photo_upload_unavailable')),
-  removePhoto: (profile) =>
-    put(profile, PersonProfileAssembler.toUpdateRequest(profile, { photoUrl: null, photoPublicId: null })),
+  // PUT by id, not PATCH /profiles/me: the latter 404s for accounts whose user is not linked to the profile.
+  uploadPhoto: (profile, file) => put(profile, PersonProfileAssembler.toUpdateRequest(profile), file),
+  // shortcut: the multipart contract can replace the photo but not clear it; wire this once it can.
+  removePhoto: () => Promise.reject(new ProfileError('photo_removal_unavailable')),
 };
 
 export function getProfilesApi(): ProfilesApi {

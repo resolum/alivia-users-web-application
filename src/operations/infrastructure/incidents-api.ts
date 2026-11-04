@@ -1,6 +1,9 @@
 import { LocalCollection, respond } from '@/shared/infrastructure/local-collection.ts';
 import { Incident, type IncidentAddress, type IncidentDeviceKind, type IncidentProps } from '../domain/model/incident.entity.ts';
 import type { ReportIncidentCommand } from '../domain/model/report-incident.command.ts';
+import { isSupportIncidentsConfigured, supportIncidentsApi } from './support-incidents-api.ts';
+
+export { IncidentActionUnavailableError } from './support-incidents-api.ts';
 
 export interface ReportedDevice {
   readonly id: string;
@@ -152,5 +155,5 @@ const localIncidentsApi: IncidentsApi = {
 };
 
 export function getIncidentsApi(): IncidentsApi {
-  return localIncidentsApi;
+  return isSupportIncidentsConfigured() ? supportIncidentsApi : localIncidentsApi;
 }

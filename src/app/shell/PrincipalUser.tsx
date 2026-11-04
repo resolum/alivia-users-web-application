@@ -3,12 +3,13 @@ import { useTranslations } from '@/shared/presentation/i18n/index.ts';
 
 interface PrincipalUserProps {
   readonly displayName: string;
+  readonly photoUrl: string | null;
 }
 
 /**
  * Read-only account summary for the principal top bar.
  */
-export function PrincipalUser({ displayName }: PrincipalUserProps) {
+export function PrincipalUser({ displayName, photoUrl }: PrincipalUserProps) {
   const t = useTranslations();
 
   return (
@@ -22,7 +23,8 @@ export function PrincipalUser({ displayName }: PrincipalUserProps) {
         </p>
       </div>
       <Avatar
-        name="Alivia"
+        name={displayName}
+        src={photoUrl ?? undefined}
         size="md"
         className="border-2 border-alivia-secondary-light"
       />

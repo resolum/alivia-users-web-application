@@ -96,6 +96,11 @@ export class Incident implements BaseEntity {
     this.evidence = props.evidence;
   }
 
+  /** "Device · room", without a dangling separator when the room is unknown. */
+  get deviceLabel(): string {
+    return [this.deviceName, this.roomName].filter(Boolean).join(' · ');
+  }
+
   get isResolved(): boolean {
     return this.stage === 'resolved';
   }

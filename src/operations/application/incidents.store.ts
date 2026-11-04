@@ -3,6 +3,7 @@ import type { ReportIncidentCommand } from '../domain/model/report-incident.comm
 import { getIncidentsApi, type ReportedDevice } from '../infrastructure/incidents-api.ts';
 
 export type { ReportedDevice } from '../infrastructure/incidents-api.ts';
+export { IncidentActionUnavailableError } from '../infrastructure/incidents-api.ts';
 
 export const isIncidentsSample = () => getIncidentsApi().isSample;
 export const loadIncidents = () => getIncidentsApi().listIncidents();

@@ -8,6 +8,7 @@ import { useTranslations } from '@/shared/presentation/i18n/index.ts';
 
 interface UserMenuProps {
   readonly displayName: string;
+  readonly photoUrl: string | null;
 }
 
 const menuItemClasses = [
@@ -16,7 +17,7 @@ const menuItemClasses = [
 ].join(' ');
 
 /** Account disclosure with profile and sign-out actions. */
-export function UserMenu({ displayName }: UserMenuProps) {
+export function UserMenu({ displayName, photoUrl }: UserMenuProps) {
   const t = useTranslations();
   const { signOut } = useSession();
   const [isOpen, setIsOpen] = useState(false);
@@ -65,6 +66,7 @@ export function UserMenu({ displayName }: UserMenuProps) {
       >
         <Avatar
           name={displayName}
+          src={photoUrl ?? undefined}
           size="sm"
           className="border-2 border-alivia-secondary"
         />

@@ -11,12 +11,10 @@ export interface PersonProfileResource {
   readonly birthDate: string;
 }
 
-/** Body of PUT /person-profiles/{profileId}. Backend equivalent: UpdatePersonProfileResource. */
+/** Multipart fields of PUT /person-profiles/{profileId}; the optional `photo` file is sent apart. */
 export interface UpdatePersonProfileRequest {
   readonly firstName: string;
   readonly lastName: string;
   readonly birthDate: string;
   readonly phoneNumber: string;
-  readonly photoUrl: string | null;
-  readonly photoPublicId: string | null;
 }

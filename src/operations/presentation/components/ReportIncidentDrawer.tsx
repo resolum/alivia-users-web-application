@@ -3,7 +3,7 @@ import { ImagePlus, Send, X } from 'lucide-react';
 import { loadHousehold } from '@/profiles/index.ts';
 import { Button, Drawer, Field, inputBase } from '@/shared/presentation/components/ui/index.ts';
 import { loadHomeDevices, type Device } from '@/tracking/index.ts';
-import { reportIncident } from '../../application/incidents.store.ts';
+import { IncidentActionUnavailableError, reportIncident } from '../../application/incidents.store.ts';
 import { PROBLEM_TYPES, type Incident, type ProblemType } from '../../domain/model/incident.entity.ts';
 import {
   DESCRIPTION_MAX,
@@ -46,7 +46,7 @@ export function ReportIncidentDrawer({ open, initialDeviceId, initialType, onClo
   const [photo, setPhoto] = useState<ReportPhoto | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [wasOpen, setWasOpen] = useState(open);
@@ -58,7 +58,7 @@ export function ReportIncidentDrawer({ open, initialDeviceId, initialType, onClo
       setDescription('');
       setPhoto(null);
       setSubmitted(false);
-      setFailed(false);
+      setFailed(null);
     }
   }
 
@@ -90,7 +90,7 @@ export function ReportIncidentDrawer({ open, initialDeviceId, initialType, onClo
     const device = devices?.find((item) => item.id === deviceId);
     if (Object.keys(command.validate()).length > 0 || !device) return;
     setSending(true);
-    setFailed(false);
+    setFailed(null);
     try {
       const household = await loadHousehold();
       const incident = await reportIncident(
@@ -103,8 +103,12 @@ export function ReportIncidentDrawer({ open, initialDeviceId, initialType, onClo
         },
       );
       onReported(incident);
-    } catch {
-      setFailed(true);
+    } catch (error) {
+      setFailed(
+        error instanceof IncidentActionUnavailableError
+          ? 'Por ahora el reporte de incidencias no está disponible en la app. Escríbenos a soporte.'
+          : 'No pudimos enviar el reporte. Revisa tu conexión e inténtalo de nuevo.',
+      );
     } finally {
       setSending(false);
     }
@@ -234,7 +238,7 @@ export function ReportIncidentDrawer({ open, initialDeviceId, initialType, onClo
 
         {failed && (
           <p role="alert" className="rounded-lg bg-alivia-danger/10 px-3 py-2 text-sm text-alivia-danger">
-            No pudimos enviar el reporte. Revisa tu conexión e inténtalo de nuevo.
+            {failed}
           </p>
         )}
       </form>

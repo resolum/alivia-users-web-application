@@ -21,6 +21,7 @@ import { GuestActivityDrawer } from '../components/GuestActivityDrawer.tsx';
 import { GuestStatePill } from '../components/GuestStatePill.tsx';
 import { WeekCalendar, WeekCalendarSkeleton } from '../components/WeekCalendar.tsx';
 import { useCareActor } from '../useCareActor.ts';
+import { AssistanceApiError } from '../../infrastructure/assistance-api-error.ts';
 
 type Mode = 'list' | 'schedule';
 type Bucket = 'today' | 'tomorrow' | 'upcoming' | 'past';
@@ -159,8 +160,8 @@ export function GuestActivitiesView() {
       setData(state.data.map((item) => (item.id === saved.id ? saved : item)));
       setDetail(saved);
       notify(`«${activity.title}» registrada como atendida`);
-    } catch {
-      notify('No pudimos actualizar la actividad. Inténtalo de nuevo.');
+    } catch (error) {
+      notify(error instanceof AssistanceApiError && error.code === 'unavailable' ? 'Esta acción todavía no está disponible en Alivia.' : 'No pudimos actualizar la actividad. Inténtalo de nuevo.');
     }
   };
 

@@ -4,7 +4,9 @@ export type AssistanceErrorCode =
   | 'conflict'
   | 'has_pending'
   | 'invitation_closed'
-  | 'already_recorded';
+  | 'already_recorded'
+  /** The backend has no endpoint for this action yet. */
+  | 'unavailable';
 
 export class AssistanceApiError extends Error {
   readonly code: AssistanceErrorCode;

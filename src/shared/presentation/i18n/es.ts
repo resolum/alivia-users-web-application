@@ -403,6 +403,7 @@ export const es = {
       forbidden: 'No tienes permiso para modificar este perfil.',
       not_found: 'No encontramos tu perfil.',
       photo_upload_unavailable: 'La subida de fotos aún no está disponible.',
+      photo_removal_unavailable: 'Por ahora no se puede quitar la foto; puedes reemplazarla por otra.',
       network: 'No pudimos conectar con el servidor. Revisa tu conexión.',
       unknown: 'Ocurrió un error inesperado. Inténtalo de nuevo.',
     },
