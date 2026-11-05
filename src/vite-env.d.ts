@@ -47,4 +47,8 @@ interface ImportMetaEnv {
   readonly VITE_PLANS_ENDPOINT_PATH?: string;
   readonly VITE_PLAN_PRICING_ENDPOINT_PATH?: string;
   readonly VITE_STRIPE_WEBHOOK_ENDPOINT_PATH?: string;
+  /** Google Maps browser key (Maps JavaScript, Places (New) and Geocoding APIs). */
+  readonly VITE_GOOGLE_MAPS_API_KEY?: string;
+  /** Map ID for the advanced marker; defaults to DEMO_MAP_ID. */
+  readonly VITE_GOOGLE_MAPS_MAP_ID?: string;
 }
