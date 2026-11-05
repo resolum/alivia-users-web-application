@@ -12,6 +12,8 @@ interface PeruMobileFieldProps
   readonly onValueChange: (value: string) => void;
   readonly error?: string;
   readonly hint?: string;
+  /** Optional fields drop the required marker; their label says "(Opcional)". */
+  readonly optional?: boolean;
 }
 
 /**
@@ -25,6 +27,7 @@ export function PeruMobileField({
   onValueChange,
   error,
   hint,
+  optional = false,
   ...inputProps
 }: PeruMobileFieldProps) {
   const t = useIamTranslations();
@@ -34,7 +37,7 @@ export function PeruMobileField({
     <AuthField
       id={id}
       label={label}
-      required
+      required={!optional}
       requiredLabel={t.common.required}
       error={error}
       hint={hint}
@@ -48,7 +51,7 @@ export function PeruMobileField({
         </span>
         <input
           id={id}
-          required
+          required={!optional}
           type="tel"
           inputMode="numeric"
           autoComplete="tel-national"

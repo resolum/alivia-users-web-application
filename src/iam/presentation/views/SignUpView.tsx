@@ -73,9 +73,11 @@ export function SignUpView() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errors, setErrors] = useState<FieldErrors<SignUpFormField>>({});
 
-  // A responsible client who already created the household resumes at configuration.
-  if (getRegistrationProgress()?.householdId) {
-    return <Navigate to="/contract/configuration" replace />;
+  // A responsible client who already created the household resumes where they left off.
+  const progress = getRegistrationProgress();
+  if (progress?.householdId) {
+    const next = progress.assistedPersonId ? '/contract/configuration' : '/household/assisted-person';
+    return <Navigate to={next} replace />;
   }
 
   const emailTaken = errorKey === 'emailAlreadyRegistered';

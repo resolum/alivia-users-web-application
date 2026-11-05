@@ -22,6 +22,7 @@ import {
   HouseholdLocationPicker,
   type PickedHouseholdLocation,
 } from '../components/HouseholdLocationPicker.tsx';
+import { HouseholdSubsteps } from '../components/HouseholdSubsteps.tsx';
 import { RegistrationLayout } from '../components/RegistrationLayout.tsx';
 import { PeruMobileField } from '../components/PeruMobileField.tsx';
 import { RegistrationTextField } from '../components/RegistrationTextField.tsx';
@@ -152,7 +153,7 @@ export function HouseholdAccountView() {
         throw error;
       }
     }).then((successful) => {
-      if (successful) void navigate('/contract/configuration');
+      if (successful) void navigate('/household/assisted-person');
     });
   }
 
@@ -167,6 +168,7 @@ export function HouseholdAccountView() {
   return (
     <RegistrationLayout step={3}>
       <div className="space-y-6">
+        <HouseholdSubsteps current={1} />
         {cameFromVerification(location.state) && (
           <p role="status" className="flex items-center gap-2 rounded-xl bg-alivia-mint px-4 py-3 text-sm font-semibold text-alivia-secondary-deep">
             <CheckCircle2 aria-hidden="true" className="size-5 shrink-0" />

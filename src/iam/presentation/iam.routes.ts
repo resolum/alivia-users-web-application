@@ -12,6 +12,10 @@ const verifyEmailView = () =>
   import('./views/VerifyEmailView.tsx').then((m) => ({ Component: m.VerifyEmailView }));
 const householdAccountView = () =>
   import('./views/HouseholdAccountView.tsx').then((m) => ({ Component: m.HouseholdAccountView }));
+const assistedPersonRegistrationView = () =>
+  import('./views/AssistedPersonRegistrationView.tsx').then((m) => ({
+    Component: m.AssistedPersonRegistrationView,
+  }));
 const forgotPasswordView = () =>
   import('./views/ForgotPasswordView.tsx').then((m) => ({ Component: m.ForgotPasswordView }));
 const resetPasswordView = () =>
@@ -40,4 +44,5 @@ export const iamRoutes: RouteObject[] = [
   // opened with or without a session, so it is not guest-only.
   { Component: IamAuthLayout, children: [{ path: 'verify-email', lazy: verifyEmailView }] },
   { path: 'household/new', lazy: householdAccountView },
+  { path: 'household/assisted-person', lazy: assistedPersonRegistrationView },
 ];

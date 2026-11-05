@@ -4,6 +4,10 @@ export { AssistedPerson } from './domain/model/assisted-person.entity.ts';
 export { CareActivity } from './domain/model/care-activity.entity.ts';
 export { Caregiver } from './domain/model/caregiver.entity.ts';
 export type { CareNetwork } from './domain/model/caregiver.entity.ts';
+export {
+  showRegisteredAssistedPerson,
+  type RegisteredAssistedPerson,
+} from './infrastructure/registered-assisted-person.local.ts';
 
 export { ActivitiesView } from './presentation/views/ActivitiesView.tsx';
 export { AssistedPersonView } from './presentation/views/AssistedPersonView.tsx';

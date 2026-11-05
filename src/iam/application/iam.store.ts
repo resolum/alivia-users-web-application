@@ -7,6 +7,7 @@ import type {
 } from '../domain/model/forgot-password.command.ts';
 import type { HouseholdAccount } from '../domain/model/household-account.entity.ts';
 import { IamError } from '../domain/model/iam-error.ts';
+import type { RegisterAssistedPersonCommand } from '../domain/model/register-assisted-person.command.ts';
 import type { ResendVerificationCommand } from '../domain/model/resend-verification.command.ts';
 import type { DefinePasswordCommand } from '../domain/model/reset-password.command.ts';
 import type { SignInCommand } from '../domain/model/sign-in.command.ts';
@@ -312,6 +313,28 @@ export async function createHouseholdAccount(
 
   const api = await getIamApi();
   const household = await api.createHouseholdAccount(command);
-  saveRegistrationProgress({ householdId: household.id });
+  saveRegistrationProgress({ householdId: household.id, assistedPersonId: null });
   return household;
+}
+
+/**
+ * Registers who will use Alivia in the household created in the previous
+ * substep of the contracting flow.
+ * @param command - The assisted person data.
+ * @returns The identifier of the assisted person.
+ */
+export async function registerAssistedPerson(
+  command: RegisterAssistedPersonCommand,
+): Promise<string> {
+  assertValid(command.validate());
+
+  const householdId = readRegistrationProgress()?.householdId ?? null;
+  if (householdId === null) {
+    throw new IamError({ code: 'unknown', detail: 'Missing household for the assisted person' });
+  }
+
+  const api = await getIamApi();
+  const assistedPersonId = await api.registerAssistedPerson(householdId, command);
+  saveRegistrationProgress({ assistedPersonId });
+  return assistedPersonId;
 }

@@ -10,7 +10,9 @@ import type { ResendVerificationCommand } from '../domain/model/resend-verificat
 import type { DefinePasswordCommand } from '../domain/model/reset-password.command.ts';
 import type { SignInCommand } from '../domain/model/sign-in.command.ts';
 import type { SignUpCommand } from '../domain/model/sign-up.command.ts';
+import type { RegisterAssistedPersonCommand } from '../domain/model/register-assisted-person.command.ts';
 import type { VerifyEmailCommand } from '../domain/model/verify-email.command.ts';
+import { AssistedPersonApiEndpoint } from './assisted-person/assisted-person-api-endpoint.ts';
 import { HouseholdAccountApiEndpoint } from './household/household-account-api-endpoint.ts';
 import { LogoutApiEndpoint } from './logout/logout-api-endpoint.ts';
 import { PasswordRecoveryApiEndpoint } from './password-recovery/password-recovery-api-endpoint.ts';
@@ -37,6 +39,11 @@ export interface IamApi {
   readonly createHouseholdAccount: (
     command: CreateHouseholdAccountCommand,
   ) => Promise<HouseholdAccount>;
+  /** Registers the assisted person of the household and returns its identifier. */
+  readonly registerAssistedPerson: (
+    householdId: string,
+    command: RegisterAssistedPersonCommand,
+  ) => Promise<string>;
 }
 
 const signUpEndpoint = new SignUpApiEndpoint();
@@ -47,6 +54,7 @@ const refreshEndpoint = new RefreshApiEndpoint();
 const logoutEndpoint = new LogoutApiEndpoint();
 const passwordRecoveryEndpoint = new PasswordRecoveryApiEndpoint();
 const householdAccountEndpoint = new HouseholdAccountApiEndpoint();
+const assistedPersonEndpoint = new AssistedPersonApiEndpoint();
 
 async function run<T>(operation: () => Promise<T>): Promise<T> {
   try {
@@ -82,6 +90,8 @@ const httpIamApi: IamApi = {
     run(() => passwordRecoveryEndpoint.resetPassword(command)),
   createHouseholdAccount: (command) =>
     run(() => householdAccountEndpoint.create(command)),
+  registerAssistedPerson: (householdId, command) =>
+    run(() => assistedPersonEndpoint.register(householdId, command)),
 };
 
 interface EnvironmentSetting {
