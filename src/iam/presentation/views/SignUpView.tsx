@@ -16,6 +16,7 @@ import { AuthFormHeader } from '../components/AuthFormHeader.tsx';
 import { AuthSubmitButton } from '../components/AuthSubmitButton.tsx';
 import { PasswordRequirements } from '../components/PasswordRequirements.tsx';
 import { RegistrationLayout } from '../components/RegistrationLayout.tsx';
+import { PeruMobileField } from '../components/PeruMobileField.tsx';
 import { RegistrationTextField } from '../components/RegistrationTextField.tsx';
 import { fieldErrorMessage, focusFirstInvalid } from '../field-error-message.ts';
 import { useIamTranslations } from '../hooks/useIamTranslations.ts';
@@ -176,13 +177,9 @@ export function SignUpView() {
               />
             </div>
             <div className="sm:col-span-2">
-              <RegistrationTextField
+              <PeruMobileField
                 id={`${ID_PREFIX}-phoneNumber`}
                 label={t.signUp.phoneLabel}
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                placeholder="987 654 321"
                 value={values.phoneNumber}
                 onValueChange={(value) => change('phoneNumber', value)}
                 error={message('phoneNumber')}
