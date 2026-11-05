@@ -1,6 +1,6 @@
 import type { ProblemType } from './incident.entity.ts';
 
-export type ReportField = 'deviceId' | 'problemType' | 'description' | 'photo';
+export type ReportField = 'deviceId' | 'problemType' | 'description' | 'photo' | 'visit';
 export type ReportFieldError = 'required' | 'too_short' | 'too_long' | 'invalid_photo';
 
 export const DESCRIPTION_MIN = 10;
@@ -14,17 +14,33 @@ export interface ReportPhoto {
   readonly dataUrl: string;
 }
 
+/** The maintenance visit the family chose: day, two-hour window and the technician free in it. */
+export interface ReportVisit {
+  readonly date: string;
+  readonly startTime: string;
+  readonly endTime: string;
+  readonly technicianId: number;
+  readonly technicianName: string;
+}
+
 export class ReportIncidentCommand {
   readonly deviceId: string;
   readonly problemType: ProblemType | '';
   readonly description: string;
   readonly photo: ReportPhoto | null;
+  readonly visit: ReportVisit | null;
 
-  constructor(deviceId: string, problemType: ProblemType | '', description: string, photo: ReportPhoto | null) {
+  constructor(deviceId: string, problemType: ProblemType | '', description: string, photo: ReportPhoto | null, visit: ReportVisit | null) {
     this.deviceId = deviceId;
     this.problemType = problemType;
     this.description = description.trim();
     this.photo = photo;
+    this.visit = visit;
+  }
+
+  /** The same report with another photo (or none), keeping the rest. */
+  withPhoto(photo: ReportPhoto | null): ReportIncidentCommand {
+    return new ReportIncidentCommand(this.deviceId, this.problemType, this.description, photo, this.visit);
   }
 
   validate(): Partial<Record<ReportField, ReportFieldError>> {
@@ -37,6 +53,7 @@ export class ReportIncidentCommand {
     if (this.photo && (!/^image\/(jpeg|png)$/.test(this.photo.type) || this.photo.size > PHOTO_MAX_BYTES)) {
       errors.photo = 'invalid_photo';
     }
+    if (this.visit === null) errors.visit = 'required';
     return errors;
   }
 }

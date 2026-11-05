@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router';
+import { Link, useLocation, useParams } from 'react-router';
 import { ArrowRight, Clock, MapPin, Radio, ShieldCheck, Wrench } from 'lucide-react';
 import { formatDateTime } from '@/shared/domain/model/valueobjects/relative-time.ts';
 import {
@@ -17,6 +17,7 @@ export function IncidentRegisteredView() {
   useDocumentTitle('Incidencia registrada');
   const { id = '' } = useParams();
   const { state, retry } = useLoad(() => loadIncident(id), [id]);
+  const photoNotAttached = (useLocation().state as { photoNotAttached?: boolean } | null)?.photoNotAttached === true;
 
   if (state.status === 'loading') {
     return (
@@ -46,6 +47,12 @@ export function IncidentRegisteredView() {
         <p className="mt-2 text-sm text-alivia-text-muted">
           El equipo de soporte técnico revisará el reporte y asignará la atención correspondiente.
         </p>
+
+        {photoNotAttached && (
+          <p role="status" className="mt-4 rounded-lg bg-alivia-warning-soft px-3 py-2 text-sm text-alivia-warning">
+            No pudimos adjuntar la foto, pero tu reporte quedó registrado.
+          </p>
+        )}
 
         <section className="mt-6 rounded-2xl bg-alivia-page p-5 text-left">
           <div className="flex flex-wrap items-center justify-between gap-2">

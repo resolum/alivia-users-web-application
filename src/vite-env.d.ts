@@ -20,6 +20,8 @@ interface ImportMetaEnv {
   readonly VITE_BUSINESS_PROFILES_ENDPOINT_PATH?: string;
   readonly VITE_STAFF_PROFILES_ENDPOINT_PATH?: string;
   readonly VITE_APPOINTMENTS_ENDPOINT_PATH?: string;
+  /** "true" keeps the sample incidents in the browser instead of calling the backend. */
+  readonly VITE_INCIDENTS_MOCK?: string;
   readonly VITE_APPOINTMENTS_AVAILABLE_SLOTS_ENDPOINT_PATH?: string;
   readonly VITE_EMPLOYEES_ENDPOINT_PATH?: string;
   readonly VITE_EMPLOYEE_ELIGIBILITY_ENDPOINT_PATH?: string;

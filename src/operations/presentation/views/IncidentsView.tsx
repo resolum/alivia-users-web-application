@@ -13,6 +13,8 @@ import {
 } from '@/shared/presentation/components/ui/index.ts';
 import { useDocumentTitle } from '@/shared/presentation/hooks/useDocumentTitle.ts';
 import { useLoad } from '@/shared/presentation/hooks/useLoad.ts';
+import { RefreshButton } from '../components/RefreshButton.tsx';
+import { useLiveRefresh } from '../components/useLiveRefresh.ts';
 import { isIncidentsSample, loadIncidents } from '../../application/incidents.store.ts';
 import { INCIDENT_STAGES, PROBLEM_TYPES, type IncidentStage, type ProblemType } from '../../domain/model/incident.entity.ts';
 import { DEVICE_ICON, formatWindow, STAGE } from '../incident-presentation.ts';
@@ -24,7 +26,8 @@ export function IncidentsView() {
   useDocumentTitle('Incidencias');
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const { state, retry } = useLoad(loadIncidents, []);
+  const { state, retry, setData } = useLoad(loadIncidents, []);
+  const { refresh, refreshing } = useLiveRefresh(loadIncidents, setData);
   const [tab, setTab] = useState<Tab>('open');
   const [query, setQuery] = useState('');
   const [stage, setStage] = useState<IncidentStage | ''>('');
@@ -59,10 +62,13 @@ export function IncidentsView() {
         title="Incidencias"
         subtitle="Reporta y consulta los problemas de tus dispositivos."
         actions={
-          <Button onClick={() => setParams({ report: '1' })}>
-            <Plus className="size-4" aria-hidden="true" />
-            Reportar incidencia
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <RefreshButton refreshing={refreshing} onRefresh={() => void refresh()} />
+            <Button onClick={() => setParams({ report: '1' })}>
+              <Plus className="size-4" aria-hidden="true" />
+              Reportar incidencia
+            </Button>
+          </div>
         }
       />
       {isIncidentsSample() && <SampleDataNotice />}
@@ -198,7 +204,9 @@ export function IncidentsView() {
         initialDeviceId={params.get('device') ?? ''}
         initialType={initialType}
         onClose={closeReport}
-        onReported={(incident) => navigate(`/incidents/${incident.id}/registered`, { replace: true })}
+        onReported={({ incident, photoAttached }) =>
+          navigate(`/incidents/${incident.id}/registered`, { replace: true, state: { photoNotAttached: !photoAttached } })
+        }
       />
     </div>
   );

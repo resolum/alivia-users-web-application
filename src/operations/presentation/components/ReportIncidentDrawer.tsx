@@ -2,8 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'r
 import { ImagePlus, Send, X } from 'lucide-react';
 import { loadHousehold } from '@/profiles/index.ts';
 import { Button, Drawer, Field, inputBase } from '@/shared/presentation/components/ui/index.ts';
-import { loadHomeDevices, type Device } from '@/tracking/index.ts';
-import { reportIncident } from '../../application/incidents.store.ts';
+import { isIncidentsSample, loadOpenIncidentOf, loadReportForm, reportIncident, type ReportedDevice, type ReportOutcome } from '../../application/incidents.store.ts';
 import { PROBLEM_TYPES, type Incident, type ProblemType } from '../../domain/model/incident.entity.ts';
 import {
   DESCRIPTION_MAX,
@@ -12,7 +11,12 @@ import {
   type ReportFieldError,
   type ReportPhoto,
 } from '../../domain/model/report-incident.command.ts';
+import type { EvaluationSlot } from '../../domain/model/evaluation-slot.ts';
+import { IncidentsRequestError } from '../../infrastructure/incidents-http-api.ts';
+import { useAvailableSlots } from './useAvailableSlots.ts';
+import { VisitSlotPicker } from './VisitSlotPicker.tsx';
 import { PROBLEM_LABELS } from '../incident-presentation.ts';
+import { OpenIncidentNotice } from './OpenIncidentNotice.tsx';
 
 const ERROR_TEXT: Record<ReportFieldError, string> = {
   required: 'Este campo es obligatorio.',
@@ -30,23 +34,39 @@ function readPhoto(file: File): Promise<ReportPhoto> {
   });
 }
 
+const NO_ADDRESS = { line: '', district: '', reference: '' };
+
+async function sampleAddress() {
+  const household = await loadHousehold();
+  return {
+    line: household.address.line,
+    district: [household.address.district, household.address.city].filter(Boolean).join(', '),
+    reference: household.address.reference,
+  };
+}
+
 interface ReportIncidentDrawerProps {
   readonly open: boolean;
   readonly initialDeviceId: string;
   readonly initialType: ProblemType | '';
   readonly onClose: () => void;
-  readonly onReported: (incident: Incident) => void;
+  readonly onReported: (outcome: ReportOutcome) => void;
 }
 
 export function ReportIncidentDrawer({ open, initialDeviceId, initialType, onClose, onReported }: ReportIncidentDrawerProps) {
-  const [devices, setDevices] = useState<readonly Device[] | null>(null);
+  const [devices, setDevices] = useState<readonly ReportedDevice[] | null>(null);
+  const [photoEnabled, setPhotoEnabled] = useState(false);
+  const [visit, setVisit] = useState<EvaluationSlot | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
+  const { slots, error: slotsError, retry: retrySlots } = useAvailableSlots(null, open);
+  // The open incident found for a device, kept with that device so another selection never shows it.
+  const [found, setFound] = useState<{ readonly deviceId: string; readonly incident: Incident | null } | null>(null);
   const [deviceId, setDeviceId] = useState(initialDeviceId);
   const [problemType, setProblemType] = useState<ProblemType | ''>(initialType);
   const [description, setDescription] = useState('');
   const [photo, setPhoto] = useState<ReportPhoto | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
-  const [failed, setFailed] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [wasOpen, setWasOpen] = useState(open);
@@ -57,16 +77,22 @@ export function ReportIncidentDrawer({ open, initialDeviceId, initialType, onClo
       setProblemType(initialType);
       setDescription('');
       setPhoto(null);
+      setVisit(null);
+      setFailure(null);
+      setFound(null);
       setSubmitted(false);
-      setFailed(false);
     }
   }
 
   useEffect(() => {
     if (!open) return;
     let active = true;
-    loadHomeDevices().then(
-      (home) => active && setDevices(home.devices),
+    loadReportForm().then(
+      (form) => {
+        if (!active) return;
+        setDevices(form.devices);
+        setPhotoEnabled(form.photoUploadEnabled);
+      },
       () => active && setDevices([]),
     );
     return () => {
@@ -74,7 +100,22 @@ export function ReportIncidentDrawer({ open, initialDeviceId, initialType, onClo
     };
   }, [open]);
 
-  const command = new ReportIncidentCommand(deviceId, problemType, description, photo);
+  const openIncident = open && found?.deviceId === deviceId ? found.incident : null;
+
+  // A device with an incident in course shows that one instead of opening a duplicate.
+  useEffect(() => {
+    if (!open || deviceId === '') return undefined;
+    let active = true;
+    loadOpenIncidentOf(deviceId).then(
+      (incident) => active && setFound({ deviceId, incident }),
+      () => undefined,
+    );
+    return () => {
+      active = false;
+    };
+  }, [open, deviceId]);
+
+  const command = new ReportIncidentCommand(deviceId, problemType, description, photo, visit);
   const errors = submitted ? command.validate() : {};
   const errorOf = (field: keyof typeof errors) => (errors[field] ? ERROR_TEXT[errors[field]] : null);
 
@@ -88,23 +129,33 @@ export function ReportIncidentDrawer({ open, initialDeviceId, initialType, onClo
     event.preventDefault();
     setSubmitted(true);
     const device = devices?.find((item) => item.id === deviceId);
-    if (Object.keys(command.validate()).length > 0 || !device) return;
+    if (sending || openIncident !== null || Object.keys(command.validate()).length > 0 || !device) return;
     setSending(true);
-    setFailed(false);
+    setFailure(null);
     try {
-      const household = await loadHousehold();
-      const incident = await reportIncident(
-        command,
+      // The backend takes the address from the installation; only the sample source needs it here.
+      const address = isIncidentsSample() ? await sampleAddress() : NO_ADDRESS;
+      const outcome = await reportIncident(
+        command.withPhoto(photoEnabled ? photo : null),
         { id: device.id, code: device.code, name: device.name, roomName: device.roomName, kind: device.kind },
-        {
-          line: household.address.line,
-          district: [household.address.district, household.address.city].filter(Boolean).join(', '),
-          reference: household.address.reference,
-        },
+        address,
       );
-      onReported(incident);
-    } catch {
-      setFailed(true);
+      onReported(outcome);
+    } catch (reason) {
+      if (reason instanceof IncidentsRequestError && reason.code === 'incident_already_open') {
+        const existing = await loadOpenIncidentOf(deviceId, reason.incidentId).catch(() => null);
+        if (existing !== null) {
+          setFound({ deviceId, incident: existing });
+          return;
+        }
+      }
+      if (reason instanceof IncidentsRequestError && reason.code === 'slot_unavailable') {
+        setVisit(null);
+        retrySlots();
+      }
+      setFailure(reason instanceof IncidentsRequestError && reason.status !== 0 && reason.status < 500
+        ? reason.message
+        : 'No pudimos enviar el reporte. Revisa tu conexión e inténtalo de nuevo.');
     } finally {
       setSending(false);
     }
@@ -123,7 +174,7 @@ export function ReportIncidentDrawer({ open, initialDeviceId, initialType, onClo
           <Button variant="ghost" onClick={onClose}>
             Cancelar
           </Button>
-          <Button type="submit" form="report-incident" loading={sending} disabled={devices === null}>
+          <Button type="submit" form="report-incident" loading={sending} disabled={devices === null || openIncident !== null}>
             Enviar reporte
             <Send className="size-4" aria-hidden="true" />
           </Button>
@@ -153,6 +204,8 @@ export function ReportIncidentDrawer({ open, initialDeviceId, initialType, onClo
             </select>
           )}
         </Field>
+
+        {openIncident && <OpenIncidentNotice incident={openIncident} onOpen={onClose} />}
 
         <Field id="report-type" label="Tipo de problema" required error={errorOf('problemType')}>
           {(describedBy) => (
@@ -205,7 +258,11 @@ export function ReportIncidentDrawer({ open, initialDeviceId, initialType, onClo
         <div className="flex flex-col gap-1.5">
           <span className="text-sm font-semibold text-alivia-primary-dark">Foto del dispositivo (opcional)</span>
           <input ref={fileRef} type="file" accept="image/jpeg,image/png" onChange={pickPhoto} className="sr-only" tabIndex={-1} aria-hidden="true" />
-          {photo ? (
+          {!photoEnabled ? (
+            <p className="rounded-xl border border-dashed border-alivia-primary-mist px-3 py-3 text-sm text-alivia-text-muted">
+              Las fotos no están disponibles por ahora. Puedes enviar el reporte sin foto.
+            </p>
+          ) : photo ? (
             <div className="flex items-center gap-3 rounded-xl border border-alivia-primary-mist p-2">
               <img src={photo.dataUrl} alt="" className="size-14 rounded-lg object-cover" />
               <p className="min-w-0 flex-1 truncate text-sm text-alivia-text">{photo.name}</p>
@@ -232,9 +289,27 @@ export function ReportIncidentDrawer({ open, initialDeviceId, initialType, onClo
           {errors.photo && <p className="text-xs font-semibold text-alivia-danger">{errorOf('photo')}</p>}
         </div>
 
-        {failed && (
+        <section aria-labelledby="report-visit-title" className="flex flex-col gap-2">
+          <h3 id="report-visit-title" className="text-sm font-semibold text-alivia-primary-dark">
+            ¿Cuándo te visitamos? <span className="text-alivia-danger" aria-hidden="true">*</span>
+          </h3>
+          <p className="text-xs text-alivia-text-muted">
+            Elige el día, la franja y el técnico. El técnico revisará tu reporte y confirmará la visita.
+          </p>
+          <VisitSlotPicker
+            slots={slots}
+            error={slotsError}
+            value={visit}
+            invalid={Boolean(errors.visit)}
+            onRetry={retrySlots}
+            onChange={setVisit}
+          />
+          {errors.visit && <p className="text-xs font-semibold text-alivia-danger">Elige el día, la franja y el técnico de la visita.</p>}
+        </section>
+
+        {failure && (
           <p role="alert" className="rounded-lg bg-alivia-danger/10 px-3 py-2 text-sm text-alivia-danger">
-            No pudimos enviar el reporte. Revisa tu conexión e inténtalo de nuevo.
+            {failure}
           </p>
         )}
       </form>
