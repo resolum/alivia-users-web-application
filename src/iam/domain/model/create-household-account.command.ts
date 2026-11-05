@@ -1,5 +1,6 @@
 import type { FieldErrors } from './field-errors.ts';
 import { EmailAddress } from './valueobjects/email-address.ts';
+import type { HouseholdLocation } from './valueobjects/household-location.ts';
 import { PhoneNumber } from './valueobjects/phone-number.ts';
 
 export type HouseholdField =
@@ -8,7 +9,11 @@ export type HouseholdField =
   | 'contactEmail'
   | 'address'
   | 'district'
-  | 'city';
+  | 'city'
+  | 'location';
+
+/** Fields the client types; the location comes from the map. */
+export type HouseholdTextField = Exclude<HouseholdField, 'location'>;
 
 const ALIAS_MAX_LENGTH = 60;
 const ADDRESS_MAX_LENGTH = 160;
@@ -25,6 +30,8 @@ export class CreateHouseholdAccountCommand {
   private readonly _address: string;
   private readonly _district: string;
   private readonly _city: string;
+  private readonly _location: HouseholdLocation | null;
+  private readonly _locationRequired: boolean;
 
   /**
    * Initializes a new CreateHouseholdAccountCommand.
@@ -38,6 +45,10 @@ export class CreateHouseholdAccountCommand {
     address: string;
     district: string;
     city: string;
+    /** Point picked on the map, if any. */
+    location?: HouseholdLocation | null;
+    /** True when the map is available, so the client must pick the point. */
+    locationRequired?: boolean;
   }) {
     this._responsibleAccountId = params.responsibleAccountId;
     this._alias = params.alias.trim();
@@ -46,6 +57,8 @@ export class CreateHouseholdAccountCommand {
     this._address = params.address.trim();
     this._district = params.district.trim();
     this._city = params.city.trim();
+    this._location = params.location ?? null;
+    this._locationRequired = params.locationRequired ?? false;
   }
 
   get responsibleAccountId(): string {
@@ -77,6 +90,10 @@ export class CreateHouseholdAccountCommand {
     return this._city;
   }
 
+  get location(): HouseholdLocation | null {
+    return this._location;
+  }
+
   /**
    * Validates the payload and returns the invalid fields, if any.
    */
@@ -97,6 +114,7 @@ export class CreateHouseholdAccountCommand {
 
     if (this._district === '') errors.district = 'required';
     if (this._city === '') errors.city = 'required';
+    if (this._locationRequired && this._location === null) errors.location = 'required';
 
     return errors;
   }

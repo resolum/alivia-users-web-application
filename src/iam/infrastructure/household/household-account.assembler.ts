@@ -16,6 +16,7 @@ export class HouseholdAccountAssembler {
       address: command.address,
       district: command.district,
       city: command.city,
+      ...(command.location ?? {}),
     };
   }
 

@@ -16,6 +16,8 @@ interface ImportMetaEnv {
   readonly VITE_IAM_ACTIVATE_ENDPOINT_PATH?: string;
   readonly VITE_IAM_ACTIVATION_ENDPOINT_PATH?: string;
   readonly VITE_IAM_HOUSEHOLD_ENDPOINT_PATH?: string;
+  /** Care profile of the assisted person (api/v1/assisted-person-care-profiles/mine). Empty keeps it in the browser. */
+  readonly VITE_ASSISTED_PERSON_CARE_PROFILE_ENDPOINT_PATH?: string;
   readonly VITE_PROFILES_ENDPOINT_PATH?: string;
   readonly VITE_BUSINESS_PROFILES_ENDPOINT_PATH?: string;
   readonly VITE_STAFF_PROFILES_ENDPOINT_PATH?: string;
@@ -47,4 +49,8 @@ interface ImportMetaEnv {
   readonly VITE_PLANS_ENDPOINT_PATH?: string;
   readonly VITE_PLAN_PRICING_ENDPOINT_PATH?: string;
   readonly VITE_STRIPE_WEBHOOK_ENDPOINT_PATH?: string;
+  /** Google Maps browser key (Maps JavaScript, Places (New) and Geocoding APIs). */
+  readonly VITE_GOOGLE_MAPS_API_KEY?: string;
+  /** Map ID for the advanced marker; defaults to DEMO_MAP_ID. */
+  readonly VITE_GOOGLE_MAPS_MAP_ID?: string;
 }

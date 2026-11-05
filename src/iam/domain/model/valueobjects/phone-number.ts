@@ -1,45 +1,48 @@
 import type { FieldErrorCode } from '../field-errors.ts';
 
 const PERU_COUNTRY_CODE = '51';
-const PERU_MOBILE_LENGTH = 9;
+/** Digits of a Peruvian mobile without the country code. */
+export const PERU_MOBILE_LENGTH = 9;
 
-function stripSeparators(value: string): string {
+function onlyDigits(value: string): string {
   let result = '';
   for (const character of value) {
-    if (character !== ' ' && character !== '-' && character !== '+') {
-      result += character;
-    }
+    if (character >= '0' && character <= '9') result += character;
   }
   return result;
 }
 
-function isDigits(value: string): boolean {
-  if (value.length === 0) return false;
-  for (const character of value) {
-    if (character < '0' || character > '9') return false;
-  }
-  return true;
-}
-
 /**
- * Phone number value object. The backend stores E.164 digits without the plus
- * sign (51987654321), so a 9-digit Peruvian mobile gets the 51 prefix.
+ * Phone number value object for a Peruvian mobile. The form takes the 9 local
+ * digits after a fixed +51; the backend stores E.164 digits without the plus
+ * sign (51987654321).
  */
 export class PhoneNumber {
   /**
-   * Normalizes a raw phone number to E.164 digits.
-   * @param value - Raw phone number as typed by the user.
-   * @returns The digits, or null when the value cannot be a phone number.
+   * Keeps what the user typed or pasted as at most 9 local digits. A pasted
+   * number with its +51 code ("+51 987 654 321") loses the code first.
+   * @param value - Raw input.
+   */
+  static toLocalDigits(value: string): string {
+    let digits = onlyDigits(value);
+    if (digits.length > PERU_MOBILE_LENGTH && digits.startsWith(PERU_COUNTRY_CODE)) {
+      digits = digits.slice(PERU_COUNTRY_CODE.length);
+    }
+    return digits.slice(0, PERU_MOBILE_LENGTH);
+  }
+
+  /**
+   * Normalizes a Peruvian mobile to E.164 digits.
+   * @param value - The 9 local digits, with or without spaces or the +51 code.
+   * @returns 51 followed by the 9 digits, or null when it is not a Peruvian mobile.
    */
   static toE164Digits(value: string): string | null {
-    const digits = stripSeparators(value.trim());
-    if (!isDigits(digits) || digits.startsWith('0')) return null;
-
-    const normalized =
-      digits.length === PERU_MOBILE_LENGTH && digits.startsWith('9')
-        ? `${PERU_COUNTRY_CODE}${digits}`
-        : digits;
-    return normalized.length >= 10 && normalized.length <= 15 ? normalized : null;
+    let digits = onlyDigits(value);
+    if (digits.length === PERU_MOBILE_LENGTH + PERU_COUNTRY_CODE.length && digits.startsWith(PERU_COUNTRY_CODE)) {
+      digits = digits.slice(PERU_COUNTRY_CODE.length);
+    }
+    if (digits.length !== PERU_MOBILE_LENGTH || !digits.startsWith('9')) return null;
+    return `${PERU_COUNTRY_CODE}${digits}`;
   }
 
   /**
