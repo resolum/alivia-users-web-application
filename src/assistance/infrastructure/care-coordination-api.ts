@@ -1,4 +1,5 @@
 import { addDays, toIsoDate } from '@/shared/domain/model/valueobjects/relative-time.ts';
+import { BaseApi } from '@/shared/infrastructure/base-api.ts';
 import { respond } from '@/shared/infrastructure/local-collection.ts';
 import type { AssignShiftCommand } from '../domain/model/assign-shift.command.ts';
 import { CareShift, shiftConflicts } from '../domain/model/care-shift.entity.ts';
@@ -19,6 +20,16 @@ import { AssistanceApiError } from './assistance-api-error.ts';
 import { careAgendaApi, isCareAgendaConfigured } from './care-agenda-api.ts';
 import { activities } from './assistance.local-data.ts';
 import { administrations, handovers, medications, shifts } from './care-coordination.local-data.ts';
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
+const MEDICATIONS_PATH = import.meta.env.VITE_MEDICATIONS_ENDPOINT_PATH ?? 'medications';
+
+function toApiError(status: number): AssistanceApiError {
+  if (status === 403) return new AssistanceApiError('forbidden');
+  if (status === 404) return new AssistanceApiError('not_found');
+  if (status === 409) return new AssistanceApiError('already_recorded');
+  return new AssistanceApiError('conflict');
+}
 
 export interface HandoverSummary {
   readonly attended: readonly string[];
@@ -328,11 +339,115 @@ const withAlert = (item: MedicationAdministration) => {
 };
 
 /**
- * Doses and their outcomes come from the backend agenda and medication administrations.
- * shortcut: shifts, reliefs and medication plans have no endpoint yet and stay in the browser copy.
+ * Connected to backend care-agenda and medication management endpoints.
  */
 const backendDosesApi: CareCoordinationApi = {
   ...localCareCoordinationApi,
+  isSample: false,
+
+  listMedications: async () => {
+    const response = await BaseApi.request(`${BASE_URL}/${MEDICATIONS_PATH}`, { method: 'GET' }, { authenticated: true });
+    if (!response.ok) throw toApiError(response.status);
+    const data = (await response.json()) as MedicationScheduleProps[];
+    return data.map((props) => new MedicationSchedule(props));
+  },
+
+  scheduleMedication: async (command, caregiver, actor) => {
+    allow(actor.can('manage_medications'));
+    allow(caregiver.can('record_medications'));
+    const { medication, dose, times, frequency, startDate, endDate, assistedPersonId, indicationRef } = command.values;
+    const body = {
+      medication,
+      dose,
+      times,
+      frequency: frequency || 'daily',
+      startDate,
+      endDate: endDate || null,
+      caregiverId: Number(caregiver.id) || null,
+      assistedPersonId: Number(assistedPersonId) || null,
+      indicationRef,
+    };
+    const url = `${BASE_URL}/assisted-persons/${encodeURIComponent(assistedPersonId)}/${MEDICATIONS_PATH}`;
+    const response = await BaseApi.request(
+      url,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+      { authenticated: true },
+    );
+    if (!response.ok) throw toApiError(response.status);
+    const data = (await response.json()) as MedicationScheduleProps;
+    return new MedicationSchedule(data);
+  },
+
+  updateMedication: async (command, actor) => {
+    allow(actor.can('manage_medications'));
+    const { dose, times, frequency, effectiveFrom, indicationRef } = command.values;
+    const body = {
+      dose,
+      times,
+      frequency: frequency || 'daily',
+      effectiveFrom,
+      indicationRef,
+    };
+    const url = `${BASE_URL}/${MEDICATIONS_PATH}/${encodeURIComponent(command.scheduleId)}`;
+    const response = await BaseApi.request(
+      url,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+      { authenticated: true },
+    );
+    if (!response.ok) throw toApiError(response.status);
+    const data = (await response.json()) as MedicationScheduleProps;
+    return new MedicationSchedule(data);
+  },
+
+  suspendMedication: async (command, actor) => {
+    allow(actor.can('manage_medications'));
+    const body = {
+      from: command.from,
+      source: command.source,
+    };
+    const url = `${BASE_URL}/${MEDICATIONS_PATH}/${encodeURIComponent(command.scheduleId)}/suspend`;
+    const response = await BaseApi.request(
+      url,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+      { authenticated: true },
+    );
+    if (!response.ok) throw toApiError(response.status);
+    const data = (await response.json()) as MedicationScheduleProps;
+    return new MedicationSchedule(data);
+  },
+
+  assignMedicationResponsible: async (scheduleId, caregiver, actor) => {
+    allow(actor.can('manage_medications'));
+    allow(caregiver.can('record_medications'));
+    const body = {
+      caregiverId: Number(caregiver.id) || null,
+    };
+    const url = `${BASE_URL}/${MEDICATIONS_PATH}/${encodeURIComponent(scheduleId)}/responsible`;
+    const response = await BaseApi.request(
+      url,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+      { authenticated: true },
+    );
+    if (!response.ok) throw toApiError(response.status);
+    const data = (await response.json()) as MedicationScheduleProps;
+    return new MedicationSchedule(data);
+  },
 
   listAdministrations: async (from, to) =>
     (await careAgendaApi.listAdministrations(toIsoDate(from), toIsoDate(to))).map(withAlert),
@@ -352,4 +467,3 @@ const backendDosesApi: CareCoordinationApi = {
 export function getCareCoordinationApi(): CareCoordinationApi {
   return isCareAgendaConfigured() ? backendDosesApi : localCareCoordinationApi;
 }
-
