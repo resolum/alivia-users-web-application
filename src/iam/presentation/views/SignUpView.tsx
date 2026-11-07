@@ -148,7 +148,7 @@ export function SignUpView() {
               autoComplete="given-name"
               maxLength={75}
               value={values.firstName}
-              onValueChange={(value) => change('firstName', value)}
+              onValueChange={(value) => change('firstName', value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g, ''))}
               error={message('firstName')}
             />
             <RegistrationTextField
@@ -157,7 +157,7 @@ export function SignUpView() {
               autoComplete="family-name"
               maxLength={75}
               value={values.lastName}
-              onValueChange={(value) => change('lastName', value)}
+              onValueChange={(value) => change('lastName', value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g, ''))}
               error={message('lastName')}
             />
             <div className="sm:col-span-2">
@@ -196,7 +196,7 @@ export function SignUpView() {
               autoComplete="off"
               maxLength={8}
               value={values.dni}
-              onValueChange={(value) => change('dni', value)}
+              onValueChange={(value) => change('dni', value.replace(/\D/g, '').slice(0, 8))}
               error={message('dni')}
             />
             <RegistrationTextField

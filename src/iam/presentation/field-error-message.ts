@@ -11,6 +11,7 @@ const FIELD_ERROR_KEYS: Readonly<Record<FieldErrorCode, FieldErrorKey>> = {
   terms_not_accepted: 'termsNotAccepted',
   invalid_phone: 'invalidPhone',
   invalid_dni: 'invalidDni',
+  invalid_name: 'invalidName',
   invalid_date: 'invalidDate',
   too_long: 'tooLong',
   already_registered: 'alreadyRegistered',
