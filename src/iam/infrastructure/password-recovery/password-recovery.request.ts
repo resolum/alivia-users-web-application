@@ -1,13 +1,17 @@
-import type { TokenPurpose } from '../../domain/model/iam.enums.ts';
-
-/** Request body for requesting a password recovery link. */
+/** Body of POST /auth/forgot-password. */
 export interface ForgotPasswordRequest {
-  readonly emailAddress: string;
+  readonly email: string;
 }
 
-/** Request body for defining a new password. */
+/** Body of POST /auth/reset-password: the 6-digit code sent by email and the new password. */
 export interface ResetPasswordRequest {
-  readonly token: string;
-  readonly purpose: TokenPurpose;
+  readonly email: string;
+  readonly code: string;
+  readonly password: string;
+}
+
+/** Body of PATCH /auth/change-password. */
+export interface ChangePasswordRequest {
+  readonly currentPassword: string;
   readonly newPassword: string;
 }

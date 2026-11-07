@@ -1,36 +1,36 @@
 import type { FieldErrors } from './field-errors.ts';
-import type { TokenPurpose } from './iam.enums.ts';
-import { isTokenPurpose } from './iam.enums.ts';
 import { isStrongPassword } from './password-policy.ts';
+import { EmailAddress } from './valueobjects/email-address.ts';
+
+export type ResetPasswordField = 'emailAddress' | 'code' | 'newPassword';
+
+const RESET_CODE = /^\d{6}$/;
 
 /**
- * Command used to define a new password. Backend equivalent: DefinePasswordCommand.
+ * Command used to set a new password with the 6-digit code sent by email.
+ * Backend equivalent: ResetPasswordCommand.
  */
-export class DefinePasswordCommand {
-  private readonly _token: string;
-  private readonly _purpose: TokenPurpose;
+export class ResetPasswordCommand {
+  private readonly _emailAddress: string;
+  private readonly _code: string;
   private readonly _newPassword: string;
 
   /**
-   * Initializes a new DefinePasswordCommand.
-   * @param params - Password token, token purpose and new password.
+   * Initializes a new ResetPasswordCommand.
+   * @param params - Account email, code received by email and new password.
    */
-  constructor(params: {
-    token: string;
-    purpose: TokenPurpose;
-    newPassword: string;
-  }) {
-    this._token = params.token;
-    this._purpose = params.purpose;
+  constructor(params: { emailAddress: string; code: string; newPassword: string }) {
+    this._emailAddress = params.emailAddress.trim();
+    this._code = params.code.trim();
     this._newPassword = params.newPassword;
   }
 
-  get token(): string {
-    return this._token;
+  get emailAddress(): string {
+    return this._emailAddress;
   }
 
-  get purpose(): TokenPurpose {
-    return this._purpose;
+  get code(): string {
+    return this._code;
   }
 
   get newPassword(): string {
@@ -40,10 +40,14 @@ export class DefinePasswordCommand {
   /**
    * Validates the payload and returns the invalid fields, if any.
    */
-  validate(): FieldErrors<'token' | 'newPassword'> {
-    const errors: FieldErrors<'token' | 'newPassword'> = {};
-    if (this._token.trim() === '') {
-      errors.token = 'required';
+  validate(): FieldErrors<ResetPasswordField> {
+    const errors: FieldErrors<ResetPasswordField> = {};
+    const emailError = EmailAddress.check(this._emailAddress);
+    if (emailError) errors.emailAddress = emailError;
+    if (this._code === '') {
+      errors.code = 'required';
+    } else if (!RESET_CODE.test(this._code)) {
+      errors.code = 'invalid';
     }
     if (this._newPassword === '') {
       errors.newPassword = 'required';
@@ -54,28 +58,9 @@ export class DefinePasswordCommand {
   }
 
   /**
-   * Hides the token and the password so they are never logged.
+   * Hides the code and the password so they are never logged.
    */
   toString(): string {
-    return `DefinePasswordCommand(token=***, purpose=${this._purpose}, newPassword=***)`;
+    return 'ResetPasswordCommand(code=***, newPassword=***)';
   }
-}
-
-function resolvePurpose(value: string | null | undefined): TokenPurpose {
-  if (value !== null && value !== undefined && isTokenPurpose(value)) {
-    return value;
-  }
-  return 'RESET';
-}
-
-export function createDefinePasswordCommandFromUrl(params: {
-  token: string;
-  purpose?: string | null;
-  newPassword: string;
-}): DefinePasswordCommand {
-  return new DefinePasswordCommand({
-    token: params.token,
-    purpose: resolvePurpose(params.purpose),
-    newPassword: params.newPassword,
-  });
 }

@@ -6,6 +6,6 @@ export class VerifyEmailAssembler {
    * Maps a VerifyEmailCommand to a VerifyEmailRequest for the API.
    */
   static toRequestFromCommand(command: VerifyEmailCommand): VerifyEmailRequest {
-    return { token: command.token };
+    return { email: command.emailAddress.toLowerCase(), code: command.code };
   }
 }

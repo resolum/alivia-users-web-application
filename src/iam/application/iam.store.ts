@@ -9,7 +9,8 @@ import type { HouseholdAccount } from '../domain/model/household-account.entity.
 import { IamError } from '../domain/model/iam-error.ts';
 import type { RegisterAssistedPersonCommand } from '../domain/model/register-assisted-person.command.ts';
 import type { ResendVerificationCommand } from '../domain/model/resend-verification.command.ts';
-import type { DefinePasswordCommand } from '../domain/model/reset-password.command.ts';
+import type { ResetPasswordCommand } from '../domain/model/reset-password.command.ts';
+import type { ChangePasswordCommand } from '../domain/model/change-password.command.ts';
 import type { SignInCommand } from '../domain/model/sign-in.command.ts';
 import type { SignUpCommand } from '../domain/model/sign-up.command.ts';
 import type { User } from '../domain/model/user.entity.ts';
@@ -212,10 +213,16 @@ export async function requestPasswordReset(command: ForgotPasswordCommand): Prom
   await api.requestPasswordReset(command);
 }
 
-/** Sets a new password without changing session state. */
-export async function resetPassword(command: DefinePasswordCommand): Promise<void> {
+/** Sets a new password with the emailed code without changing session state. */
+export async function resetPassword(command: ResetPasswordCommand): Promise<void> {
   const api = await getIamApi();
   await api.resetPassword(command);
+}
+
+/** Changes the password of the signed-in user; the session stays open. */
+export async function changePassword(command: ChangePasswordCommand): Promise<void> {
+  const api = await getIamApi();
+  await api.changePassword(command);
 }
 
 export type { RegistrationProgress };
@@ -249,42 +256,31 @@ export async function signUp(command: SignUpCommand): Promise<Account> {
   return account;
 }
 
-// The token works only once, so a repeated call (React StrictMode, a double
-// render) must reuse the first request instead of burning the token.
-const verifications = new Map<string, Promise<void>>();
-
-/** Verifies the email with the token of the link. */
-export function verifyEmail(command: VerifyEmailCommand): Promise<void> {
-  const pending = verifications.get(command.token);
-  if (pending !== undefined) return pending;
-
-  const request = (async () => {
-    assertValid(command.validate());
-    const api = await getIamApi();
-    const session = await api.verifyEmail(command);
-    const refreshToken = session.refreshToken;
-    if (refreshToken === null) {
-      throw new IamError({
-        code: 'unknown',
-        detail: 'The email verification response did not include a refresh token',
-      });
-    }
-
-    // Email verification is the authentication hand-off for the contracting
-    // flow. Persist it so a new tab and the later activation step can renew it.
-    saveSession(
-      { accessToken: session.accessToken, refreshToken },
-      true,
-      session.user,
-    );
-    setState({ status: 'authenticated', user: session.user });
-    saveRegistrationProgress({
-      accountId: session.user.id.getValue(),
-      emailVerified: true,
+/** Verifies the email with the 6-digit code sent to it and opens the session. */
+export async function verifyEmail(command: VerifyEmailCommand): Promise<void> {
+  assertValid(command.validate());
+  const api = await getIamApi();
+  const session = await api.verifyEmail(command);
+  const refreshToken = session.refreshToken;
+  if (refreshToken === null) {
+    throw new IamError({
+      code: 'unknown',
+      detail: 'The email verification response did not include a refresh token',
     });
-  })();
-  verifications.set(command.token, request);
-  return request;
+  }
+
+  // Email verification is the authentication hand-off for the contracting
+  // flow. Persist it so a new tab and the later activation step can renew it.
+  saveSession(
+    { accessToken: session.accessToken, refreshToken },
+    true,
+    session.user,
+  );
+  setState({ status: 'authenticated', user: session.user });
+  saveRegistrationProgress({
+    accountId: session.user.id.getValue(),
+    emailVerified: true,
+  });
 }
 
 /** Sends a new verification link to the registered email. */

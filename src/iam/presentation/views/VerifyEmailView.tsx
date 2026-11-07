@@ -1,12 +1,18 @@
-import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router';
+import { useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router';
 import { useDocumentTitle } from '@/shared/presentation/hooks/useDocumentTitle.ts';
 import { getRegistrationProgress, verifyEmail } from '../../application/iam.store.ts';
-import { VerifyEmailCommand } from '../../domain/model/verify-email.command.ts';
-import { toIamErrorKey, type IamErrorKey } from '../iam-error-keys.ts';
+import type { FieldErrors } from '../../domain/model/field-errors.ts';
+import {
+  VerifyEmailCommand,
+  type VerifyEmailField,
+} from '../../domain/model/verify-email.command.ts';
 import { AuthButton } from '../components/AuthButton.tsx';
 import { AuthHeading } from '../components/AuthHeading.tsx';
+import { AuthNotice } from '../components/AuthNotice.tsx';
+import { AuthTextField } from '../components/AuthTextField.tsx';
 import { ResendVerificationForm } from '../components/ResendVerificationForm.tsx';
+import { useSubmission } from '../hooks/useSubmission.ts';
 import { useIamTranslations } from '../hooks/useIamTranslations.ts';
 
 /** State passed to the household screen right after a verification. */
@@ -14,70 +20,113 @@ export interface VerifiedNavigationState {
   readonly emailVerified: true;
 }
 
+const FIELD_IDS: readonly [VerifyEmailField, string][] = [
+  ['emailAddress', 'verify-email'],
+  ['code', 'verify-code'],
+];
+
 export function VerifyEmailView() {
   const t = useIamTranslations();
   useDocumentTitle(t.verifyEmail.title);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const token = (searchParams.get('token') ?? '').trim();
-  const [failure, setFailure] = useState<IamErrorKey | null>(null);
+  const { status, errorKey, run } = useSubmission();
+  const registeredEmail = getRegistrationProgress()?.emailAddress ?? '';
+  const [email, setEmail] = useState(registeredEmail);
+  const [code, setCode] = useState('');
+  const [errors, setErrors] = useState<FieldErrors<VerifyEmailField>>({});
 
-  useEffect(() => {
-    if (token === '') return;
-    let active = true;
-    verifyEmail(new VerifyEmailCommand({ token }))
-      .then(() => {
-        const state: VerifiedNavigationState = { emailVerified: true };
-        if (active) void navigate('/household/new', { replace: true, state });
-      })
-      .catch((error: unknown) => {
-        if (active) setFailure(toIamErrorKey(error));
-      });
-    return () => {
-      active = false;
-    };
-  }, [token, navigate]);
+  async function handleSubmit(event: FormEvent<HTMLFormElement>): Promise<void> {
+    event.preventDefault();
+    const command = new VerifyEmailCommand({ emailAddress: email, code });
+    const nextErrors = command.validate();
+    setErrors(nextErrors);
 
-  if (token !== '' && failure === null) {
+    const firstInvalid = FIELD_IDS.find(([field]) => nextErrors[field] !== undefined);
+    if (firstInvalid) {
+      document.getElementById(firstInvalid[1])?.focus();
+      return;
+    }
+
+    if (await run(() => verifyEmail(command))) {
+      const state: VerifiedNavigationState = { emailVerified: true };
+      void navigate('/household/new', { replace: true, state });
+    }
+  }
+
+  if (errorKey === 'emailAlreadyVerified') {
     return (
-      <div role="status" className="flex animate-step-in items-center gap-4">
-        <span
-          aria-hidden="true"
-          className="size-7 shrink-0 animate-spin rounded-full border-[3px] border-alivia-primary-mist border-t-alivia-primary"
-        />
-        <div>
-          <h1 className="text-xl font-semibold tracking-[-0.01em] text-alivia-primary">
-            {t.verifyEmail.title}
-          </h1>
-          <p className="mt-1 text-base text-alivia-text-muted">{t.verifyEmail.checking}</p>
+      <>
+        <AuthHeading title={t.verifyEmail.title} description={t.verifyEmail.alreadyVerified} />
+        <div className="mt-8 animate-step-in [animation-delay:60ms]">
+          <AuthButton to="/sign-in" label={t.registration.signIn} />
         </div>
-      </div>
+      </>
     );
   }
 
-  const alreadyVerified = failure === 'emailAlreadyVerified';
-  const message =
-    token === ''
-      ? t.verifyEmail.missingToken
-      : alreadyVerified
-        ? t.verifyEmail.alreadyVerified
-        : failure === 'network' || failure === 'serviceUnavailable' || failure === 'configuration'
-          ? t.errors[failure]
-          : t.verifyEmail.failedBody;
+  const emailError =
+    errors.emailAddress === 'required'
+      ? t.common.emailRequired
+      : errors.emailAddress === 'invalid_email'
+        ? t.common.emailInvalid
+        : undefined;
+  const codeError =
+    errors.code === 'required'
+      ? t.verifyEmail.codeRequired
+      : errors.code === 'invalid'
+        ? t.verifyEmail.codeInvalid
+        : undefined;
 
   return (
     <>
-      <AuthHeading title={t.verifyEmail.failedTitle} description={message} />
-      <div className="mt-8 animate-step-in [animation-delay:60ms]">
-        {alreadyVerified ? (
-          <AuthButton to="/sign-in" label={t.registration.signIn} />
-        ) : (
-          <ResendVerificationForm
-            defaultEmail={getRegistrationProgress()?.emailAddress ?? ''}
-            variant="primary"
-            hideTitle
-          />
-        )}
+      <AuthHeading title={t.verifyEmail.title} description={t.verifyEmail.subtitle} />
+
+      <form
+        noValidate
+        onSubmit={handleSubmit}
+        className="mt-8 flex animate-step-in flex-col gap-5 [animation-delay:60ms]"
+      >
+        {errorKey && <AuthNotice tone="error">{t.errors[errorKey]}</AuthNotice>}
+
+        <AuthTextField
+          id="verify-email"
+          name="email"
+          type="email"
+          label={t.common.emailLabel}
+          autoComplete="email"
+          autoCapitalize="none"
+          spellCheck={false}
+          placeholder={t.common.emailPlaceholder}
+          value={email}
+          onValueChange={(value) => {
+            setEmail(value);
+            setErrors((current) => ({ ...current, emailAddress: undefined }));
+          }}
+          error={emailError}
+        />
+
+        <AuthTextField
+          id="verify-code"
+          name="code"
+          label={t.verifyEmail.codeLabel}
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          maxLength={6}
+          pattern="[0-9]{6}"
+          value={code}
+          onValueChange={(value) => {
+            // Pasted codes often carry spaces; only digits reach the command.
+            setCode(value.replace(/\D/g, '').slice(0, 6));
+            setErrors((current) => ({ ...current, code: undefined }));
+          }}
+          error={codeError}
+        />
+
+        <AuthButton label={t.verifyEmail.submit} loading={status === 'submitting'} />
+      </form>
+
+      <div className="mt-8 border-t border-slate-100 pt-6">
+        <ResendVerificationForm defaultEmail={registeredEmail} />
       </div>
     </>
   );

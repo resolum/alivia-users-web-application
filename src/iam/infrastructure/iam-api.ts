@@ -2,12 +2,13 @@
 import type { AuthTokens } from '@/shared/infrastructure/token-storage.ts';
 import type { Account } from '../domain/model/account.entity.ts';
 import type { AuthSession } from '../domain/model/auth-session.ts';
+import type { ChangePasswordCommand } from '../domain/model/change-password.command.ts';
 import type { CreateHouseholdAccountCommand } from '../domain/model/create-household-account.command.ts';
 import type { ForgotPasswordCommand } from '../domain/model/forgot-password.command.ts';
 import type { HouseholdAccount } from '../domain/model/household-account.entity.ts';
 import { IamError } from '../domain/model/iam-error.ts';
 import type { ResendVerificationCommand } from '../domain/model/resend-verification.command.ts';
-import type { DefinePasswordCommand } from '../domain/model/reset-password.command.ts';
+import type { ResetPasswordCommand } from '../domain/model/reset-password.command.ts';
 import type { SignInCommand } from '../domain/model/sign-in.command.ts';
 import type { SignUpCommand } from '../domain/model/sign-up.command.ts';
 import type { RegisterAssistedPersonCommand } from '../domain/model/register-assisted-person.command.ts';
@@ -35,7 +36,8 @@ export interface IamApi {
   readonly refreshSession: (refreshToken: string) => Promise<AuthTokens>;
   readonly logout: (refreshToken: string) => Promise<void>;
   readonly requestPasswordReset: (command: ForgotPasswordCommand) => Promise<void>;
-  readonly resetPassword: (command: DefinePasswordCommand) => Promise<void>;
+  readonly resetPassword: (command: ResetPasswordCommand) => Promise<void>;
+  readonly changePassword: (command: ChangePasswordCommand) => Promise<void>;
   readonly createHouseholdAccount: (
     command: CreateHouseholdAccountCommand,
   ) => Promise<HouseholdAccount>;
@@ -88,6 +90,8 @@ const httpIamApi: IamApi = {
     run(() => passwordRecoveryEndpoint.requestPasswordReset(command)),
   resetPassword: (command) =>
     run(() => passwordRecoveryEndpoint.resetPassword(command)),
+  changePassword: (command) =>
+    run(() => passwordRecoveryEndpoint.changePassword(command)),
   createHouseholdAccount: (command) =>
     run(() => householdAccountEndpoint.create(command)),
   registerAssistedPerson: (householdId, command) =>

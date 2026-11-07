@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, KeyRound } from 'lucide-react';
+import { ChangePasswordForm } from '@/iam/index.ts';
 import {
+  Button,
+  Card,
   ErrorState,
   SkeletonDetail,
 } from '@/shared/presentation/components/ui/index.ts';
@@ -13,6 +16,7 @@ import type { PersonProfile } from '../../domain/model/person-profile.entity.ts'
 import { ProfileError, type ProfileErrorCode } from '../../domain/model/profile-error.ts';
 import { PersonalDataForm } from '../components/PersonalDataForm.tsx';
 import { PhotoUploadDialog } from '../components/PhotoUploadDialog.tsx';
+import { ProfileDialog } from '../components/ProfileDialog.tsx';
 import { ProfileHeaderCard } from '../components/ProfileHeaderCard.tsx';
 
 type LoadState =
@@ -29,6 +33,7 @@ export function ProfileView() {
   useDocumentTitle(t.title);
   const [state, setState] = useState<LoadState>({ status: 'loading' });
   const [photoOpen, setPhotoOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
   const [attempt, setAttempt] = useState(0);
@@ -125,6 +130,36 @@ export function ProfileView() {
           />
         </>
       )}
+
+      {/* The password belongs to the account, not the profile, so it stays usable when the profile fails to load. */}
+      <Card className="overflow-hidden">
+        <div className="border-b border-alivia-primary-mist bg-alivia-primary-mist/45 px-5 py-4 sm:px-6">
+          <h2 className="flex items-center gap-2 text-base font-bold text-alivia-primary">
+            <KeyRound className="size-5" aria-hidden="true" />
+            {t.security.title}
+          </h2>
+        </div>
+        <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <p className="text-sm text-alivia-text-muted">{t.security.hint}</p>
+          <Button variant="outline" onClick={() => setPasswordOpen(true)} className="shrink-0">
+            {t.security.action}
+          </Button>
+        </div>
+      </Card>
+      <ProfileDialog
+        open={passwordOpen}
+        title={t.security.action}
+        closeLabel={t.security.close}
+        onClose={() => setPasswordOpen(false)}
+      >
+        <ChangePasswordForm
+          onCancel={() => setPasswordOpen(false)}
+          onChanged={() => {
+            setPasswordOpen(false);
+            setNotice(t.security.saved);
+          }}
+        />
+      </ProfileDialog>
 
       <div aria-live="polite" className="pointer-events-none fixed inset-x-4 bottom-4 z-50 flex justify-center sm:inset-x-auto sm:right-6 sm:bottom-6">
         {notice && (

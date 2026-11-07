@@ -42,6 +42,22 @@ export interface SlotHold {
   readonly expiresAt: string;
 }
 
+// shortcut: VITE_APPOINTMENTS_MOCK=true offers one sample window and fakes its hold and booking while the backend has no technician with a work schedule; remove it once one exists.
+const MOCK_SLOTS = import.meta.env.VITE_APPOINTMENTS_MOCK === 'true';
+const LIMA_DATE = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Lima' });
+
+/** Tomorrow 09:00 to 11:00 in Lima, with a technician labelled as sample data. */
+function sampleSlot(): EvaluationSlot {
+  return new EvaluationSlot({
+    date: LIMA_DATE.format(new Date(Date.now() + 24 * 60 * 60 * 1000)),
+    startTime: '09:00',
+    endTime: '11:00',
+    technicianId: 0,
+    technicianName: 'Técnico de prueba',
+    availableTechnicians: 1,
+  });
+}
+
 const CONFLICT_MESSAGES: Readonly<Record<AppointmentConflict, string>> = {
   SLOT_TAKEN: 'Ese horario acaba de ocuparse. Elige otra franja.',
   NOT_PREAUTHORIZED: 'Tu tarjeta todavía no tiene la preautorización. Vuelve al paso de pago para completarla.',
@@ -80,6 +96,7 @@ async function send(url: string, init?: RequestInit): Promise<Response> {
 export const appointmentsApi = {
   /** Every free technician of each window; the window {@code draftId} holds is still listed for it. */
   async listAvailableSlots(draftId: string | null = null): Promise<readonly EvaluationSlot[]> {
+    if (MOCK_SLOTS) return [sampleSlot()];
     const query = draftId === null ? '' : `?draftId=${encodeURIComponent(draftId)}`;
     const slots = await request<EvaluationSlotProps[]>(`${API_BASE_URL}${APPOINTMENTS_PATH}/available-slots${query}`);
     return slots.map((slot) => new EvaluationSlot(slot));
@@ -87,6 +104,10 @@ export const appointmentsApi = {
 
   /** Holds the window and technician for 30 minutes, or renews the hold; 409 when someone else took it. */
   async hold(draftId: string, slot: EvaluationSlot): Promise<SlotHold> {
+    if (MOCK_SLOTS) {
+      const expiresAt = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+      return { draftId, ...slot.toProps(), expiresAt };
+    }
     return await request<SlotHold>(holdUrl(draftId), {
       method: 'PUT',
       body: JSON.stringify({ date: slot.date, startTime: slot.startTime, endTime: slot.endTime, technicianId: slot.technicianId }),
@@ -94,10 +115,12 @@ export const appointmentsApi = {
   },
 
   async release(draftId: string): Promise<void> {
+    if (MOCK_SLOTS) return;
     await send(holdUrl(draftId), { method: 'DELETE' });
   },
 
   async schedule(body: ScheduleAppointmentRequest): Promise<Appointment> {
+    if (MOCK_SLOTS) return new Appointment({ id: 0, technicianName: sampleSlot().technicianName, ...body });
     const appointment = await request<AppointmentProps>(`${API_BASE_URL}${APPOINTMENTS_PATH}`, {
       method: 'POST',
       body: JSON.stringify(body),

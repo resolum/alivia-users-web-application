@@ -92,7 +92,11 @@ const CODE_MESSAGES: Readonly<Record<string, string>> = {
 };
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
-const INCIDENTS_PATH = '/api/v1/support-incidents';
+const env = import.meta.env;
+const INCIDENTS_PATH = env.VITE_SUPPORT_INCIDENTS_ENDPOINT_PATH ?? 'support-incidents';
+const REPORTS_PATH = env.VITE_SUPPORT_INCIDENT_REPORTS_ENDPOINT_PATH ?? 'support-incidents/reports';
+const DEVICES_PATH = env.VITE_SUPPORT_INCIDENT_DEVICES_ENDPOINT_PATH ?? 'support-incidents/devices';
+const PHOTO_PATH = env.VITE_SUPPORT_INCIDENT_EVIDENCE_PHOTO_ENDPOINT_PATH ?? 'support-incidents/{incidentId}/evidences/photo';
 
 const STAGE_OF: Readonly<Record<string, IncidentStage>> = {
   OPEN: 'registered',
@@ -229,7 +233,7 @@ async function send(path: string, init: RequestInit = {}, json = true): Promise<
   let response: Response;
   try {
     response = await BaseApi.request(
-      `${API_BASE_URL}${INCIDENTS_PATH}${path}`,
+      `${API_BASE_URL}/${path}`,
       json ? { ...init, headers: { 'Content-Type': 'application/json', ...init.headers } } : init,
       { authenticated: true },
     );
@@ -252,19 +256,19 @@ async function send(path: string, init: RequestInit = {}, json = true): Promise<
 
 export const incidentsHttpApi = {
   async list(): Promise<Incident[]> {
-    const incidents = (await (await send('')).json()) as IncidentDto[];
+    const incidents = (await (await send(INCIDENTS_PATH)).json()) as IncidentDto[];
     return incidents.map(toIncident).sort((a, b) => b.reportedAt.localeCompare(a.reportedAt));
   },
 
   async get(id: string): Promise<Incident> {
-    return toIncident((await (await send(`/${encodeURIComponent(id)}`)).json()) as IncidentDto);
+    return toIncident((await (await send(`${INCIDENTS_PATH}/${encodeURIComponent(id)}`)).json()) as IncidentDto);
   },
 
   /** The installed devices of the family's active home (none until the installation is approved). */
   async reportForm(): Promise<ReportForm> {
     let response: Response;
     try {
-      response = await send('/devices');
+      response = await send(DEVICES_PATH);
     } catch (error) {
       if (error instanceof IncidentsRequestError && error.status === 404) return { devices: [], photoUploadEnabled: false };
       throw error;
@@ -286,7 +290,7 @@ export const incidentsHttpApi = {
   async uploadPhoto(id: string, photo: ReportPhoto): Promise<Incident> {
     const body = new FormData();
     body.append('file', photoBlob(photo), photo.name);
-    const response = await send(`/${encodeURIComponent(id)}/evidences/photo`, { method: 'POST', body }, false);
+    const response = await send(PHOTO_PATH.replace('{incidentId}', encodeURIComponent(id)), { method: 'POST', body }, false);
     return toIncident((await response.json()) as IncidentDto);
   },
 
@@ -294,7 +298,7 @@ export const incidentsHttpApi = {
   async report(command: ReportIncidentCommand): Promise<Incident> {
     if (command.problemType === '') throw new IncidentsRequestError(400, 'Elige el tipo de problema.');
     if (command.visit === null) throw new IncidentsRequestError(400, 'Elige el día, la franja y el técnico de la visita.');
-    const response = await send('/reports', {
+    const response = await send(REPORTS_PATH, {
       method: 'POST',
       body: JSON.stringify({
         deviceMac: command.deviceId,

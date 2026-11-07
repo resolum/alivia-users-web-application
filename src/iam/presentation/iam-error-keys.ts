@@ -15,6 +15,7 @@ const IAM_ERROR_KEYS: Readonly<Record<IamErrorCode, IamErrorKey>> = {
   verification_code_expired: 'verificationCodeExpired',
   invalid_password_token: 'invalidPasswordToken',
   password_token_expired: 'passwordTokenExpired',
+  current_password_incorrect: 'currentPasswordIncorrect',
   role_not_allowed: 'roleNotAllowed',
   rate_limited: 'rateLimited',
   validation_failed: 'validationFailed',

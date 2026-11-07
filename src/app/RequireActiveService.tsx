@@ -4,6 +4,9 @@ import { loadMyContracting, NO_REQUEST_PATH } from '@/subscriptions/index.ts';
 import { Spinner } from '@/shared/presentation/components/ui/index.ts';
 import { useSession } from '@/shared/presentation/hooks/useSession.ts';
 
+// shortcut: VITE_SKIP_SERVICE_GATE=true opens the platform without an active service, while no technician can approve an installation; development only.
+const SKIP_GATE = import.meta.env.VITE_SKIP_SERVICE_GATE === 'true';
+
 type Gate = { readonly state: 'checking' } | { readonly state: 'open' } | { readonly state: 'closed'; readonly to: string };
 
 /**
@@ -13,7 +16,7 @@ type Gate = { readonly state: 'checking' } | { readonly state: 'open' } | { read
  */
 export function RequireActiveService() {
   const { accessLevel, user } = useSession();
-  const contracts = accessLevel === 'principal';
+  const contracts = accessLevel === 'principal' && !SKIP_GATE;
   const account = user?.id ?? '';
   // The answer is kept with the account it belongs to, so another account starts checking again.
   const [checked, setChecked] = useState<{ readonly account: string; readonly gate: Gate } | null>(null);

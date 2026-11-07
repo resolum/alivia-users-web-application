@@ -105,16 +105,16 @@ export const en: Translations = {
     },
     forgotPassword: {
       title: 'Recover password',
-      subtitle: 'Enter the email associated with your account.',
-      submit: 'Send recovery link',
-      confirmationTitle: 'Check your email',
-      confirmation:
-        'If the email is registered, you will receive instructions to reset your password.',
+      subtitle: 'Enter your account email and we will send you a 6-digit code.',
+      submit: 'Send code',
     },
     resetPassword: {
       title: 'Create a new password',
       subtitle:
-        'For security, choose a strong password that you have not used before.',
+        'Enter the code we emailed you and choose a password you have not used before.',
+      codeSent:
+        'If the email is registered, we sent you a 6-digit code. It expires in 60 minutes.',
+      codeLabel: '6-digit code',
       passwordLabel: 'New password',
       confirmLabel: 'Confirm password',
       submit: 'Change password',
@@ -134,16 +134,24 @@ export const en: Translations = {
         passwordWeak: 'The password does not meet every requirement.',
         confirmRequired: 'Confirm your password.',
         passwordMismatch: 'Passwords do not match.',
+        codeRequired: 'Enter the code you received.',
+        codeInvalid: 'The code has 6 digits.',
       },
-      linkMissingTitle: 'This link does not work',
-      tokenMissing: 'The recovery link is invalid or incomplete.',
-      requestNewLink: 'Request a new link',
+      requestNewCode: 'Request a new code',
     },
     passwordUpdated: {
       title: 'Password updated',
       message:
         'Your password has been reset successfully. You can now sign in with your new credentials.',
       submit: 'Go to sign in',
+    },
+    changePassword: {
+      currentLabel: 'Current password',
+      submit: 'Save password',
+      cancel: 'Cancel',
+      errors: {
+        currentRequired: 'Enter your current password.',
+      },
     },
     registration: {
       progressLabel: 'Contracting progress',
@@ -197,28 +205,28 @@ export const en: Translations = {
     },
     emailSent: {
       title: 'Check your email',
-      body: 'We sent a link to {email}. Open the message and press “Verify email” to continue contracting.',
+      body: 'We sent a 6-digit code to {email}. Enter it to continue contracting. It expires in 24 hours.',
       hint: 'If it does not arrive in a few minutes, check your spam or promotions folders.',
       wrongEmail: 'Typed the wrong email?',
       registerAgain: 'Register again',
       noRegistration:
-        'We could not find a registration in progress in this browser. Enter your email to get a new link.',
+        'We could not find a registration in progress in this browser. Enter your email to get a new code.',
+      enterCode: 'Enter the code',
     },
     resend: {
       title: 'Did not get the email?',
       emailLabel: 'Registered email',
       submit: 'Resend verification email',
       wait: 'You can resend it in {seconds} s',
-      sent: 'If the email is registered and pending verification, we sent a new link. The previous one no longer works.',
+      sent: 'If the email is registered and pending verification, we sent a new code. The previous one no longer works.',
     },
     verifyEmail: {
-      title: 'Verifying your email',
-      checking: 'We are confirming your link…',
-      failedTitle: 'We could not verify your email',
-      failedBody:
-        'The link is not valid or has expired. Request a new verification email.',
-      missingToken:
-        'The link is incomplete. Open it again from the email or request a new one.',
+      title: 'Verify your email',
+      subtitle: 'Enter the 6-digit code we sent to your email.',
+      codeLabel: '6-digit code',
+      submit: 'Verify email',
+      codeRequired: 'Enter the code you received.',
+      codeInvalid: 'The code has 6 digits.',
       alreadyVerified: 'Your email was already verified. Sign in to continue.',
     },
     household: {
@@ -251,7 +259,7 @@ export const en: Translations = {
       pendingTitle: 'Complete these details to continue to payment:',
       notVerifiedTitle: 'Verify your email first',
       notVerifiedBody:
-        'To create the household account we need to confirm your email with the link we sent you.',
+        'To create the household account we need to confirm your email with the code we sent you.',
       goToEmailSent: 'See how to verify my email',
       startSignUp: 'Create my account',
     },
@@ -319,13 +327,13 @@ export const en: Translations = {
       emailAlreadyRegistered: 'That email is already registered.',
       emailAlreadyVerified: 'That email has already been verified. Sign in to continue.',
       invalidVerificationCode:
-        'The verification link is not valid or was already used. Request a new email.',
+        'The code is not correct. After 5 failed attempts you will need a new one.',
       verificationCodeExpired:
-        'The verification link expired. Request a new email.',
+        'The code expired. Request a new one below.',
       invalidPasswordToken:
-        'The recovery link is not valid. Request a new one.',
-      passwordTokenExpired:
-        'The recovery link expired. Request a new one.',
+        'The code is not correct. After 5 failed attempts you will need a new one.',
+      passwordTokenExpired: 'The code expired.',
+      currentPasswordIncorrect: 'Your current password is not correct.',
       roleNotAllowed: 'Your role does not have access to this portal.',
       rateLimited: 'Too many attempts. Wait a few minutes and try again.',
       validationFailed: 'Check the highlighted fields.',
@@ -449,6 +457,13 @@ export const en: Translations = {
       save: 'Save photo',
       saved: 'Photo updated',
       removed: 'Photo removed',
+    },
+    security: {
+      title: 'Password',
+      hint: 'Change it whenever you want. You stay signed in.',
+      action: 'Change password',
+      close: 'Close',
+      saved: 'Password updated',
     },
     fieldErrors: {
       required: 'This field is required.',
