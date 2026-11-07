@@ -97,7 +97,7 @@ describe('incidents over HTTP', () => {
   it('lists the newest incidents first and reads one by id', async () => {
     const fetchMock = reply(200, [scheduled, { ...scheduled, id: 90, occurredAt: '2026-11-04T18:00:00Z' }]);
     expect((await incidentsHttpApi.list()).map((item) => item.id)).toEqual(['90', '84']);
-    expect(fetchMock).toHaveBeenCalledWith('/api/v1/support-incidents', expect.anything());
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringMatching(/\/support-incidents$/), expect.anything());
 
     reply(200, scheduled);
     expect((await incidentsHttpApi.get('84')).id).toBe('84');
@@ -131,7 +131,7 @@ describe('incidents over HTTP', () => {
 
     expect(incident.stage).toBe('evaluating');
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('/api/v1/support-incidents/reports');
+    expect(url).toMatch(/\/support-incidents\/reports$/);
     expect(init.method).toBe('POST');
     expect(JSON.parse(String(init.body))).toMatchObject({
       deviceMac: '00:1A:2B:3C:4D:5E', problemType: 'NO_RESPONSE', description: 'No responde a la voz desde ayer.',
@@ -168,7 +168,7 @@ describe('incidents over HTTP', () => {
     expect(outcome.photoAttached).toBe(true);
     expect(outcome.incident.evidence[0]?.url).toBe('https://res.cloudinary.com/x/sensor.png');
     const [url, init] = fetchMock.mock.calls[1] as [string, RequestInit];
-    expect(url).toBe('/api/v1/support-incidents/84/evidences/photo');
+    expect(url).toMatch(/\/support-incidents\/84\/evidences\/photo$/);
     const file = (init.body as FormData).get('file') as File;
     expect(file.name).toBe('sensor.png');
     expect(file.type).toBe('image/png');

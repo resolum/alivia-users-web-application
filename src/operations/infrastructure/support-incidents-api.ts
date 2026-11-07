@@ -1,6 +1,4 @@
-import { BaseApi } from '@/shared/infrastructure/base-api.ts';
 import { Incident, type IncidentStage } from '../domain/model/incident.entity.ts';
-import type { IncidentsApi } from './incidents-api.ts';
 
 /** Backend equivalent: SupportIncidentResource. */
 export interface SupportIncidentResource {
@@ -33,11 +31,6 @@ export class IncidentActionUnavailableError extends Error {
     this.name = 'IncidentActionUnavailableError';
   }
 }
-
-const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
-const INCIDENTS_PATH = import.meta.env.VITE_SUPPORT_INCIDENTS_ENDPOINT_PATH ?? 'support-incidents';
-
-export const isSupportIncidentsConfigured = () => Boolean(import.meta.env.VITE_SUPPORT_INCIDENTS_ENDPOINT_PATH);
 
 const STAGES: Readonly<Record<string, IncidentStage>> = {
   OPEN: 'registered',
@@ -92,27 +85,3 @@ export function toIncident(resource: SupportIncidentResource): Incident {
     })),
   });
 }
-
-async function get<T>(url: string): Promise<T> {
-  const response = await BaseApi.request(url, { method: 'GET' }, { authenticated: true });
-  if (response.status === 404) throw new Error('incident_not_found');
-  if (!response.ok) throw new Error(`support_incidents_${response.status}`);
-  return (await response.json()) as T;
-}
-
-/** Read side of GET /support-incidents; the backend lists the caller's own incidents. */
-export const supportIncidentsApi: IncidentsApi = {
-  isSample: false,
-
-  listIncidents: async () =>
-    (await get<SupportIncidentResource[]>(`${BASE_URL}/${INCIDENTS_PATH}`)).map(toIncident),
-
-  getIncident: async (id) =>
-    toIncident(await get<SupportIncidentResource>(`${BASE_URL}/${INCIDENTS_PATH}/${encodeURIComponent(id)}`)),
-
-  // shortcut: POST /support-incidents needs the householdId and a numeric deviceId; sign-in returns neither yet.
-  reportIncident: () => Promise.reject(new IncidentActionUnavailableError()),
-
-  // shortcut: the backend has no endpoint to ask for another visit date.
-  requestVisitReschedule: () => Promise.reject(new IncidentActionUnavailableError()),
-};

@@ -10,6 +10,7 @@ interface ImportMetaEnv {
   readonly VITE_IAM_LOGOUT_ENDPOINT_PATH?: string;
   readonly VITE_IAM_FORGOT_PASSWORD_ENDPOINT_PATH?: string;
   readonly VITE_IAM_RESET_PASSWORD_ENDPOINT_PATH?: string;
+  readonly VITE_IAM_CHANGE_PASSWORD_ENDPOINT_PATH?: string;
   readonly VITE_IAM_VERIFY_EMAIL_ENDPOINT_PATH?: string;
   readonly VITE_IAM_RESEND_VERIFICATION_ENDPOINT_PATH?: string;
   readonly VITE_IAM_VERIFICATION_STATUS_ENDPOINT_PATH?: string;
@@ -26,6 +27,10 @@ interface ImportMetaEnv {
   /** "true" keeps the sample incidents in the browser instead of calling the backend. */
   readonly VITE_INCIDENTS_MOCK?: string;
   readonly VITE_APPOINTMENTS_AVAILABLE_SLOTS_ENDPOINT_PATH?: string;
+  /** "true" offers one sample evaluation window instead of the backend's free slots. */
+  readonly VITE_APPOINTMENTS_MOCK?: string;
+  /** "true" opens the platform without an active service (development only). */
+  readonly VITE_SKIP_SERVICE_GATE?: string;
   readonly VITE_APPOINTMENT_HOLDS_ENDPOINT_PATH?: string;
   readonly VITE_EMPLOYEES_ENDPOINT_PATH?: string;
   readonly VITE_EMPLOYEE_ELIGIBILITY_ENDPOINT_PATH?: string;
@@ -45,7 +50,12 @@ interface ImportMetaEnv {
   readonly VITE_MEDICATION_ADMINISTRATIONS_ENDPOINT_PATH?: string;
   readonly VITE_MEDICATION_OUTCOMES_ENDPOINT_PATH?: string;
   readonly VITE_SUPPORT_INCIDENTS_ENDPOINT_PATH?: string;
+  readonly VITE_SUPPORT_INCIDENT_REPORTS_ENDPOINT_PATH?: string;
+  readonly VITE_SUPPORT_INCIDENT_DEVICES_ENDPOINT_PATH?: string;
+  readonly VITE_SUPPORT_INCIDENT_EVIDENCE_PHOTO_ENDPOINT_PATH?: string;
   readonly VITE_CONFIGURATION_DRAFTS_ENDPOINT_PATH?: string;
+  readonly VITE_MY_CONFIGURATION_DRAFTS_ENDPOINT_PATH?: string;
+  readonly VITE_CONFIGURATION_DRAFT_OWNER_ENDPOINT_PATH?: string;
   readonly VITE_CONFIGURATION_DRAFT_ROOMS_ENDPOINT_PATH?: string;
   readonly VITE_CONFIGURATION_DRAFT_PREAUTHORIZATION_ENDPOINT_PATH?: string;
   readonly VITE_CONFIGURATION_DRAFT_PAYMENT_SETUP_ENDPOINT_PATH?: string;

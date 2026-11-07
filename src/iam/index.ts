@@ -57,10 +57,10 @@ export { ResendVerificationCommand } from './domain/model/resend-verification.co
 export { Account } from './domain/model/account.entity.ts';
 export { HouseholdAccount } from './domain/model/household-account.entity.ts';
 export { PhoneNumber } from './domain/model/valueobjects/phone-number.ts';
-export {
-  DefinePasswordCommand,
-  createDefinePasswordCommandFromUrl,
-} from './domain/model/reset-password.command.ts';
+export { ResetPasswordCommand } from './domain/model/reset-password.command.ts';
+export type { ResetPasswordField } from './domain/model/reset-password.command.ts';
+export { ChangePasswordCommand } from './domain/model/change-password.command.ts';
+export type { ChangePasswordField } from './domain/model/change-password.command.ts';
 export {
   evaluatePassword,
   isStrongPassword,
@@ -74,3 +74,4 @@ export type {
 export { IamSessionProvider } from './presentation/IamSessionProvider.tsx';
 export { RequireAuth } from './presentation/guards/RequireAuth.tsx';
 export { iamRoutes } from './presentation/iam.routes.ts';
+export { ChangePasswordForm } from './presentation/components/ChangePasswordForm.tsx';

@@ -12,6 +12,7 @@ export const IAM_ERROR_CODES = [
   'verification_code_expired',
   'invalid_password_token',
   'password_token_expired',
+  'current_password_incorrect',
   'role_not_allowed',
   'rate_limited',
   'validation_failed',

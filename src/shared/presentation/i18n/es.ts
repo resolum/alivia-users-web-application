@@ -107,16 +107,16 @@ export const es = {
     },
     forgotPassword: {
       title: 'Recuperar contraseña',
-      subtitle: 'Ingresa el correo asociado a tu cuenta.',
-      submit: 'Enviar enlace de recuperación',
-      confirmationTitle: 'Revisa tu correo',
-      confirmation:
-        'Si el correo está registrado, recibirás instrucciones para restablecer tu contraseña.',
+      subtitle: 'Ingresa el correo de tu cuenta y te enviaremos un código de 6 dígitos.',
+      submit: 'Enviar código',
     },
     resetPassword: {
       title: 'Crea una nueva contraseña',
       subtitle:
-        'Por seguridad, elige una contraseña robusta que no hayas usado antes.',
+        'Ingresa el código que recibiste por correo y elige una contraseña que no hayas usado antes.',
+      codeSent:
+        'Si el correo está registrado, te enviamos un código de 6 dígitos. Vence en 60 minutos.',
+      codeLabel: 'Código de 6 dígitos',
       passwordLabel: 'Nueva contraseña',
       confirmLabel: 'Confirmar contraseña',
       submit: 'Cambiar contraseña',
@@ -137,17 +137,24 @@ export const es = {
         passwordWeak: 'La contraseña no cumple todos los requisitos.',
         confirmRequired: 'Confirma tu contraseña.',
         passwordMismatch: 'Las contraseñas no coinciden.',
+        codeRequired: 'Ingresa el código que recibiste.',
+        codeInvalid: 'El código tiene 6 dígitos.',
       },
-      linkMissingTitle: 'Este enlace no funciona',
-      tokenMissing:
-        'El enlace de recuperación no es válido o está incompleto.',
-      requestNewLink: 'Solicitar un enlace nuevo',
+      requestNewCode: 'Pedir un código nuevo',
     },
     passwordUpdated: {
       title: 'Contraseña actualizada',
       message:
         'Tu contraseña ha sido restablecida con éxito. Ya puedes iniciar sesión con tus nuevas credenciales.',
       submit: 'Ir a iniciar sesión',
+    },
+    changePassword: {
+      currentLabel: 'Contraseña actual',
+      submit: 'Guardar contraseña',
+      cancel: 'Cancelar',
+      errors: {
+        currentRequired: 'Ingresa tu contraseña actual.',
+      },
     },
     registration: {
       progressLabel: 'Progreso de contratación',
@@ -202,28 +209,28 @@ export const es = {
     },
     emailSent: {
       title: 'Revisa tu correo',
-      body: 'Enviamos un enlace a {email}. Abre el mensaje y pulsa «Verificar correo» para continuar con la contratación.',
+      body: 'Enviamos un código de 6 dígitos a {email}. Ingrésalo para continuar con la contratación. Vence en 24 horas.',
       hint: 'Si no aparece en unos minutos, revisa las carpetas de spam o promociones.',
       wrongEmail: '¿Escribiste mal tu correo?',
       registerAgain: 'Registrarme de nuevo',
       noRegistration:
-        'No encontramos un registro en curso en este navegador. Escribe tu correo para recibir un enlace nuevo.',
+        'No encontramos un registro en curso en este navegador. Escribe tu correo para recibir un código nuevo.',
+      enterCode: 'Ingresar el código',
     },
     resend: {
       title: '¿No te llegó el correo?',
       emailLabel: 'Correo registrado',
       submit: 'Reenviar correo de verificación',
       wait: 'Podrás reenviarlo en {seconds} s',
-      sent: 'Si el correo está registrado y pendiente de verificación, te enviamos un enlace nuevo. El anterior ya no funciona.',
+      sent: 'Si el correo está registrado y pendiente de verificación, te enviamos un código nuevo. El anterior ya no funciona.',
     },
     verifyEmail: {
-      title: 'Verificando tu correo',
-      checking: 'Estamos confirmando tu enlace…',
-      failedTitle: 'No pudimos verificar tu correo',
-      failedBody:
-        'El enlace no es válido o perdió su vigencia. Solicita un nuevo correo de verificación.',
-      missingToken:
-        'El enlace está incompleto. Ábrelo de nuevo desde el correo o solicita uno nuevo.',
+      title: 'Verifica tu correo',
+      subtitle: 'Ingresa el código de 6 dígitos que enviamos a tu correo.',
+      codeLabel: 'Código de 6 dígitos',
+      submit: 'Verificar correo',
+      codeRequired: 'Ingresa el código que recibiste.',
+      codeInvalid: 'El código tiene 6 dígitos.',
       alreadyVerified: 'Tu correo ya estaba verificado. Inicia sesión para continuar.',
     },
     household: {
@@ -256,7 +263,7 @@ export const es = {
       pendingTitle: 'Completa estos datos para continuar al pago:',
       notVerifiedTitle: 'Primero verifica tu correo',
       notVerifiedBody:
-        'Para crear la cuenta del hogar necesitamos confirmar tu correo con el enlace que te enviamos.',
+        'Para crear la cuenta del hogar necesitamos confirmar tu correo con el código que te enviamos.',
       goToEmailSent: 'Ver cómo verificar mi correo',
       startSignUp: 'Crear mi cuenta',
     },
@@ -324,13 +331,13 @@ export const es = {
       emailAlreadyRegistered: 'Ese correo ya está registrado.',
       emailAlreadyVerified: 'Ese correo ya fue verificado. Inicia sesión para continuar.',
       invalidVerificationCode:
-        'El enlace de verificación no es válido o ya se usó. Solicita un nuevo correo.',
+        'El código no es correcto. Tras 5 intentos fallidos tendrás que pedir uno nuevo.',
       verificationCodeExpired:
-        'El enlace de verificación venció. Solicita un nuevo correo.',
+        'El código venció. Pide uno nuevo más abajo.',
       invalidPasswordToken:
-        'El enlace de recuperación no es válido. Solicita uno nuevo.',
-      passwordTokenExpired:
-        'El enlace de recuperación venció. Solicita uno nuevo.',
+        'El código no es correcto. Tras 5 intentos fallidos tendrás que pedir uno nuevo.',
+      passwordTokenExpired: 'El código venció.',
+      currentPasswordIncorrect: 'La contraseña actual no es correcta.',
       roleNotAllowed: 'Tu rol no tiene acceso a este portal.',
       rateLimited:
         'Demasiados intentos. Espera unos minutos e inténtalo de nuevo.',
@@ -455,6 +462,13 @@ export const es = {
       save: 'Guardar foto',
       saved: 'Foto actualizada',
       removed: 'Foto eliminada',
+    },
+    security: {
+      title: 'Contraseña',
+      hint: 'Cámbiala cuando quieras. Tu sesión seguirá abierta.',
+      action: 'Cambiar contraseña',
+      close: 'Cerrar',
+      saved: 'Contraseña actualizada',
     },
     fieldErrors: {
       required: 'Este campo es obligatorio.',

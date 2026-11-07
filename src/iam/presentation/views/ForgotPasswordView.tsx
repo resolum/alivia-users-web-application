@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router';
 import { useDocumentTitle } from '@/shared/presentation/hooks/useDocumentTitle.ts';
 import type { FieldErrors } from '../../domain/model/field-errors.ts';
 import { ForgotPasswordCommand } from '../../domain/model/forgot-password.command.ts';
@@ -9,11 +10,11 @@ import { AuthNotice } from '../components/AuthNotice.tsx';
 import { AuthTextField } from '../components/AuthTextField.tsx';
 import { useForgotPassword } from '../hooks/useForgotPassword.ts';
 import { useIamTranslations } from '../hooks/useIamTranslations.ts';
-import { ForgotPasswordSent } from './ForgotPasswordSent.tsx';
 
 export function ForgotPasswordView() {
   const t = useIamTranslations();
   useDocumentTitle(t.forgotPassword.title);
+  const navigate = useNavigate();
   const { status, errorKey, submit } = useForgotPassword();
   const [email, setEmail] = useState('');
   const [errors, setErrors] = useState<FieldErrors<'emailAddress'>>({});
@@ -29,10 +30,11 @@ export function ForgotPasswordView() {
       return;
     }
 
-    await submit(command);
+    if (await submit(command)) {
+      // The email travels in router state, not in the URL, so it stays out of the history.
+      void navigate('/reset-password', { state: { email: command.emailAddress } });
+    }
   }
-
-  if (status === 'success') return <ForgotPasswordSent />;
 
   const emailError =
     errors.emailAddress === 'required'

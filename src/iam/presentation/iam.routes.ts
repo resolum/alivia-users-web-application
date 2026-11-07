@@ -40,8 +40,7 @@ export const iamRoutes: RouteObject[] = [
       },
     ],
   },
-  // The backend verification link points to /verify-email?token=...; it can be
-  // opened with or without a session, so it is not guest-only.
+  // The 6-digit code can be entered with or without a session, so it is not guest-only.
   { Component: IamAuthLayout, children: [{ path: 'verify-email', lazy: verifyEmailView }] },
   { path: 'household/new', lazy: householdAccountView },
   { path: 'household/assisted-person', lazy: assistedPersonRegistrationView },

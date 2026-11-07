@@ -1,19 +1,18 @@
-import { useSearchParams } from 'react-router';
+import { useLocation } from 'react-router';
 import { useDocumentTitle } from '@/shared/presentation/hooks/useDocumentTitle.ts';
 import { useIamTranslations } from '../hooks/useIamTranslations.ts';
-import { ResetLinkMissing } from './ResetLinkMissing.tsx';
 import { ResetPasswordForm } from './ResetPasswordForm.tsx';
+
+function readEmail(state: unknown): string {
+  if (typeof state !== 'object' || state === null || !('email' in state)) return '';
+  return typeof state.email === 'string' ? state.email : '';
+}
 
 export function ResetPasswordView() {
   const t = useIamTranslations();
   useDocumentTitle(t.resetPassword.title);
-  const [searchParams] = useSearchParams();
-  const token = (searchParams.get('token') ?? '').trim();
-  const purpose = searchParams.get('purpose');
+  // Arriving from /recover-password brings the email; opened directly, the user types it.
+  const email = readEmail(useLocation().state);
 
-  return token.length === 0 ? (
-    <ResetLinkMissing />
-  ) : (
-    <ResetPasswordForm token={token} purpose={purpose} />
-  );
+  return <ResetPasswordForm initialEmail={email} codeSent={email !== ''} />;
 }

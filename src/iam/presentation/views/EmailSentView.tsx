@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import { MailCheck } from 'lucide-react';
 import { useDocumentTitle } from '@/shared/presentation/hooks/useDocumentTitle.ts';
 import { getRegistrationProgress } from '../../application/iam.store.ts';
+import { AuthButton } from '../components/AuthButton.tsx';
 import { RegistrationLayout } from '../components/RegistrationLayout.tsx';
 import { ResendVerificationForm } from '../components/ResendVerificationForm.tsx';
 import { useIamTranslations } from '../hooks/useIamTranslations.ts';
@@ -40,6 +41,8 @@ export function EmailSentView() {
             <p className="text-sm text-alivia-text-muted">{t.emailSent.noRegistration}</p>
           )}
         </div>
+
+        <AuthButton to="/verify-email" label={t.emailSent.enterCode} />
 
         <div className="border-t border-slate-100 pt-6">
           <ResendVerificationForm
