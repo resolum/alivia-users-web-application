@@ -5,11 +5,13 @@ export type UpdateProfileField = 'firstName' | 'lastName' | 'phoneNumber';
 
 const NAME_MIN_LENGTH = 2;
 const NAME_MAX_LENGTH = 75;
+const NAME_PATTERN = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/;
 
 function checkName(value: string) {
   if (value === '') return 'required';
   if (value.length < NAME_MIN_LENGTH) return 'too_short';
   if (value.length > NAME_MAX_LENGTH) return 'too_long';
+  if (!NAME_PATTERN.test(value)) return 'invalid_name';
   return null;
 }
 

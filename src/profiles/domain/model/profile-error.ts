@@ -2,6 +2,7 @@ export type ProfileFieldErrorCode =
   | 'required'
   | 'too_short'
   | 'too_long'
+  | 'invalid_name'
   | 'invalid_phone'
   | 'invalid_photo_type'
   | 'photo_too_large';
