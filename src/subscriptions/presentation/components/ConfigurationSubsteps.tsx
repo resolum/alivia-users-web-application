@@ -13,7 +13,7 @@ const SUBSTEPS: readonly { id: ConfigurationSubstep; label: string }[] = [
 
 export function ConfigurationSubsteps({ current }: { readonly current: ConfigurationSubstep }) {
   const currentIndex = SUBSTEPS.findIndex((step) => step.id === current);
-  return <nav className="mx-auto mt-5 max-w-4xl" aria-label="Subpasos de configuración"><ol className="grid grid-cols-5 overflow-hidden rounded-xl border border-slate-200 bg-white">{SUBSTEPS.map((step, index) => {
+  return <nav className="mx-auto mt-2 max-w-4xl" aria-label="Subpasos de configuración"><ol className="grid grid-cols-5 overflow-hidden rounded-xl border border-slate-200 bg-white">{SUBSTEPS.map((step, index) => {
     const active = index === currentIndex;
     const done = index < currentIndex;
     return <li key={step.id} aria-current={active ? 'step' : undefined} className={`flex items-center justify-center gap-2 border-r border-slate-200 px-2 py-3 text-xs font-bold last:border-r-0 sm:text-sm ${active ? 'bg-alivia-primary text-white' : done ? 'bg-alivia-mint text-alivia-secondary-deep' : 'text-slate-400'}`}><span>{done ? <Check aria-hidden="true" className="size-4" /> : `${index + 1}.`}</span><span className="hidden sm:inline">{step.label}</span></li>;

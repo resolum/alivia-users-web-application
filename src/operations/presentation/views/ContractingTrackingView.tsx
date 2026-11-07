@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Hash, Headphones, LifeBuoy, Lock } from 'lucide-react';
+import { Hash, Headphones, LifeBuoy, Lock, RefreshCw } from 'lucide-react';
 import { Link, Navigate } from 'react-router';
 import { ContractFooter, readPlanSelection } from '@/subscriptions/index.ts';
 import type { ContractingTracking } from '../../domain/model/contracting-tracking.ts';
@@ -7,6 +7,7 @@ import { contractingTrackingApi } from '../../infrastructure/contracting-trackin
 import { ConfirmationTrackingCard } from '../components/ConfirmationTrackingCard.tsx';
 import { EvaluationTrackingCard } from '../components/EvaluationTrackingCard.tsx';
 import { TrackingStatusCard } from '../components/TrackingStatusCard.tsx';
+import { ContractingStepper } from '@/shared/presentation/components/contracting-stepper/ContractingStepper.tsx';
 import { TrackingStepper } from '../components/TrackingStepper.tsx';
 
 /** While the technician has not decided, the tracking refreshes itself so the family sees the change. */
@@ -18,12 +19,13 @@ export function ContractingTrackingView() {
   const draftId = selection?.draftId ?? null;
   const [tracking, setTracking] = useState<ContractingTracking | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [confirmError, setConfirmError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    if (draftId === null) return;
-    contractingTrackingApi.get(draftId)
+    if (draftId === null) return Promise.resolve();
+    return contractingTrackingApi.get(draftId)
       .then((value) => { setTracking(value); setError(null); })
       .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : 'No pudimos consultar el seguimiento.'));
   }, [draftId]);
@@ -36,6 +38,11 @@ export function ContractingTrackingView() {
   }, [tracking?.stage, load]);
 
   if (draftId === null) return <Navigate to="/plans" replace />;
+
+  const refresh = () => {
+    setRefreshing(true);
+    void load().finally(() => setRefreshing(false));
+  };
 
   const confirm = () => {
     setConfirming(true);
@@ -73,17 +80,29 @@ export function ContractingTrackingView() {
         </div>
         {error !== null && (
           <div role="alert" className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-            <span>{error}</span><button type="button" onClick={load} className="font-bold underline underline-offset-2">Reintentar</button>
+            <span>{error}</span><button type="button" onClick={refresh} className="font-bold underline underline-offset-2">Reintentar</button>
           </div>
         )}
         {tracking === null ? (
           error === null && <div className="grid min-h-80 place-items-center text-sm text-alivia-text-muted">Consultando el estado de tu solicitud…</div>
         ) : (
           <div className="mt-6 grid gap-6">
+            <ContractingStepper current="evaluation" stopped={tracking.stage === 'NOT_VIABLE'} />
             <TrackingStepper steps={tracking.steps} stopped={tracking.stage === 'NOT_VIABLE'} />
             {tracking.stage === 'EVALUATION' ? <EvaluationTrackingCard visit={tracking.evaluation} />
               : tracking.stage === 'CONFIRMATION' ? <ConfirmationTrackingCard tracking={tracking} confirming={confirming} error={confirmError} onConfirm={confirm} />
                 : <TrackingStatusCard tracking={tracking} />}
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={refresh}
+                disabled={refreshing}
+                className="inline-flex items-center gap-2 rounded-xl bg-alivia-primary px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-alivia-primary-dark disabled:cursor-wait disabled:opacity-60"
+              >
+                <RefreshCw aria-hidden="true" className={`size-4 ${refreshing ? 'animate-spin' : ''}`} />
+                {refreshing ? 'Actualizando estado…' : 'Actualizar estado'}
+              </button>
+            </div>
             <p className="flex flex-wrap items-center justify-center gap-1.5 text-center text-sm text-alivia-text-muted">
               {tracking.stage === 'CONFIRMATION'
                 ? <><Lock aria-hidden="true" className="size-4 text-alivia-secondary-deep" />Proceso respaldado por el protocolo de seguridad y cuidado asistencial Alivia</>

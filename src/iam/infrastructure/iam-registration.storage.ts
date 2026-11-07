@@ -10,6 +10,8 @@ export interface RegistrationProgress {
   readonly accountId: string | null;
   readonly emailVerified: boolean;
   readonly householdId: string | null;
+  /** Set once the assisted person of the household is registered. */
+  readonly assistedPersonId: string | null;
 }
 
 const REGISTRATION_KEY = 'alivia.iam.registration';
@@ -20,6 +22,7 @@ const EMPTY_PROGRESS: RegistrationProgress = {
   accountId: null,
   emailVerified: false,
   householdId: null,
+  assistedPersonId: null,
 };
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
@@ -42,10 +45,16 @@ function parse(value: unknown): RegistrationProgress | null {
     accountId: readNullableString(value.accountId),
     emailVerified: value.emailVerified === true,
     householdId: readNullableString(value.householdId),
+    assistedPersonId: readNullableString(value.assistedPersonId),
   };
 }
 
 /** Reads the stored progress, or null when there is none. */
+/** Forgets the registration of this browser (after signing out). */
+export function clearRegistrationProgress(): void {
+  window.localStorage.removeItem(REGISTRATION_KEY);
+}
+
 export function readRegistrationProgress(): RegistrationProgress | null {
   try {
     const raw = window.localStorage.getItem(REGISTRATION_KEY);

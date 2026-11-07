@@ -28,7 +28,9 @@ import {
 } from '@/shared/presentation/components/ui/index.ts';
 import { useDocumentTitle } from '@/shared/presentation/hooks/useDocumentTitle.ts';
 import { useLoad } from '@/shared/presentation/hooks/useLoad.ts';
-import { IncidentActionUnavailableError, loadIncident, requestVisitReschedule } from '../../application/incidents.store.ts';
+import { RefreshButton } from '../components/RefreshButton.tsx';
+import { useLiveRefresh } from '../components/useLiveRefresh.ts';
+import { loadIncident, requestVisitReschedule, IncidentActionUnavailableError} from '../../application/incidents.store.ts';
 import type { Incident, IncidentEvidence } from '../../domain/model/incident.entity.ts';
 import { PROBLEM_LABELS, STAGE } from '../incident-presentation.ts';
 import { IncidentStepper } from '../components/IncidentStepper.tsx';
@@ -105,7 +107,7 @@ function StagePanel({ incident, onReschedule }: { readonly incident: Incident; r
         </div>
         {incident.visit.rescheduleRequested ? (
           <StatusDot tone="warning">Reprogramación solicitada</StatusDot>
-        ) : (
+        ) : !incident.canRescheduleVisit ? null : (
           <Button variant="outline" onClick={onReschedule}>
             <CalendarClock className="size-4" aria-hidden="true" />
             Reprogramar visita
@@ -168,6 +170,7 @@ function StagePanel({ incident, onReschedule }: { readonly incident: Incident; r
 export function IncidentDetailView() {
   const { id = '' } = useParams();
   const { state, retry, setData } = useLoad(() => loadIncident(id), [id]);
+  const { refresh, refreshing } = useLiveRefresh(() => loadIncident(id), setData);
   const [rescheduling, setRescheduling] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, notify] = useToast();
@@ -241,6 +244,7 @@ export function IncidentDetailView() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2 print:hidden">
+          <RefreshButton refreshing={refreshing} onRefresh={() => void refresh()} />
           <Link
             to={`/devices?device=${incident.deviceId}`}
             className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-alivia-primary-light/70 bg-white px-4 text-sm font-semibold text-alivia-primary-dark hover:bg-alivia-primary-mist/60"

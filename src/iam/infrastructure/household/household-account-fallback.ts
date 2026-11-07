@@ -23,3 +23,17 @@ export function createHouseholdAccountLocally(request: HouseholdAccountRequest):
   }
   return household;
 }
+
+/** Alias of the household kept in this browser, or an empty string. */
+export function readLocalHouseholdAlias(): string {
+  try {
+    const raw = window.localStorage.getItem(LOCAL_HOUSEHOLD_KEY);
+    const stored: unknown = raw === null ? null : JSON.parse(raw);
+    if (typeof stored === 'object' && stored !== null && 'alias' in stored && typeof stored.alias === 'string') {
+      return stored.alias;
+    }
+  } catch {
+    console.error('Error reading household account');
+  }
+  return '';
+}

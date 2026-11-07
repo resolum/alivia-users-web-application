@@ -9,16 +9,25 @@ import {
 import {
   CreateHouseholdAccountCommand,
   type HouseholdField,
+  type HouseholdTextField,
 } from '../../domain/model/create-household-account.command.ts';
+import type { HouseholdLocation } from '../../domain/model/valueobjects/household-location.ts';
 import type { FieldErrors } from '../../domain/model/field-errors.ts';
 import { IamError } from '../../domain/model/iam-error.ts';
 import { AuthErrorAlert } from '../components/AuthErrorAlert.tsx';
 import { AuthFormHeader } from '../components/AuthFormHeader.tsx';
 import { AuthLinkButton } from '../components/AuthLinkButton.tsx';
 import { AuthSubmitButton } from '../components/AuthSubmitButton.tsx';
+import {
+  HouseholdLocationPicker,
+  type PickedHouseholdLocation,
+} from '../components/HouseholdLocationPicker.tsx';
+import { HouseholdSubsteps } from '../components/HouseholdSubsteps.tsx';
 import { RegistrationLayout } from '../components/RegistrationLayout.tsx';
+import { PeruMobileField } from '../components/PeruMobileField.tsx';
 import { RegistrationTextField } from '../components/RegistrationTextField.tsx';
 import { fieldErrorMessage, focusFirstInvalid } from '../field-error-message.ts';
+import { isGoogleMapsConfigured } from '../google-maps.config.ts';
 import { useIamTranslations } from '../hooks/useIamTranslations.ts';
 import { useSubmission } from '../hooks/useSubmission.ts';
 
@@ -29,12 +38,13 @@ const HOUSEHOLD_FIELDS: readonly HouseholdField[] = [
   'alias',
   'phoneNumber',
   'contactEmail',
+  'location',
   'address',
   'district',
   'city',
 ];
 
-type HouseholdValues = Readonly<Record<HouseholdField, string>>;
+type HouseholdValues = Readonly<Record<HouseholdTextField, string>>;
 
 function cameFromVerification(state: unknown): boolean {
   return typeof state === 'object' && state !== null && 'emailVerified' in state;
@@ -69,7 +79,9 @@ export function HouseholdAccountView() {
     district: '',
     city: '',
   });
+  const [pickedLocation, setPickedLocation] = useState<HouseholdLocation | null>(null);
   const [errors, setErrors] = useState<FieldErrors<HouseholdField>>({});
+  const mapsEnabled = isGoogleMapsConfigured();
   const [showPending, setShowPending] = useState(false);
 
   const accountId = progress?.accountId ?? null;
@@ -88,18 +100,39 @@ export function HouseholdAccountView() {
     address: t.household.addressLabel,
     district: t.household.districtLabel,
     city: t.household.cityLabel,
+    location: t.household.locationLabel,
   };
   const pendingFields = HOUSEHOLD_FIELDS.filter((field) => errors[field] !== undefined);
 
-  function change(field: HouseholdField, value: string): void {
+  function change(field: HouseholdTextField, value: string): void {
     setValues((current) => ({ ...current, [field]: value }));
     setErrors((current) => ({ ...current, [field]: undefined }));
+  }
+
+  /** A point picked on the map fills the address, district and city. */
+  function pickLocation({ location: picked, fields }: PickedHouseholdLocation): void {
+    setPickedLocation(picked);
+    setValues((current) => ({
+      ...current,
+      address: fields.address || current.address,
+      district: fields.district || current.district,
+      city: fields.city || current.city,
+    }));
+    setErrors((current) => ({
+      ...current,
+      location: undefined,
+      ...(fields.address ? { address: undefined } : {}),
+      ...(fields.district ? { district: undefined } : {}),
+      ...(fields.city ? { city: undefined } : {}),
+    }));
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>): void {
     event.preventDefault();
     const command = new CreateHouseholdAccountCommand({
       ...values,
+      location: pickedLocation,
+      locationRequired: mapsEnabled,
       responsibleAccountId: accountId ?? '',
     });
     const nextErrors = command.validate();
@@ -120,11 +153,11 @@ export function HouseholdAccountView() {
         throw error;
       }
     }).then((successful) => {
-      if (successful) void navigate('/contract/configuration');
+      if (successful) void navigate('/household/assisted-person');
     });
   }
 
-  const field = (name: HouseholdField) => ({
+  const field = (name: HouseholdTextField) => ({
     id: `${ID_PREFIX}-${name}`,
     label: labels[name],
     value: values[name],
@@ -135,6 +168,7 @@ export function HouseholdAccountView() {
   return (
     <RegistrationLayout step={3}>
       <div className="space-y-6">
+        <HouseholdSubsteps current={1} />
         {cameFromVerification(location.state) && (
           <p role="status" className="flex items-center gap-2 rounded-xl bg-alivia-mint px-4 py-3 text-sm font-semibold text-alivia-secondary-deep">
             <CheckCircle2 aria-hidden="true" className="size-5 shrink-0" />
@@ -181,13 +215,7 @@ export function HouseholdAccountView() {
                 placeholder={t.household.aliasPlaceholder}
               />
             </div>
-            <RegistrationTextField
-              {...field('phoneNumber')}
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              placeholder="987 654 321"
-            />
+            <PeruMobileField {...field('phoneNumber')} />
             <RegistrationTextField
               {...field('contactEmail')}
               type="email"
@@ -202,6 +230,16 @@ export function HouseholdAccountView() {
             <legend className="mb-3 text-sm font-bold text-alivia-primary">
               {t.household.locationSection}
             </legend>
+            {mapsEnabled && (
+              <div className="sm:col-span-2">
+                <HouseholdLocationPicker
+                  id={`${ID_PREFIX}-location`}
+                  location={pickedLocation}
+                  onPick={pickLocation}
+                  error={errors.location ? t.household.locationRequired : undefined}
+                />
+              </div>
+            )}
             <div className="sm:col-span-2">
               <RegistrationTextField
                 {...field('address')}

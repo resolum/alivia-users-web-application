@@ -23,6 +23,8 @@ export interface IncidentVisit {
   readonly technicianName: string;
   readonly technicianSpecialty: string;
   readonly rescheduleRequested: boolean;
+  /** False when the visit cannot be moved from the web (backend visits, for now). */
+  readonly reschedulable?: boolean;
 }
 
 export interface IncidentAddress {
@@ -52,6 +54,11 @@ export interface IncidentProps {
   readonly resolutionNote: string | null;
   readonly address: IncidentAddress;
   readonly evidence: readonly IncidentEvidence[];
+}
+
+/** The incident still in course for a device, if any: a new report of it would duplicate that one. */
+export function openIncidentOf(incidents: readonly Incident[], deviceId: string): Incident | null {
+  return incidents.find((incident) => incident.deviceId === deviceId && !incident.isResolved) ?? null;
 }
 
 /** A support ticket about a home device. Backend equivalent: Incident (Soporte Técnico). */
@@ -111,6 +118,8 @@ export class Incident implements BaseEntity {
 
   /** A visit can be moved only before the technician starts working on it. */
   get canRescheduleVisit(): boolean {
-    return this.stage === 'visit_scheduled' && this.visit !== null && !this.visit.rescheduleRequested;
+    return (
+      this.stage === 'visit_scheduled' && this.visit !== null && this.visit.reschedulable !== false && !this.visit.rescheduleRequested
+    );
   }
 }

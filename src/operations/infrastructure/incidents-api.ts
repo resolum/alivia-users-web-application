@@ -1,23 +1,27 @@
 import { LocalCollection, respond } from '@/shared/infrastructure/local-collection.ts';
-import { Incident, type IncidentAddress, type IncidentDeviceKind, type IncidentProps } from '../domain/model/incident.entity.ts';
+import { Incident, type IncidentAddress, type IncidentProps } from '../domain/model/incident.entity.ts';
 import type { ReportIncidentCommand } from '../domain/model/report-incident.command.ts';
 import { isSupportIncidentsConfigured, supportIncidentsApi } from './support-incidents-api.ts';
+import { incidentsHttpApi, type ReportableDevice, type ReportForm } from './incidents-http-api.ts';
 
 export { IncidentActionUnavailableError } from './support-incidents-api.ts';
 
-export interface ReportedDevice {
-  readonly id: string;
-  readonly code: string;
-  readonly name: string;
-  readonly roomName: string;
-  readonly kind: IncidentDeviceKind;
+export type ReportedDevice = ReportableDevice;
+export type { ReportForm } from './incidents-http-api.ts';
+
+/** The registered incident; photoAttached is false when the family chose a photo that could not be stored. */
+export interface ReportOutcome {
+  readonly incident: Incident;
+  readonly photoAttached: boolean;
 }
 
 export interface IncidentsApi {
   readonly isSample: boolean;
+  /** Devices the family can report and whether photos upload; null when this source has no device list. */
+  loadReportForm(): Promise<ReportForm | null>;
   listIncidents(): Promise<Incident[]>;
   getIncident(id: string): Promise<Incident>;
-  reportIncident(command: ReportIncidentCommand, device: ReportedDevice, address: IncidentAddress): Promise<Incident>;
+  reportIncident(command: ReportIncidentCommand, device: ReportedDevice, address: IncidentAddress): Promise<ReportOutcome>;
   requestVisitReschedule(id: string): Promise<Incident>;
 }
 
@@ -108,12 +112,11 @@ function sizeLabel(bytes: number): string {
   return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
 
-/**
- * shortcut: the technical support contract is pending, so incidents live in
- * this browser with the Figma example data. Swap in the HTTP source here.
- */
+/** Sample incidents with the Figma example data, kept in this browser (VITE_INCIDENTS_MOCK=true). */
 const localIncidentsApi: IncidentsApi = {
   isSample: true,
+
+  loadReportForm: async () => null,
 
   listIncidents: async () => (await respond(incidents.all())).map((props) => new Incident(props)),
 
@@ -134,16 +137,24 @@ const localIncidentsApi: IncidentsApi = {
       reportedAt: now,
       stage: 'registered',
       stageDates: { registered: now },
-      visit: null,
+      visit: command.visit
+        ? {
+          start: new Date(`${command.visit.date}T${command.visit.startTime}:00-05:00`).toISOString(),
+          end: new Date(`${command.visit.date}T${command.visit.endTime}:00-05:00`).toISOString(),
+          technicianName: command.visit.technicianName,
+          technicianSpecialty: 'Técnico de soporte Alivia',
+          rescheduleRequested: false,
+        }
+        : null,
       attentionNote: null,
-      remoteNote: 'Sin visita programada',
+      remoteNote: command.visit ? `Visita solicitada con ${command.visit.technicianName} (pendiente de confirmación)` : 'Sin visita programada',
       resolutionNote: null,
       address,
       evidence: command.photo
         ? [{ name: command.photo.name, sizeLabel: sizeLabel(command.photo.size), url: command.photo.dataUrl, stage: 'report' }]
         : [],
     });
-    return new Incident(await respond(saved));
+    return { incident: new Incident(await respond(saved)), photoAttached: true };
   },
 
   requestVisitReschedule: async (id) => {
@@ -154,6 +165,38 @@ const localIncidentsApi: IncidentsApi = {
   },
 };
 
+/** The backend source: incidents of the signed-in family, reported against the devices installed at home. */
+const httpIncidentsApi: IncidentsApi = {
+  isSample: false,
+  loadReportForm: () => incidentsHttpApi.reportForm(),
+  listIncidents: () => incidentsHttpApi.list(),
+  getIncident: async (id) => {
+    try {
+      return await incidentsHttpApi.get(id);
+    } catch (error) {
+      if (error instanceof Error && 'status' in error && error.status === 404) throw new IncidentNotFoundError();
+      throw error;
+    }
+  },
+  // The photo is optional: when it cannot be stored the report still counts as registered.
+  reportIncident: async (command) => {
+    const incident = await incidentsHttpApi.report(command);
+    if (!command.photo) return { incident, photoAttached: true };
+    try {
+      return { incident: await incidentsHttpApi.uploadPhoto(incident.id, command.photo), photoAttached: true };
+    } catch {
+      return { incident, photoAttached: false };
+    }
+  },
+  // The backend does not reschedule maintenance visits yet; the button stays hidden for these incidents.
+  requestVisitReschedule: () => Promise.reject(new Error('reschedule_not_available')),
+};
+
+/**
+ * VITE_INCIDENTS_MOCK=true keeps the Figma sample data in this browser. Otherwise the support-incidents
+ * source is used when configured, and the regular backend when it is not.
+ */
 export function getIncidentsApi(): IncidentsApi {
-  return isSupportIncidentsConfigured() ? supportIncidentsApi : localIncidentsApi;
+  if (import.meta.env.VITE_INCIDENTS_MOCK === 'true') return localIncidentsApi;
+  return isSupportIncidentsConfigured() ? supportIncidentsApi : httpIncidentsApi;
 }

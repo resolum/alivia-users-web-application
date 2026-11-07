@@ -15,6 +15,12 @@ function read<T>(key: string, build: (value: never) => T): T | null {
   }
 }
 
+/** Forgets the chosen window and the booked visit kept in this browser (after signing out). */
+export function clearEvaluationChoice(): void {
+  window.sessionStorage.removeItem(SLOT_KEY);
+  window.sessionStorage.removeItem(APPOINTMENT_KEY);
+}
+
 export function saveChosenSlot(slot: EvaluationSlot | null): void {
   if (slot === null) window.sessionStorage.removeItem(SLOT_KEY);
   else window.sessionStorage.setItem(SLOT_KEY, JSON.stringify(slot.toProps()));

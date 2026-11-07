@@ -1,7 +1,12 @@
 import type { Appointment, EvaluationContact } from '../domain/model/appointment.ts';
 import type { EvaluationSlot } from '../domain/model/evaluation-slot.ts';
 import { appointmentsApi } from '../infrastructure/appointments-api.ts';
-import { readChosenSlot, saveBookedAppointment, saveChosenSlot } from '../infrastructure/evaluation.storage.ts';
+import { clearEvaluationChoice, readChosenSlot, saveBookedAppointment, saveChosenSlot } from '../infrastructure/evaluation.storage.ts';
+
+/** Forgets the window chosen for the visit and the booked visit (after signing out). */
+export function forgetEvaluationChoice(): void {
+  clearEvaluationChoice();
+}
 
 export function loadAvailableSlots(draftId: string | null = null): Promise<readonly EvaluationSlot[]> {
   return appointmentsApi.listAvailableSlots(draftId);
@@ -33,8 +38,22 @@ export function currentChosenSlot(): EvaluationSlot | null {
   return readChosenSlot();
 }
 
-/** Books the chosen window with its technician; the backend checks again that it is still free. */
-export async function confirmEvaluation(draftId: string, slot: EvaluationSlot, contact: EvaluationContact): Promise<Appointment> {
+/** Bookings in flight by draft, so a repeated call (React StrictMode, a double click) reuses the same request. */
+const bookingsInFlight = new Map<string, Promise<Appointment>>();
+
+/**
+ * Books the chosen window with its technician; the backend checks again that it is still free. Concurrent calls
+ * for the same draft share one request, and the backend answers a repeated booking with the visit already made.
+ */
+export function confirmEvaluation(draftId: string, slot: EvaluationSlot, contact: EvaluationContact): Promise<Appointment> {
+  const inFlight = bookingsInFlight.get(draftId);
+  if (inFlight) return inFlight;
+  const booking = scheduleEvaluation(draftId, slot, contact).finally(() => bookingsInFlight.delete(draftId));
+  bookingsInFlight.set(draftId, booking);
+  return booking;
+}
+
+async function scheduleEvaluation(draftId: string, slot: EvaluationSlot, contact: EvaluationContact): Promise<Appointment> {
   const appointment = await appointmentsApi.schedule({
     draftId,
     date: slot.date,
