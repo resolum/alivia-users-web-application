@@ -1,6 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { contractingTrackingApi, TrackingRequestError } from './contracting-tracking-api.ts';
 
+// The API module reads its paths when it loads, so they are set before the import runs.
+vi.hoisted(() => {
+  vi.stubEnv('VITE_API_BASE_URL', '/api/v1');
+  vi.stubEnv('VITE_CONFIGURATION_DRAFT_TRACKING_ENDPOINT_PATH', 'configuration-drafts/{draftId}/tracking');
+  vi.stubEnv('VITE_CONFIGURATION_DRAFT_CONFIRMATION_ENDPOINT_PATH', 'configuration-drafts/{draftId}/confirmation');
+});
+
 const tracking = {
   draftId: 'd1', code: 'SOL-ABCD1234', stage: 'CONFIRMATION', planCode: 'CUSTOM', planName: 'Plan Personalizado',
   rooms: 3, devices: 6, monthlyAmount: 179, currency: 'PEN', confirmedAt: null, installation: null,

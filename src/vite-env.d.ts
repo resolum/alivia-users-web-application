@@ -19,12 +19,14 @@ interface ImportMetaEnv {
   /** Care profile of the assisted person (api/v1/assisted-person-care-profiles/mine). Empty keeps it in the browser. */
   readonly VITE_ASSISTED_PERSON_CARE_PROFILE_ENDPOINT_PATH?: string;
   readonly VITE_PROFILES_ENDPOINT_PATH?: string;
+  readonly VITE_MY_PROFILE_ENDPOINT_PATH?: string;
   readonly VITE_BUSINESS_PROFILES_ENDPOINT_PATH?: string;
   readonly VITE_STAFF_PROFILES_ENDPOINT_PATH?: string;
   readonly VITE_APPOINTMENTS_ENDPOINT_PATH?: string;
   /** "true" keeps the sample incidents in the browser instead of calling the backend. */
   readonly VITE_INCIDENTS_MOCK?: string;
   readonly VITE_APPOINTMENTS_AVAILABLE_SLOTS_ENDPOINT_PATH?: string;
+  readonly VITE_APPOINTMENT_HOLDS_ENDPOINT_PATH?: string;
   readonly VITE_EMPLOYEES_ENDPOINT_PATH?: string;
   readonly VITE_EMPLOYEE_ELIGIBILITY_ENDPOINT_PATH?: string;
   readonly VITE_CONTRACTS_ENDPOINT_PATH?: string;
@@ -42,10 +44,13 @@ interface ImportMetaEnv {
   readonly VITE_CARE_AGENDA_ENDPOINT_PATH?: string;
   readonly VITE_MEDICATION_ADMINISTRATIONS_ENDPOINT_PATH?: string;
   readonly VITE_MEDICATION_OUTCOMES_ENDPOINT_PATH?: string;
+  readonly VITE_SUPPORT_INCIDENTS_ENDPOINT_PATH?: string;
   readonly VITE_CONFIGURATION_DRAFTS_ENDPOINT_PATH?: string;
   readonly VITE_CONFIGURATION_DRAFT_ROOMS_ENDPOINT_PATH?: string;
   readonly VITE_CONFIGURATION_DRAFT_PREAUTHORIZATION_ENDPOINT_PATH?: string;
   readonly VITE_CONFIGURATION_DRAFT_PAYMENT_SETUP_ENDPOINT_PATH?: string;
+  readonly VITE_CONFIGURATION_DRAFT_CONFIRMATION_ENDPOINT_PATH?: string;
+  readonly VITE_CONFIGURATION_DRAFT_TRACKING_ENDPOINT_PATH?: string;
   readonly VITE_PLANS_ENDPOINT_PATH?: string;
   readonly VITE_PLAN_PRICING_ENDPOINT_PATH?: string;
   readonly VITE_STRIPE_WEBHOOK_ENDPOINT_PATH?: string;

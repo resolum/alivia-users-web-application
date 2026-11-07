@@ -6,6 +6,7 @@ export type FieldErrorCode =
   | 'terms_not_accepted'
   | 'invalid_phone'
   | 'invalid_dni'
+  | 'invalid_name'
   | 'invalid_date'
   | 'too_long'
   | 'already_registered'

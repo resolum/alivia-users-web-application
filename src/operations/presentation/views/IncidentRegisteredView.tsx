@@ -64,7 +64,7 @@ export function IncidentRegisteredView() {
           </div>
           <dl className="mt-4 space-y-3 text-sm">
             {[
-              { icon: Radio, label: 'Dispositivo afectado', value: `${incident.deviceName} (${incident.deviceCode}) · ${incident.roomName}` },
+              { icon: Radio, label: 'Dispositivo afectado', value: [`${incident.deviceName} (${incident.deviceCode})`, incident.roomName].filter(Boolean).join(' · ') },
               { icon: Wrench, label: 'Tipo de problema', value: PROBLEM_LABELS[incident.problemType] },
               { icon: Clock, label: 'Fecha y hora reportadas', value: formatDateTime(incident.reportedAt) },
               { icon: MapPin, label: 'Ubicación del servicio', value: `${incident.address.line}, ${incident.address.district}` },

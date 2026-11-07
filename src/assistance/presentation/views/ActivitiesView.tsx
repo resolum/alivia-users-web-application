@@ -32,6 +32,7 @@ import { AgendaRows, DayAgenda } from '../components/DayAgenda.tsx';
 import { WeekCalendar, WeekCalendarSkeleton } from '../components/WeekCalendar.tsx';
 import { useCareActor } from '../useCareActor.ts';
 import { GuestActivitiesView } from './GuestActivitiesView.tsx';
+import { AssistanceApiError } from '../../infrastructure/assistance-api-error.ts';
 
 type Mode = 'day' | 'week' | 'list';
 
@@ -121,8 +122,8 @@ function AgendaView() {
       // Records who attended it and when, which may not be the assigned caregiver.
       upsert(await completeActivity(activity.id, actor));
       notify(`«${activity.title}» registrada como atendida`);
-    } catch {
-      notify('No pudimos actualizar la actividad. Inténtalo de nuevo.');
+    } catch (error) {
+      notify(error instanceof AssistanceApiError && error.code === 'unavailable' ? 'Esta acción todavía no está disponible en Alivia.' : 'No pudimos actualizar la actividad. Inténtalo de nuevo.');
     }
   };
 
@@ -132,8 +133,8 @@ function AgendaView() {
     try {
       upsert(await cancelActivity(cancelling.id, actor));
       notify('Actividad cancelada');
-    } catch {
-      notify('No pudimos cancelar la actividad. Inténtalo de nuevo.');
+    } catch (error) {
+      notify(error instanceof AssistanceApiError && error.code === 'unavailable' ? 'Esta acción todavía no está disponible en Alivia.' : 'No pudimos cancelar la actividad. Inténtalo de nuevo.');
     } finally {
       setBusy(false);
       setCancelling(null);

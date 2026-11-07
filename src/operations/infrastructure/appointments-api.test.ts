@@ -5,6 +5,7 @@ import { AppointmentRequestError, appointmentsApi } from './appointments-api.ts'
 vi.hoisted(() => {
   vi.stubEnv('VITE_API_BASE_URL', '');
   vi.stubEnv('VITE_APPOINTMENTS_ENDPOINT_PATH', 'api/v1/appointments');
+  vi.stubEnv('VITE_APPOINTMENT_HOLDS_ENDPOINT_PATH', 'api/v1/appointments/holds/{draftId}');
 });
 
 const request = {

@@ -1,8 +1,9 @@
 export type AssistedPersonField = 'firstName' | 'lastName' | 'birthDate' | 'kinship' | 'phone';
-export type AssistedPersonFieldError = 'required' | 'too_short' | 'invalid_date' | 'invalid_phone';
+export type AssistedPersonFieldError = 'required' | 'too_short' | 'invalid_name' | 'invalid_date' | 'invalid_phone';
 
 /** Peruvian mobile: 9 digits starting with 9. */
 const LOCAL_PHONE = /^9\d{8}$/;
+const NAME_PATTERN = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/;
 
 export interface AssistedPersonValues {
   readonly firstName: string;
@@ -37,8 +38,11 @@ export class UpdateAssistedPersonCommand {
     const errors: Partial<Record<AssistedPersonField, AssistedPersonFieldError>> = {};
     if (firstName === '') errors.firstName = 'required';
     else if (firstName.length < 2) errors.firstName = 'too_short';
+    else if (!NAME_PATTERN.test(firstName)) errors.firstName = 'invalid_name';
+
     if (lastName === '') errors.lastName = 'required';
     else if (lastName.length < 2) errors.lastName = 'too_short';
+    else if (!NAME_PATTERN.test(lastName)) errors.lastName = 'invalid_name';
     if (birthDate === '') errors.birthDate = 'required';
     else if (Number.isNaN(Date.parse(birthDate)) || new Date(`${birthDate}T00:00:00`) > now || birthDate < '1900-01-01') {
       errors.birthDate = 'invalid_date';

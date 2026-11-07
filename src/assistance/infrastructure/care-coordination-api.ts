@@ -16,6 +16,7 @@ import type {
   UpdateMedicationCommand,
 } from '../domain/model/medication.commands.ts';
 import { AssistanceApiError } from './assistance-api-error.ts';
+import { careAgendaApi, isCareAgendaConfigured } from './care-agenda-api.ts';
 import { activities } from './assistance.local-data.ts';
 import { administrations, handovers, medications, shifts } from './care-coordination.local-data.ts';
 
@@ -318,7 +319,37 @@ const localCareCoordinationApi: CareCoordinationApi = {
   },
 };
 
+/** Overdue alerts raised this session; the backend does not store them, so they are not raised twice. */
+const alertedDoses = new Map<string, string>();
+
+const withAlert = (item: MedicationAdministration) => {
+  const at = alertedDoses.get(item.id);
+  return at ? new MedicationAdministration({ ...item.toProps(), alertedAt: at }) : item;
+};
+
+/**
+ * Doses and their outcomes come from the backend agenda and medication administrations.
+ * shortcut: shifts, reliefs and medication plans have no endpoint yet and stay in the browser copy.
+ */
+const backendDosesApi: CareCoordinationApi = {
+  ...localCareCoordinationApi,
+
+  listAdministrations: async (from, to) =>
+    (await careAgendaApi.listAdministrations(toIsoDate(from), toIsoDate(to))).map(withAlert),
+
+  recordAdministration: async (command, actor) => {
+    allow(actor.can('record_medications'));
+    const saved = await careAgendaApi.recordOutcome(command.administrationId, command.result, command.reason);
+    return new MedicationAdministration({ ...saved.toProps(), recordedByName: actor.fullName });
+  },
+
+  markAlerted: async (administrationId) => {
+    alertedDoses.set(administrationId, new Date().toISOString());
+    return withAlert(await careAgendaApi.getAdministration(administrationId));
+  },
+};
+
 export function getCareCoordinationApi(): CareCoordinationApi {
-  return localCareCoordinationApi;
+  return isCareAgendaConfigured() ? backendDosesApi : localCareCoordinationApi;
 }
 

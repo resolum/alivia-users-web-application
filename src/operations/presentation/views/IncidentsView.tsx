@@ -169,7 +169,8 @@ export function IncidentsView() {
                       <StatusDot tone={STAGE[incident.stage].tone}>{STAGE[incident.stage].label}</StatusDot>
                     </div>
                     <p className="mt-1 text-lg text-alivia-primary-dark">
-                      <span className="font-bold">{incident.deviceName}</span> · {incident.roomName}
+                      <span className="font-bold">{incident.deviceName}</span>
+                      {incident.roomName && ` · ${incident.roomName}`}
                     </p>
                     <p className="text-xs text-alivia-hint">{formatDateTime(incident.reportedAt)}</p>
                   </div>

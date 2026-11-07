@@ -5,6 +5,7 @@ import { getIncidentsApi, type ReportForm, type ReportOutcome } from '../infrast
 import type { ReportedDevice } from '../infrastructure/incidents-api.ts';
 
 export type { ReportedDevice, ReportForm, ReportOutcome } from '../infrastructure/incidents-api.ts';
+export { IncidentActionUnavailableError } from '../infrastructure/incidents-api.ts';
 
 export const isIncidentsSample = () => getIncidentsApi().isSample;
 export const loadIncidents = () => getIncidentsApi().listIncidents();

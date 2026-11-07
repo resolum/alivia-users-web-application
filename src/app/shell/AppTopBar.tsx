@@ -49,9 +49,9 @@ export function AppTopBar() {
             className="mx-1 hidden h-8 w-px bg-alivia-primary-mist sm:block"
           />
           {isGuest ? (
-            <UserMenu displayName={shell.displayName} />
+            <UserMenu displayName={shell.displayName} photoUrl={shell.photoUrl} />
           ) : (
-            <PrincipalUser displayName={shell.displayName} />
+            <PrincipalUser displayName={shell.displayName} photoUrl={shell.photoUrl} />
           )}
         </div>
       }

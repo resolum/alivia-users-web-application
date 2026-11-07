@@ -90,7 +90,13 @@ export function PersonalDataForm({ profile, onSaved }: PersonalDataFormProps) {
         <input
           id={id}
           value={values[field]}
-          onChange={(event) => setField(field, event.target.value)}
+          onChange={(event) => {
+            const raw = event.target.value;
+            const clean = (field === 'firstName' || field === 'lastName')
+              ? raw.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g, '')
+              : raw;
+            setField(field, clean);
+          }}
           autoComplete={autoComplete}
           required
           aria-invalid={error !== undefined}

@@ -1,7 +1,10 @@
 import { LocalCollection, respond } from '@/shared/infrastructure/local-collection.ts';
 import { Incident, type IncidentAddress, type IncidentProps } from '../domain/model/incident.entity.ts';
 import type { ReportIncidentCommand } from '../domain/model/report-incident.command.ts';
+import { isSupportIncidentsConfigured, supportIncidentsApi } from './support-incidents-api.ts';
 import { incidentsHttpApi, type ReportableDevice, type ReportForm } from './incidents-http-api.ts';
+
+export { IncidentActionUnavailableError } from './support-incidents-api.ts';
 
 export type ReportedDevice = ReportableDevice;
 export type { ReportForm } from './incidents-http-api.ts';
@@ -189,7 +192,11 @@ const httpIncidentsApi: IncidentsApi = {
   requestVisitReschedule: () => Promise.reject(new Error('reschedule_not_available')),
 };
 
-/** VITE_INCIDENTS_MOCK=true keeps the Figma sample data in this browser instead of calling the backend. */
+/**
+ * VITE_INCIDENTS_MOCK=true keeps the Figma sample data in this browser. Otherwise the support-incidents
+ * source is used when configured, and the regular backend when it is not.
+ */
 export function getIncidentsApi(): IncidentsApi {
-  return import.meta.env.VITE_INCIDENTS_MOCK === 'true' ? localIncidentsApi : httpIncidentsApi;
+  if (import.meta.env.VITE_INCIDENTS_MOCK === 'true') return localIncidentsApi;
+  return isSupportIncidentsConfigured() ? supportIncidentsApi : httpIncidentsApi;
 }

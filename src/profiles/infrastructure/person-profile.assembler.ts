@@ -25,8 +25,6 @@ export const PersonProfileAssembler = {
       lastName: profile.lastName,
       birthDate: profile.birthDate,
       phoneNumber: profile.phoneNumber,
-      photoUrl: profile.photoUrl,
-      photoPublicId: profile.photoPublicId,
       ...changes,
     };
   },

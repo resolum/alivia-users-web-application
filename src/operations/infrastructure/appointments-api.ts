@@ -29,6 +29,8 @@ export interface ScheduleAppointmentRequest {
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 const APPOINTMENTS_PATH = `/${import.meta.env.VITE_APPOINTMENTS_ENDPOINT_PATH}`;
+const HOLDS_PATH = import.meta.env.VITE_APPOINTMENT_HOLDS_ENDPOINT_PATH ?? 'appointments/holds/{draftId}';
+const holdUrl = (draftId: string) => `${API_BASE_URL}/${HOLDS_PATH.replace('{draftId}', encodeURIComponent(draftId))}`;
 
 export interface SlotHold {
   readonly draftId: string;
@@ -85,14 +87,14 @@ export const appointmentsApi = {
 
   /** Holds the window and technician for 30 minutes, or renews the hold; 409 when someone else took it. */
   async hold(draftId: string, slot: EvaluationSlot): Promise<SlotHold> {
-    return await request<SlotHold>(`${API_BASE_URL}${APPOINTMENTS_PATH}/holds/${encodeURIComponent(draftId)}`, {
+    return await request<SlotHold>(holdUrl(draftId), {
       method: 'PUT',
       body: JSON.stringify({ date: slot.date, startTime: slot.startTime, endTime: slot.endTime, technicianId: slot.technicianId }),
     });
   },
 
   async release(draftId: string): Promise<void> {
-    await send(`${API_BASE_URL}${APPOINTMENTS_PATH}/holds/${encodeURIComponent(draftId)}`, { method: 'DELETE' });
+    await send(holdUrl(draftId), { method: 'DELETE' });
   },
 
   async schedule(body: ScheduleAppointmentRequest): Promise<Appointment> {

@@ -15,6 +15,11 @@ export type SignUpField =
 
 const NAME_MAX_LENGTH = 75;
 const DNI_LENGTH = 8;
+const NAME_PATTERN = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]+$/;
+
+function isLettersOnly(value: string): boolean {
+  return NAME_PATTERN.test(value);
+}
 
 function isDni(value: string): boolean {
   if (value.length !== DNI_LENGTH) return false;
@@ -110,9 +115,11 @@ export class SignUpCommand {
 
     if (this._firstName === '') errors.firstName = 'required';
     else if (this._firstName.length > NAME_MAX_LENGTH) errors.firstName = 'too_long';
+    else if (!isLettersOnly(this._firstName)) errors.firstName = 'invalid_name';
 
     if (this._lastName === '') errors.lastName = 'required';
     else if (this._lastName.length > NAME_MAX_LENGTH) errors.lastName = 'too_long';
+    else if (!isLettersOnly(this._lastName)) errors.lastName = 'invalid_name';
 
     const emailError = EmailAddress.check(this._emailAddress);
     if (emailError) errors.emailAddress = emailError;

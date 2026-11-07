@@ -52,7 +52,8 @@ function ResultLine({ item }: { readonly item: MedicationAdministration }) {
   if (!item.recordedAt) return null;
   return (
     <p className="text-sm text-alivia-text-muted">
-      {item.result === 'given' ? 'Administrado' : 'Omitido'} a las {formatTime(item.recordedAt)} por {item.recordedByName}
+      {item.result === 'given' ? 'Administrado' : 'Omitido'} a las {formatTime(item.recordedAt)}
+      {item.recordedByName && ` por ${item.recordedByName}`}
       {item.isLate && ' · registro tardío'}
       {item.reason && <span className="block">Motivo: {item.reason}</span>}
     </p>
@@ -224,7 +225,7 @@ export function MedicationsView() {
                     </span>
                     <div className="min-w-0 flex-1 basis-56">
                       <p className="flex flex-wrap items-center gap-2 font-semibold text-alivia-text">
-                        {item.medication} · {item.dose}
+                        {[item.medication, item.dose].filter(Boolean).join(' · ')}
                         <StatusDot tone={label.tone}>{label.label}</StatusDot>
                         {item.isLate && <StatusDot tone="warning">Tardío</StatusDot>}
                       </p>

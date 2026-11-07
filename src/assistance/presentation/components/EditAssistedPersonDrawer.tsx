@@ -13,6 +13,7 @@ import {
 const ERROR_TEXT: Record<AssistedPersonFieldError, string> = {
   required: 'Este campo es obligatorio.',
   too_short: 'Ingresa al menos 2 caracteres.',
+  invalid_name: 'Solo se permiten letras y espacios, sin números ni caracteres especiales.',
   invalid_date: 'Ingresa una fecha válida que no sea futura.',
   invalid_phone: 'Ingresa un celular de 9 dígitos, por ejemplo 912 345 678, o déjalo vacío.',
 };
@@ -74,7 +75,13 @@ export function EditAssistedPersonDrawer({ open, person, onClose, onSaved }: Edi
         <input
           id={`ap-${id}`}
           value={values[id]}
-          onChange={(event) => set(id, event.target.value)}
+          onChange={(event) => {
+            const raw = event.target.value;
+            const clean = (id === 'firstName' || id === 'lastName')
+              ? raw.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'-]/g, '')
+              : raw;
+            set(id, clean);
+          }}
           autoComplete={extra.autoComplete ?? 'off'}
           aria-invalid={Boolean(errorOf(id === 'localPhone' ? 'phone' : id))}
           aria-describedby={describedBy}

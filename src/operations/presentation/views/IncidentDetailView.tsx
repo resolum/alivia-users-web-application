@@ -30,7 +30,7 @@ import { useDocumentTitle } from '@/shared/presentation/hooks/useDocumentTitle.t
 import { useLoad } from '@/shared/presentation/hooks/useLoad.ts';
 import { RefreshButton } from '../components/RefreshButton.tsx';
 import { useLiveRefresh } from '../components/useLiveRefresh.ts';
-import { loadIncident, requestVisitReschedule } from '../../application/incidents.store.ts';
+import { loadIncident, requestVisitReschedule, IncidentActionUnavailableError} from '../../application/incidents.store.ts';
 import type { Incident, IncidentEvidence } from '../../domain/model/incident.entity.ts';
 import { PROBLEM_LABELS, STAGE } from '../incident-presentation.ts';
 import { IncidentStepper } from '../components/IncidentStepper.tsx';
@@ -82,7 +82,7 @@ function EvidenceTile({ evidence }: { readonly evidence: IncidentEvidence }) {
       <figcaption className="flex items-center justify-between gap-2 px-3 py-2 text-xs">
         <span className="truncate font-semibold text-alivia-primary-dark">{evidence.name}</span>
         <span className="shrink-0 text-alivia-text-muted">
-          {caption} · {evidence.sizeLabel}
+          {[caption, evidence.sizeLabel].filter(Boolean).join(' · ')}
         </span>
       </figcaption>
     </figure>
@@ -221,8 +221,8 @@ export function IncidentDetailView() {
     try {
       setData(await requestVisitReschedule(incident.id));
       notify('Pedimos la reprogramación. Soporte te llamará para elegir otra fecha.');
-    } catch {
-      notify('No pudimos enviar la solicitud. Inténtalo de nuevo.');
+    } catch (error) {
+      notify(error instanceof IncidentActionUnavailableError ? 'Esta acción todavía no está disponible en Alivia.' : 'No pudimos enviar la solicitud. Inténtalo de nuevo.');
     } finally {
       setBusy(false);
       setRescheduling(false);
@@ -240,7 +240,7 @@ export function IncidentDetailView() {
             <StatusDot tone={STAGE[incident.stage].tone}>{STAGE[incident.stage].label}</StatusDot>
           </div>
           <p className="text-sm text-alivia-text-muted">
-            {incident.deviceName} · {incident.roomName}
+            {incident.deviceLabel}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 print:hidden">
@@ -265,7 +265,7 @@ export function IncidentDetailView() {
         <Panel title="Detalle del reporte" icon={<ClipboardList className="size-5 text-alivia-secondary-deep" aria-hidden="true" />}>
           <dl className="grid gap-3 sm:grid-cols-2">
             <Fact label="Dispositivo y habitación">
-              {incident.deviceName} · {incident.roomName}
+              {incident.deviceLabel}
             </Fact>
             <Fact label="Tipo de problema">{PROBLEM_LABELS[incident.problemType]}</Fact>
             <Fact label="Fecha y hora del incidente" wide>
@@ -327,6 +327,7 @@ export function IncidentDetailView() {
                 {incident.attentionNote}
               </p>
             )}
+            {incident.address.line && (
             <div>
               <h3 className="text-[11px] font-bold tracking-wide text-alivia-text-muted uppercase">Ubicación del servicio</h3>
               <p className="mt-2 flex items-start gap-2 rounded-xl bg-alivia-page p-4 text-sm">
@@ -340,6 +341,7 @@ export function IncidentDetailView() {
                 </span>
               </p>
             </div>
+            )}
           </Panel>
         )}
       </div>

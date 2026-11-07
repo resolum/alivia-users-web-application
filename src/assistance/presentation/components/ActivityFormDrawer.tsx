@@ -3,6 +3,7 @@ import { CalendarCheck } from 'lucide-react';
 import { toIsoDate } from '@/shared/domain/model/valueobjects/relative-time.ts';
 import { Button, Drawer, Field, inputBase } from '@/shared/presentation/components/ui/index.ts';
 import { scheduleActivity } from '../../application/assistance.store.ts';
+import { AssistanceApiError } from '../../infrastructure/assistance-api-error.ts';
 import {
   ACTIVITY_TYPES,
   REPETITIONS,
@@ -82,7 +83,7 @@ export function ActivityFormDrawer({
   const [values, setValues] = useState<ScheduleActivityValues>(() => emptyValues(defaultDate));
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<string | null>(null);
 
   // Each opening starts from the target's values, reset during render instead of in an effect.
   const [openedFor, setOpenedFor] = useState(target);
@@ -91,7 +92,7 @@ export function ActivityFormDrawer({
     if (target !== null) {
       setValues(target === 'new' ? emptyValues(defaultDate) : valuesOf(target));
       setSubmitted(false);
-      setFailed(false);
+      setFailed(null);
     }
   }
 
@@ -107,12 +108,12 @@ export function ActivityFormDrawer({
     setSubmitted(true);
     if (Object.keys(command.validate()).length > 0 || !actor) return;
     setSaving(true);
-    setFailed(false);
+    setFailed(null);
     try {
       const caregiver = caregivers.find((item) => item.id === values.caregiverId);
       onSaved(await scheduleActivity(command, caregiver?.fullName ?? '', actor), editingId === null);
-    } catch {
-      setFailed(true);
+    } catch (error) {
+      setFailed(error instanceof AssistanceApiError && error.code === 'unavailable' ? 'Esta acción todavía no está disponible en Alivia.' : 'No pudimos guardar la actividad. Inténtalo de nuevo.');
     } finally {
       setSaving(false);
     }
@@ -311,7 +312,7 @@ export function ActivityFormDrawer({
 
         {failed && (
           <p role="alert" className="rounded-lg bg-alivia-danger/10 px-3 py-2 text-sm text-alivia-danger">
-            No pudimos guardar la actividad. Inténtalo de nuevo.
+            {failed}
           </p>
         )}
       </form>

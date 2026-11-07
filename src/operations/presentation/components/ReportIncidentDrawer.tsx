@@ -2,7 +2,15 @@ import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'r
 import { ImagePlus, Send, X } from 'lucide-react';
 import { loadHousehold } from '@/profiles/index.ts';
 import { Button, Drawer, Field, inputBase } from '@/shared/presentation/components/ui/index.ts';
-import { isIncidentsSample, loadOpenIncidentOf, loadReportForm, reportIncident, type ReportedDevice, type ReportOutcome } from '../../application/incidents.store.ts';
+import {
+  IncidentActionUnavailableError,
+  isIncidentsSample,
+  loadOpenIncidentOf,
+  loadReportForm,
+  reportIncident,
+  type ReportedDevice,
+  type ReportOutcome,
+} from '../../application/incidents.store.ts';
 import { PROBLEM_TYPES, type Incident, type ProblemType } from '../../domain/model/incident.entity.ts';
 import {
   DESCRIPTION_MAX,
@@ -153,9 +161,13 @@ export function ReportIncidentDrawer({ open, initialDeviceId, initialType, onClo
         setVisit(null);
         retrySlots();
       }
-      setFailure(reason instanceof IncidentsRequestError && reason.status !== 0 && reason.status < 500
-        ? reason.message
-        : 'No pudimos enviar el reporte. Revisa tu conexión e inténtalo de nuevo.');
+      if (reason instanceof IncidentActionUnavailableError) {
+        setFailure('Por ahora el reporte de incidencias no está disponible en la app. Escríbenos a soporte.');
+      } else {
+        setFailure(reason instanceof IncidentsRequestError && reason.status !== 0 && reason.status < 500
+          ? reason.message
+          : 'No pudimos enviar el reporte. Revisa tu conexión e inténtalo de nuevo.');
+      }
     } finally {
       setSending(false);
     }
