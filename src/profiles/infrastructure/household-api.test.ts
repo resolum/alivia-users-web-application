@@ -53,7 +53,7 @@ describe('httpHouseholdApi', () => {
       contactEmail: 'actualizado@alivia.pe',
     };
 
-    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
       if (init?.method === 'PUT') {
         return Promise.resolve(new Response(JSON.stringify(updatedResource), { status: 200 }));
       }
