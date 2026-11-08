@@ -12,26 +12,30 @@ vi.hoisted(() => {
 const caregiver = new Caregiver({
   id: '2',
   fullName: 'María Ramos',
-  relationship: 'Cuidadora',
+  relationship: 'external_caregiver',
+  relationshipDetail: 'Cuidadora',
   role: 'additional',
   status: 'active',
   email: 'maria@example.com',
   phone: '999888777',
   photoUrl: '',
-  joinedAt: '2026-01-01',
+  linkedSince: '2026-01-01',
+  invitedAt: '2026-01-01',
   responsibilities: ['manage_medications', 'record_medications'],
 });
 
 const actor = new Caregiver({
   id: '1',
   fullName: 'Juan Pérez',
-  relationship: 'Familiar',
+  relationship: 'family',
+  relationshipDetail: 'Familiar',
   role: 'principal',
   status: 'active',
   email: 'juan@example.com',
   phone: '999111222',
   photoUrl: '',
-  joinedAt: '2026-01-01',
+  linkedSince: '2026-01-01',
+  invitedAt: '2026-01-01',
   responsibilities: ['manage_medications', 'record_medications'],
 });
 
