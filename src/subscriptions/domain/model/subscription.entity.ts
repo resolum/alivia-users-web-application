@@ -14,6 +14,7 @@ export interface SubscriptionPayment {
   readonly amount: number;
   readonly paidAt: string;
   readonly status: 'paid' | 'failed';
+  readonly receiptUrl?: string | null;
 }
 
 export interface SubscriptionProps {
