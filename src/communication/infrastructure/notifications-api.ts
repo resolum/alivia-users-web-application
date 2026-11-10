@@ -112,7 +112,7 @@ const httpNotificationsApi: NotificationsApi = {
   isSample: false,
   list: async () => {
     try {
-      const res = await BaseApi.request(`${BASE_URL}/api/v1/notifications`, {
+      const res = await BaseApi.request(`${BASE_URL}/notifications`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' },
       }, { authenticated: true });
@@ -132,7 +132,7 @@ const httpNotificationsApi: NotificationsApi = {
     try {
       const numericIds = ids.map((id) => Number(id)).filter((id) => !isNaN(id));
       if (numericIds.length > 0) {
-        await BaseApi.request(`${BASE_URL}/api/v1/notifications/read`, {
+        await BaseApi.request(`${BASE_URL}/notifications/read`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ ids: numericIds }),
@@ -145,7 +145,7 @@ const httpNotificationsApi: NotificationsApi = {
   },
   publish: async (notification) => {
     try {
-      await BaseApi.request(`${BASE_URL}/api/v1/notifications`, {
+      await BaseApi.request(`${BASE_URL}/notifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

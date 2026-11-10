@@ -203,6 +203,25 @@ const localAssistanceApi: AssistanceApi = {
   },
 };
 
+const KINSHIP_TO_LABEL: Record<string, string> = {
+  PARENT: 'Padre',
+  GRANDPARENT: 'Abuelo/a',
+  AUNT_UNCLE: 'Tío/a',
+  SPOUSE: 'Cónyuge',
+  SIBLING: 'Hermano/a',
+  OTHER: 'Familiar',
+};
+
+function formatDisplayPhone(e164: string | null): string | null {
+  if (!e164 || e164.trim() === '') return null;
+  const digits = e164.replace(/\D/g, '');
+  const local = digits.startsWith('51') && digits.length > 2 ? digits.slice(2) : digits;
+  if (local.length === 9) {
+    return `+51 ${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`;
+  }
+  return e164;
+}
+
 /**
  * Connected HTTP API communicating with the Assistance Bounded Context endpoints.
  */
@@ -216,6 +235,31 @@ const httpAssistanceApi: AssistanceApi = {
         const data = await response.json();
         const item = Array.isArray(data) ? data[0] : data;
         if (item) {
+          let householdAlias = 'Hogar';
+          try {
+            const hhResponse = await BaseApi.request(`${BASE_URL}/households/mine`, { method: 'GET' }, { authenticated: true });
+            if (hhResponse.ok) {
+              const hhData = await hhResponse.json();
+              if (hhData?.alias) householdAlias = hhData.alias;
+            }
+          } catch {
+            // Keep default
+          }
+
+          let principalCaregiverName = 'Familiar Responsable';
+          try {
+            const profileResponse = await BaseApi.request(`${BASE_URL}/person-profiles/mine`, { method: 'GET' }, { authenticated: true });
+            if (profileResponse.ok) {
+              const profileData = await profileResponse.json();
+              const fullName = [profileData?.firstName, profileData?.lastName].filter(Boolean).join(' ');
+              if (fullName) principalCaregiverName = fullName;
+            }
+          } catch {
+            // Keep default
+          }
+
+          const kinshipDisplay = item.kinship ? (KINSHIP_TO_LABEL[item.kinship] ?? item.kinship) : 'Familiar';
+
           return new AssistedPerson({
             id: String(item.id),
             firstName: item.firstName ?? 'Persona',
@@ -223,13 +267,13 @@ const httpAssistanceApi: AssistanceApi = {
             documentType: (item.dni ? 'DNI' : 'DNI') as DocumentType,
             documentNumber: item.dni ?? '12345678',
             documentValidated: true,
-            birthDate: item.birthDate ?? '1950-01-01',
-            kinship: 'Padre',
-            phone: item.phoneNumber ?? null,
+            birthDate: item.birthDate ? String(item.birthDate).slice(0, 10) : '1950-01-01',
+            kinship: kinshipDisplay,
+            phone: formatDisplayPhone(item.phoneNumber),
             photoUrl: item.photoUrl ?? null,
-            householdAlias: 'Hogar Principal',
-            principalCaregiverName: 'Familiar Responsable',
-            principalCaregiverKinship: 'Hijo/a',
+            householdAlias,
+            principalCaregiverName,
+            principalCaregiverKinship: 'Titular',
           });
         }
       }
@@ -248,11 +292,11 @@ const httpAssistanceApi: AssistanceApi = {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            relativeId: 1,
             firstName,
             lastName,
             birthDate,
-            phoneNumber: command.phone,
+            phoneNumber: command.phone ? command.phone.replace(/\D/g, '') : null,
+            kinship,
           }),
         },
         { authenticated: true },
