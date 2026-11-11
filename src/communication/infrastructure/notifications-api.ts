@@ -130,7 +130,7 @@ const httpNotificationsApi: NotificationsApi = {
   },
   markRead: async (ids) => {
     try {
-      const numericIds = ids.map((id) => Number(id)).filter((id) => !isNaN(id));
+      const numericIds = ids.map((id) => Number(id)).filter((id) => !Number.isNaN(id));
       if (numericIds.length > 0) {
         await BaseApi.request(`${BASE_URL}/notifications/read`, {
           method: 'POST',

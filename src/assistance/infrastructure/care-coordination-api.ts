@@ -38,7 +38,9 @@ async function toApiError(responseOrStatus: Response | number): Promise<Assistan
     if (data && typeof data === 'object' && typeof data.code === 'string') {
       return new AssistanceApiError(data.code as AssistanceErrorCode);
     }
-  } catch {}
+  } catch {
+    // Ignore JSON parsing errors when response has no body or invalid format
+  }
   if (responseOrStatus.status === 403) return new AssistanceApiError('forbidden');
   if (responseOrStatus.status === 404) return new AssistanceApiError('not_found');
   if (responseOrStatus.status === 409) return new AssistanceApiError('conflict');

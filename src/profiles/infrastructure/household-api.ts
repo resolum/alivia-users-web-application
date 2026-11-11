@@ -161,7 +161,7 @@ const httpHouseholdApi: HouseholdApi = {
 
     // 2. Try stored householdId if known
     const registered = readRegistered();
-    if (registered && !isNaN(Number(registered.id))) {
+    if (registered && !Number.isNaN(Number(registered.id))) {
       try {
         const response = await BaseApi.request(
           `${householdsUrl}/${encodeURIComponent(registered.id)}`,
@@ -184,7 +184,7 @@ const httpHouseholdApi: HouseholdApi = {
   },
 
   updateHousehold: async (household: Household, command: UpdateHouseholdCommand): Promise<Household> => {
-    if (!isNaN(Number(household.id))) {
+    if (!Number.isNaN(Number(household.id))) {
       const response = await BaseApi.request(
         `${householdsUrl}/${encodeURIComponent(household.id)}`,
         {

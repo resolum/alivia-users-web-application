@@ -264,7 +264,7 @@ const httpAssistanceApi: AssistanceApi = {
             id: String(item.id),
             firstName: item.firstName ?? 'Persona',
             lastName: item.lastName ?? 'Asistida',
-            documentType: (item.dni ? 'DNI' : 'DNI') as DocumentType,
+            documentType: 'DNI' as DocumentType,
             documentNumber: item.dni ?? '12345678',
             documentValidated: true,
             birthDate: item.birthDate ? String(item.birthDate).slice(0, 10) : '1950-01-01',
@@ -583,7 +583,7 @@ const httpAssistanceApi: AssistanceApi = {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             careActivityId: 1,
-            assignmentId: isNaN(assignmentId) ? 1 : assignmentId,
+            assignmentId: Number.isNaN(assignmentId) ? 1 : assignmentId,
             date,
             caregiverUserId: Number(actor.id) || 1,
             notes: 'Completado por ' + actor.fullName,
@@ -615,7 +615,7 @@ const httpAssistanceApi: AssistanceApi = {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             careActivityId: 1,
-            assignmentId: isNaN(assignmentId) ? 1 : assignmentId,
+            assignmentId: Number.isNaN(assignmentId) ? 1 : assignmentId,
             date,
             relativeId: Number(actor.id) || 1,
           }),
