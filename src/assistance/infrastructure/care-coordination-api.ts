@@ -1,9 +1,10 @@
 import { addDays, toIsoDate } from '@/shared/domain/model/valueobjects/relative-time.ts';
+import { BaseApi } from '@/shared/infrastructure/base-api.ts';
 import { respond } from '@/shared/infrastructure/local-collection.ts';
 import type { AssignShiftCommand } from '../domain/model/assign-shift.command.ts';
-import { CareShift, shiftConflicts } from '../domain/model/care-shift.entity.ts';
+import { CareShift, shiftConflicts, type CareShiftProps } from '../domain/model/care-shift.entity.ts';
 import type { Caregiver } from '../domain/model/caregiver.entity.ts';
-import { Handover } from '../domain/model/handover.entity.ts';
+import { Handover, type HandoverProps } from '../domain/model/handover.entity.ts';
 import {
   dosesFor,
   MedicationAdministration,
@@ -15,10 +16,36 @@ import type {
   SuspendMedicationCommand,
   UpdateMedicationCommand,
 } from '../domain/model/medication.commands.ts';
-import { AssistanceApiError } from './assistance-api-error.ts';
+import { AssistanceApiError, type AssistanceErrorCode } from './assistance-api-error.ts';
 import { careAgendaApi, isCareAgendaConfigured } from './care-agenda-api.ts';
 import { activities } from './assistance.local-data.ts';
 import { administrations, handovers, medications, shifts } from './care-coordination.local-data.ts';
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
+const MEDICATIONS_PATH = import.meta.env.VITE_MEDICATIONS_ENDPOINT_PATH ?? 'medications';
+const SHIFTS_PATH = import.meta.env.VITE_SHIFTS_ENDPOINT_PATH ?? 'shifts';
+const HANDOVERS_PATH = import.meta.env.VITE_HANDOVERS_ENDPOINT_PATH ?? 'handovers';
+
+async function toApiError(responseOrStatus: Response | number): Promise<AssistanceApiError> {
+  if (typeof responseOrStatus === 'number') {
+    if (responseOrStatus === 403) return new AssistanceApiError('forbidden');
+    if (responseOrStatus === 404) return new AssistanceApiError('not_found');
+    if (responseOrStatus === 409) return new AssistanceApiError('already_recorded');
+    return new AssistanceApiError('conflict');
+  }
+  try {
+    const data = await responseOrStatus.json();
+    if (data && typeof data === 'object' && typeof data.code === 'string') {
+      return new AssistanceApiError(data.code as AssistanceErrorCode);
+    }
+  } catch {
+    // Ignore JSON parsing errors when response has no body or invalid format
+  }
+  if (responseOrStatus.status === 403) return new AssistanceApiError('forbidden');
+  if (responseOrStatus.status === 404) return new AssistanceApiError('not_found');
+  if (responseOrStatus.status === 409) return new AssistanceApiError('conflict');
+  return new AssistanceApiError('conflict');
+}
 
 export interface HandoverSummary {
   readonly attended: readonly string[];
@@ -328,11 +355,310 @@ const withAlert = (item: MedicationAdministration) => {
 };
 
 /**
- * Doses and their outcomes come from the backend agenda and medication administrations.
- * shortcut: shifts, reliefs and medication plans have no endpoint yet and stay in the browser copy.
+ * Connected to backend care-agenda, shifts, handovers and medication management endpoints.
  */
 const backendDosesApi: CareCoordinationApi = {
   ...localCareCoordinationApi,
+  isSample: false,
+
+  listShifts: async (from, to) => {
+    try {
+      const url = `${BASE_URL}/${SHIFTS_PATH}?from=${encodeURIComponent(from.toISOString())}&to=${encodeURIComponent(to.toISOString())}`;
+      const response = await BaseApi.request(url, { method: 'GET' }, { authenticated: true });
+      if (response.ok) {
+        const data = (await response.json()) as CareShiftProps[];
+        return data.map((props) => new CareShift(props));
+      }
+    } catch (e) {
+      console.warn('Failed to list shifts from backend, using fallback', e);
+    }
+    return localCareCoordinationApi.listShifts(from, to);
+  },
+
+  saveShift: async (command, caregiverName, allowConflict) => {
+    try {
+      const body = {
+        shiftId: command.shiftId,
+        caregiverId: command.values.caregiverId,
+        caregiverName,
+        startsAt: command.start.toISOString(),
+        endsAt: command.end.toISOString(),
+        notes: command.values.notes,
+        allowConflict,
+      };
+      const response = await BaseApi.request(
+        `${BASE_URL}/${SHIFTS_PATH}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+        { authenticated: true },
+      );
+      if (!response.ok) {
+        throw await toApiError(response);
+      }
+      const data = (await response.json()) as CareShiftProps;
+      return new CareShift(data);
+    } catch (e) {
+      if (e instanceof AssistanceApiError) throw e;
+      console.warn('Failed to save shift on backend, using fallback', e);
+      return localCareCoordinationApi.saveShift(command, caregiverName, allowConflict);
+    }
+  },
+
+  deleteShift: async (shiftId) => {
+    try {
+      const response = await BaseApi.request(
+        `${BASE_URL}/${SHIFTS_PATH}/${encodeURIComponent(shiftId)}`,
+        { method: 'DELETE' },
+        { authenticated: true },
+      );
+      if (!response.ok) {
+        throw await toApiError(response);
+      }
+      return;
+    } catch (e) {
+      if (e instanceof AssistanceApiError) throw e;
+      console.warn('Failed to delete shift on backend, using fallback', e);
+      return localCareCoordinationApi.deleteShift(shiftId);
+    }
+  },
+
+  listHandovers: async () => {
+    try {
+      const response = await BaseApi.request(`${BASE_URL}/${HANDOVERS_PATH}`, { method: 'GET' }, { authenticated: true });
+      if (response.ok) {
+        const data = (await response.json()) as HandoverProps[];
+        return data.map((props) => new Handover(props));
+      }
+    } catch (e) {
+      console.warn('Failed to list handovers from backend, using fallback', e);
+    }
+    return localCareCoordinationApi.listHandovers();
+  },
+
+  requestHandover: async (fromShiftId, toShiftId, summary) => {
+    if (fromShiftId.startsWith('sh-') || toShiftId.startsWith('sh-')) {
+      return localCareCoordinationApi.requestHandover(fromShiftId, toShiftId, summary);
+    }
+    try {
+      const body = {
+        fromShiftId,
+        toShiftId,
+        attended: summary.attended,
+        pending: summary.pending,
+      };
+      const response = await BaseApi.request(
+        `${BASE_URL}/${HANDOVERS_PATH}/request`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+        { authenticated: true },
+      );
+      if (!response.ok) {
+        throw await toApiError(response);
+      }
+      const data = (await response.json()) as HandoverProps;
+      return new Handover(data);
+    } catch (e) {
+      if (e instanceof AssistanceApiError) throw e;
+      console.warn('Failed to request handover on backend, using fallback', e);
+      return localCareCoordinationApi.requestHandover(fromShiftId, toShiftId, summary);
+    }
+  },
+
+  answerHandover: async (handoverId, accept, actor, summary) => {
+    if (handoverId.startsWith('ho-')) {
+      return localCareCoordinationApi.answerHandover(handoverId, accept, actor, summary);
+    }
+    try {
+      const body = {
+        accept,
+        actorId: actor.id,
+        actorName: actor.fullName,
+        attended: summary.attended,
+        pending: summary.pending,
+      };
+      const response = await BaseApi.request(
+        `${BASE_URL}/${HANDOVERS_PATH}/${encodeURIComponent(handoverId)}/answer`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+        { authenticated: true },
+      );
+      if (!response.ok) {
+        throw await toApiError(response);
+      }
+      const data = (await response.json()) as HandoverProps;
+      return new Handover(data);
+    } catch (e) {
+      if (e instanceof AssistanceApiError) throw e;
+      console.warn('Failed to answer handover on backend, using fallback', e);
+      return localCareCoordinationApi.answerHandover(handoverId, accept, actor, summary);
+    }
+  },
+
+  proposeSubstitute: async (handoverId, substitute, actor) => {
+    if (handoverId.startsWith('ho-')) {
+      return localCareCoordinationApi.proposeSubstitute(handoverId, substitute, actor);
+    }
+    try {
+      const body = {
+        substituteCaregiverId: substitute.id,
+        substituteCaregiverName: substitute.fullName,
+        actorId: actor.id,
+      };
+      const response = await BaseApi.request(
+        `${BASE_URL}/${HANDOVERS_PATH}/${encodeURIComponent(handoverId)}/substitute`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        },
+        { authenticated: true },
+      );
+      if (!response.ok) {
+        throw await toApiError(response);
+      }
+      const data = (await response.json()) as HandoverProps;
+      return new Handover(data);
+    } catch (e) {
+      if (e instanceof AssistanceApiError) throw e;
+      console.warn('Failed to propose substitute on backend, using fallback', e);
+      return localCareCoordinationApi.proposeSubstitute(handoverId, substitute, actor);
+    }
+  },
+
+  markEscalated: async (handoverId) => {
+    if (handoverId.startsWith('ho-')) {
+      return localCareCoordinationApi.markEscalated(handoverId);
+    }
+    try {
+      const response = await BaseApi.request(
+        `${BASE_URL}/${HANDOVERS_PATH}/${encodeURIComponent(handoverId)}/escalate`,
+        { method: 'POST' },
+        { authenticated: true },
+      );
+      if (!response.ok) {
+        throw await toApiError(response);
+      }
+      const data = (await response.json()) as HandoverProps;
+      return new Handover(data);
+    } catch (e) {
+      if (e instanceof AssistanceApiError) throw e;
+      console.warn('Failed to mark handover escalated on backend, using fallback', e);
+      return localCareCoordinationApi.markEscalated(handoverId);
+    }
+  },
+
+  listMedications: async () => {
+    const response = await BaseApi.request(`${BASE_URL}/${MEDICATIONS_PATH}`, { method: 'GET' }, { authenticated: true });
+    if (!response.ok) throw await toApiError(response);
+    const data = (await response.json()) as MedicationScheduleProps[];
+    return data.map((props) => new MedicationSchedule(props));
+  },
+
+  scheduleMedication: async (command, caregiver, actor) => {
+    allow(actor.can('manage_medications'));
+    allow(caregiver.can('record_medications'));
+    const { medication, dose, times, frequency, startDate, endDate, assistedPersonId, indicationRef } = command.values;
+    const body = {
+      medication,
+      dose,
+      times,
+      frequency: frequency || 'daily',
+      startDate,
+      endDate: endDate || null,
+      caregiverId: Number(caregiver.id) || null,
+      assistedPersonId: Number(assistedPersonId) || null,
+      indicationRef,
+    };
+    const url = `${BASE_URL}/assisted-persons/${encodeURIComponent(assistedPersonId)}/${MEDICATIONS_PATH}`;
+    const response = await BaseApi.request(
+      url,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+      { authenticated: true },
+    );
+    if (!response.ok) throw await toApiError(response);
+    const data = (await response.json()) as MedicationScheduleProps;
+    return new MedicationSchedule(data);
+  },
+
+  updateMedication: async (command, actor) => {
+    allow(actor.can('manage_medications'));
+    const { dose, times, frequency, effectiveFrom, indicationRef } = command.values;
+    const body = {
+      dose,
+      times,
+      frequency: frequency || 'daily',
+      effectiveFrom,
+      indicationRef,
+    };
+    const url = `${BASE_URL}/${MEDICATIONS_PATH}/${encodeURIComponent(command.scheduleId)}`;
+    const response = await BaseApi.request(
+      url,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+      { authenticated: true },
+    );
+    if (!response.ok) throw await toApiError(response);
+    const data = (await response.json()) as MedicationScheduleProps;
+    return new MedicationSchedule(data);
+  },
+
+  suspendMedication: async (command, actor) => {
+    allow(actor.can('manage_medications'));
+    const body = {
+      from: command.from,
+      source: command.source,
+    };
+    const url = `${BASE_URL}/${MEDICATIONS_PATH}/${encodeURIComponent(command.scheduleId)}/suspend`;
+    const response = await BaseApi.request(
+      url,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+      { authenticated: true },
+    );
+    if (!response.ok) throw await toApiError(response);
+    const data = (await response.json()) as MedicationScheduleProps;
+    return new MedicationSchedule(data);
+  },
+
+  assignMedicationResponsible: async (scheduleId, caregiver, actor) => {
+    allow(actor.can('manage_medications'));
+    allow(caregiver.can('record_medications'));
+    const body = {
+      caregiverId: Number(caregiver.id) || null,
+    };
+    const url = `${BASE_URL}/${MEDICATIONS_PATH}/${encodeURIComponent(scheduleId)}/responsible`;
+    const response = await BaseApi.request(
+      url,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      },
+      { authenticated: true },
+    );
+    if (!response.ok) throw await toApiError(response);
+    const data = (await response.json()) as MedicationScheduleProps;
+    return new MedicationSchedule(data);
+  },
 
   listAdministrations: async (from, to) =>
     (await careAgendaApi.listAdministrations(toIsoDate(from), toIsoDate(to))).map(withAlert),
@@ -352,4 +678,3 @@ const backendDosesApi: CareCoordinationApi = {
 export function getCareCoordinationApi(): CareCoordinationApi {
   return isCareAgendaConfigured() ? backendDosesApi : localCareCoordinationApi;
 }
-

@@ -43,6 +43,10 @@ function Line({ label, children }: { readonly label: string; readonly children: 
 function downloadReceipt(subscription: Subscription) {
   const payment = subscription.lastPayment;
   if (!payment) return;
+  if (payment.receiptUrl) {
+    window.open(payment.receiptUrl, '_blank', 'noopener,noreferrer');
+    return;
+  }
   const text = [
     'ALIVIA · Comprobante de pago',
     '',

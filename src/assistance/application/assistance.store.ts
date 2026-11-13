@@ -34,7 +34,11 @@ export const updateResponsibilities = (caregiverId: string, responsibilities: re
   api().updateResponsibilities(caregiverId, responsibilities);
 
 export const loadInvitation = (token: string) => api().getInvitation(token);
-export const answerInvitation = (token: string, accept: boolean) => api().answerInvitation(token, accept);
+export const answerInvitation = (
+  token: string,
+  accept: boolean,
+  registrationData?: { password?: string; firstName?: string; lastName?: string; phoneNumber?: string },
+) => api().answerInvitation(token, accept, registrationData);
 
 /** Activities of the 7 days starting on `weekStart`. */
 export function loadWeek(weekStart: Date): Promise<CareActivity[]> {

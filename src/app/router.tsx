@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { createBrowserRouter, Navigate } from 'react-router';
+import { createBrowserRouter, Navigate, useSearchParams } from 'react-router';
 import { iamRoutes, RequireAuth } from '@/iam/index.ts';
 import {
   NAV_ITEMS,
@@ -58,6 +58,12 @@ const navRoutes = [
   { path: 'incidents/:id/registered', element: <IncidentRegisteredView /> },
 ];
 
+function ActivateAccountRedirect() {
+  const [params] = useSearchParams();
+  const invitationId = params.get('invitationId');
+  return <Navigate to={invitationId ? `/invitations/${invitationId}` : '/home'} replace />;
+}
+
 /**
  * Public auth screens live under GuestOnly; private screens require both a
  * session and the access level declared by the navigation catalog.
@@ -74,6 +80,7 @@ export const router = createBrowserRouter([
   { path: 'contract/tracking', element: <ContractingTrackingView /> },
   // Opened from the invitation e-mail, with or without a session.
   { path: 'invitations/:token', element: <InvitationView /> },
+  { path: 'activate-account', element: <ActivateAccountRedirect /> },
   ...iamRoutes,
   {
     element: <RequireAuth />,

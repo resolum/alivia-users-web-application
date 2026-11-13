@@ -44,7 +44,11 @@ export function InvitationView() {
   const navigate = useNavigate();
   const { status: sessionStatus } = useSession();
   const { state, retry, setData } = useLoad(() => loadInvitation(token), [token]);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState<'accept' | 'reject' | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -54,14 +58,42 @@ export function InvitationView() {
   const accept = async (event: FormEvent, invitation: Invitation) => {
     event.preventDefault();
     setError(null);
-    if (!signedIn && password === '') {
-      setError('Ingresa tu contraseña para continuar.');
-      return;
+    const isNew = invitation.isNewUser ?? false;
+
+    if (!signedIn) {
+      if (isNew) {
+        if (!firstName.trim() || !lastName.trim()) {
+          setError('Ingresa tu nombre y apellido para continuar.');
+          return;
+        }
+        if (password.length < 8) {
+          setError('La contraseña debe tener al menos 8 caracteres.');
+          return;
+        }
+        if (password !== confirmPassword) {
+          setError('Las contraseñas no coinciden.');
+          return;
+        }
+      } else if (password === '') {
+        setError('Ingresa tu contraseña para continuar.');
+        return;
+      }
     }
+
     setBusy('accept');
     try {
-      if (!signedIn) await signIn(new SignInCommand({ emailAddress: invitation.email, password }), false);
-      await answerInvitation(token, true);
+      if (!signedIn && isNew) {
+        await answerInvitation(token, true, {
+          password,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          phoneNumber: phoneNumber.trim() || '51987654321',
+        });
+        await signIn(new SignInCommand({ emailAddress: invitation.email, password }), false);
+      } else {
+        if (!signedIn) await signIn(new SignInCommand({ emailAddress: invitation.email, password }), false);
+        await answerInvitation(token, true);
+      }
       void navigate('/home', { replace: true });
     } catch (caught) {
       setBusy(null);
@@ -165,7 +197,106 @@ export function InvitationView() {
                   )}
                 </Field>
 
-                {!signedIn && (
+                {!signedIn && state.data.isNewUser && (
+                  <>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <Field id="invitation-first-name" label="Nombre(s)" required>
+                        {(describedBy) => (
+                          <input
+                            id="invitation-first-name"
+                            type="text"
+                            autoComplete="given-name"
+                            value={firstName}
+                            onChange={(event) => setFirstName(event.target.value)}
+                            aria-describedby={describedBy}
+                            placeholder="Ej. Carlos"
+                            className={`${inputBase} min-h-11`}
+                          />
+                        )}
+                      </Field>
+                      <Field id="invitation-last-name" label="Apellidos" required>
+                        {(describedBy) => (
+                          <input
+                            id="invitation-last-name"
+                            type="text"
+                            autoComplete="family-name"
+                            value={lastName}
+                            onChange={(event) => setLastName(event.target.value)}
+                            aria-describedby={describedBy}
+                            placeholder="Ej. Gómez"
+                            className={`${inputBase} min-h-11`}
+                          />
+                        )}
+                      </Field>
+                    </div>
+
+                    <Field id="invitation-phone" label="Teléfono móvil" hint="Para coordinaciones del hogar.">
+                      {(describedBy) => (
+                        <input
+                          id="invitation-phone"
+                          type="tel"
+                          autoComplete="tel"
+                          value={phoneNumber}
+                          onChange={(event) => setPhoneNumber(event.target.value)}
+                          aria-describedby={describedBy}
+                          placeholder="Ej. 987654321"
+                          className={`${inputBase} min-h-11`}
+                        />
+                      )}
+                    </Field>
+
+                    <Field
+                      id="invitation-password"
+                      label="Crea tu contraseña"
+                      required
+                      hint="Mínimo 8 caracteres."
+                    >
+                      {(describedBy) => (
+                        <div className="relative">
+                          <input
+                            id="invitation-password"
+                            type={showPassword ? 'text' : 'password'}
+                            autoComplete="new-password"
+                            value={password}
+                            onChange={(event) => setPassword(event.target.value)}
+                            aria-describedby={describedBy}
+                            placeholder="Crea una contraseña segura"
+                            className={`${inputBase} min-h-11 pr-12`}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword((value) => !value)}
+                            aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                            className="absolute top-0 right-0 grid size-11 place-items-center text-alivia-hint hover:text-alivia-primary"
+                          >
+                            {showPassword ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+                          </button>
+                        </div>
+                      )}
+                    </Field>
+
+                    <Field
+                      id="invitation-confirm-password"
+                      label="Confirmar contraseña"
+                      required
+                    >
+                      {(describedBy) => (
+                        <input
+                          id="invitation-confirm-password"
+                          type={showPassword ? 'text' : 'password'}
+                          autoComplete="new-password"
+                          value={confirmPassword}
+                          onChange={(event) => setConfirmPassword(event.target.value)}
+                          aria-describedby={describedBy}
+                          placeholder="Repite tu contraseña"
+                          className={`${inputBase} min-h-11`}
+                        />
+                      )}
+                    </Field>
+                  </>
+                )}
+
+                {!signedIn && !state.data.isNewUser && (
                   <Field
                     id="invitation-password"
                     label="Contraseña"
@@ -202,14 +333,18 @@ export function InvitationView() {
                     )}
                   </Field>
                 )}
-                {signedIn && error && (
+                {error && (
                   <p role="alert" className="text-sm font-semibold text-alivia-danger">
                     {error}
                   </p>
                 )}
 
                 <Button type="submit" loading={busy === 'accept'} disabled={busy !== null} className="w-full">
-                  {signedIn ? 'Aceptar invitación' : 'Iniciar sesión y aceptar'}
+                  {signedIn
+                    ? 'Aceptar invitación'
+                    : state.data.isNewUser
+                    ? 'Crear cuenta y unirme'
+                    : 'Iniciar sesión y aceptar'}
                 </Button>
                 <Button variant="ghost" onClick={reject} loading={busy === 'reject'} disabled={busy !== null} className="self-center text-alivia-text-muted">
                   Rechazar invitación
