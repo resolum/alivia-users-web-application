@@ -13,4 +13,5 @@ export interface Invitation {
   readonly invitedByRelationship: string;
   readonly responsibilities: readonly Responsibility[];
   readonly status: InvitationStatus;
+  readonly isNewUser?: boolean;
 }

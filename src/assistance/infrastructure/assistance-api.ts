@@ -33,7 +33,11 @@ export interface AssistanceApi {
   listNetworkLog(): Promise<NetworkLogEntry[]>;
   getInvitation(token: string): Promise<Invitation>;
   /** Rejects with `invitation_closed` unless the invitation is still valid. */
-  answerInvitation(token: string, accept: boolean): Promise<Invitation>;
+  answerInvitation(
+    token: string,
+    accept: boolean,
+    registrationData?: { password?: string; firstName?: string; lastName?: string; phoneNumber?: string },
+  ): Promise<Invitation>;
   listActivities(from: string, to: string): Promise<CareActivity[]>;
   /** The activity calls reject with `forbidden` unless `actor` can manage activities. */
   scheduleActivity(command: ScheduleActivityCommand, caregiverName: string, actor: Caregiver): Promise<CareActivity>;
@@ -392,8 +396,6 @@ const httpAssistanceApi: AssistanceApi = {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            relativeId: 1,
-            assistedPersonId: 1,
             inviteeEmail: command.email,
           }),
         },
@@ -467,7 +469,7 @@ const httpAssistanceApi: AssistanceApi = {
         { authenticated: false },
       );
       if (response.ok) {
-        const inv = (await response.json()) as { id: number; inviteeEmail: string; status: string };
+        const inv = (await response.json()) as { id: number; inviteeEmail: string; status: string; isNewUser?: boolean };
         return {
           token: String(inv.id),
           caregiverId: String(inv.id),
@@ -477,6 +479,7 @@ const httpAssistanceApi: AssistanceApi = {
           invitedByRelationship: 'Familiar',
           responsibilities: ['view_activities', 'manage_activities'],
           status: inv.status === 'ACCEPTED' ? 'accepted' : inv.status === 'PENDING' ? 'active' : 'expired',
+          isNewUser: inv.isNewUser ?? true,
         };
       }
     } catch (e) {
@@ -485,17 +488,18 @@ const httpAssistanceApi: AssistanceApi = {
     return localAssistanceApi.getInvitation(token);
   },
 
-  answerInvitation: async (token, accept) => {
+  answerInvitation: async (token, accept, registrationData) => {
     try {
       if (accept) {
+        const isRegistration = Boolean(registrationData?.password);
         const response = await BaseApi.request(
           `${BASE_URL}/invitations/${encodeURIComponent(token)}/accept`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ caregiverUserId: 1 }),
+            body: JSON.stringify(registrationData ?? {}),
           },
-          { authenticated: true },
+          { authenticated: !isRegistration },
         );
         if (response.ok) {
           return localAssistanceApi.answerInvitation(token, true);
@@ -519,6 +523,16 @@ const httpAssistanceApi: AssistanceApi = {
   scheduleActivity: async (command, caregiverName, actor) => {
     allowActivities(actor);
     const { type, ...values } = command.values;
+    const typeMapping: Record<string, string> = {
+      nutrition: 'MEAL',
+      hydration: 'MEAL',
+      mobility: 'EXERCISE',
+      social: 'APPOINTMENT',
+      leisure: 'OTHER',
+      hygiene: 'HYGIENE',
+      medication: 'MEDICATION',
+    };
+    const backendType = typeMapping[type] || (type || 'hygiene').toUpperCase();
     try {
       const createResponse = await BaseApi.request(
         `${BASE_URL}/activities`,
@@ -526,9 +540,7 @@ const httpAssistanceApi: AssistanceApi = {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            relativeId: 1,
-            assistedPersonId: 1,
-            type: (type || 'hygiene').toUpperCase(),
+            type: backendType,
             title: values.title,
             description: values.notes || values.title,
           }),
@@ -550,7 +562,6 @@ const httpAssistanceApi: AssistanceApi = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              relativeId: 1,
               caregiverId: Number(values.caregiverId) || null,
               scheduleType: values.repetition === 'none' ? 'ONCE' : 'WEEKLY',
               days: values.repetition === 'none' ? [] : ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'],
@@ -582,10 +593,9 @@ const httpAssistanceApi: AssistanceApi = {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            careActivityId: 1,
             assignmentId: Number.isNaN(assignmentId) ? 1 : assignmentId,
             date,
-            caregiverUserId: Number(actor.id) || 1,
+            caregiverUserId: Number(actor.id) || null,
             notes: 'Completado por ' + actor.fullName,
           }),
         },
@@ -614,10 +624,8 @@ const httpAssistanceApi: AssistanceApi = {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            careActivityId: 1,
             assignmentId: Number.isNaN(assignmentId) ? 1 : assignmentId,
             date,
-            relativeId: Number(actor.id) || 1,
           }),
         },
         { authenticated: true },
