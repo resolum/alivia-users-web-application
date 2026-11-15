@@ -34,6 +34,7 @@ const CLOSED_TEXT: Record<Exclude<Invitation['status'], 'active'>, { title: stri
 
 function signInMessage(error: unknown): string {
   if (error instanceof IamError && error.code === 'invalid_credentials') return 'El correo o la contraseña son incorrectos.';
+  if (error instanceof Error && !(error instanceof IamError) && error.message) return error.message;
   return 'No pudimos iniciar sesión. Revisa tu conexión e inténtalo de nuevo.';
 }
 
@@ -66,8 +67,8 @@ export function InvitationView() {
           setError('Ingresa tu nombre y apellido para continuar.');
           return;
         }
-        if (password.length < 8) {
-          setError('La contraseña debe tener al menos 8 caracteres.');
+        if (password.length < 8 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password) || !/[@$!%*?&#]/.test(password)) {
+          setError('La contraseña debe tener al menos 8 caracteres, incluyendo mayúscula, minúscula, número y símbolo (@$!%*?&#).');
           return;
         }
         if (password !== confirmPassword) {
@@ -239,7 +240,7 @@ export function InvitationView() {
                           value={phoneNumber}
                           onChange={(event) => setPhoneNumber(event.target.value)}
                           aria-describedby={describedBy}
-                          placeholder="Ej. 987654321"
+                          placeholder="Ej. +51987654321"
                           className={`${inputBase} min-h-11`}
                         />
                       )}
@@ -249,7 +250,7 @@ export function InvitationView() {
                       id="invitation-password"
                       label="Crea tu contraseña"
                       required
-                      hint="Mínimo 8 caracteres."
+                      hint="Mínimo 8 caracteres, con mayúscula, minúscula, número y símbolo (@$!%*?&#)."
                     >
                       {(describedBy) => (
                         <div className="relative">
