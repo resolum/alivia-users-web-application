@@ -7,16 +7,14 @@ describe('Subscription API', () => {
     vi.restoreAllMocks();
   });
 
-  it('falls back to local sample subscription when backend request fails', async () => {
-    vi.spyOn(BaseApi, 'request').mockRejectedValue(new Error('Network error'));
+  it('returns null when backend returns 404 and propagates network errors', async () => {
+    vi.spyOn(BaseApi, 'request').mockResolvedValueOnce(new Response(null, { status: 404 }));
 
     const api = getSubscriptionApi();
-    const subscription = await api.getCurrent();
+    expect(await api.getCurrent()).toBeNull();
 
-    expect(subscription).toBeDefined();
-    expect(subscription.planCode).toBe('MINIMUM');
-    expect(subscription.status).toBe('active');
-    expect(subscription.monthlyAmount).toBe(99);
+    vi.spyOn(BaseApi, 'request').mockRejectedValueOnce(new Error('Network error'));
+    await expect(api.getCurrent()).rejects.toThrow('Network error');
   });
 
   it('maps backend response to subscription entity when request succeeds', async () => {
@@ -57,13 +55,14 @@ describe('Subscription API', () => {
     const api = getSubscriptionApi();
     const subscription = await api.getCurrent();
 
-    expect(subscription.id).toBe('123');
-    expect(subscription.planCode).toBe('CUSTOM');
-    expect(subscription.planName).toBe('Plan Personalizado');
-    expect(subscription.status).toBe('active');
-    expect(subscription.monthlyAmount).toBe(159);
-    expect(subscription.paymentMethod.brand).toBe('MasterCard');
-    expect(subscription.lastPayment?.receiptUrl).toBe('https://stripe.com/receipt/test');
+    expect(subscription).not.toBeNull();
+    expect(subscription!.id).toBe('123');
+    expect(subscription!.planCode).toBe('CUSTOM');
+    expect(subscription!.planName).toBe('Plan Personalizado');
+    expect(subscription!.status).toBe('active');
+    expect(subscription!.monthlyAmount).toBe(159);
+    expect(subscription!.paymentMethod.brand).toBe('MasterCard');
+    expect(subscription!.lastPayment?.receiptUrl).toBe('https://stripe.com/receipt/test');
   });
 
   it('updates subscription status via API', async () => {

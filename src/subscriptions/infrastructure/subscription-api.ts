@@ -1,11 +1,10 @@
 import { BaseApi } from '@/shared/infrastructure/base-api.ts';
-import { LocalCollection, respond } from '@/shared/infrastructure/local-collection.ts';
 import type { PlanCode } from '../domain/model/plan.entity.ts';
-import { Subscription, type SubscriptionProps, type SubscriptionStatus } from '../domain/model/subscription.entity.ts';
+import { Subscription, type SubscriptionStatus } from '../domain/model/subscription.entity.ts';
 
 export interface SubscriptionApi {
   readonly isSample: boolean;
-  getCurrent(): Promise<Subscription>;
+  getCurrent(): Promise<Subscription | null>;
   changeStatus(id: string, status: SubscriptionStatus): Promise<Subscription>;
   requestPlanChange(id: string, planCode: PlanCode): Promise<Subscription>;
 }
@@ -39,30 +38,6 @@ interface BackendSubscriptionResource {
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
-const subscriptions = new LocalCollection<SubscriptionProps>('alivia.subscriptions.current', () => [
-  {
-    id: 'sub-sample',
-    status: 'active',
-    planCode: 'MINIMUM',
-    planName: 'Plan Base',
-    currency: 'S/',
-    monthlyAmount: 99,
-    startedOn: '2024-10-15',
-    renewsOn: '2024-11-15',
-    rooms: 2,
-    devices: 5,
-    paymentMethod: { brand: 'VISA', last4: '4242', holderName: 'María Elena Villanueva C.', autoCharge: true },
-    lastPayment: { id: 'pay-2024-10-15', amount: 99, paidAt: '2024-10-15', status: 'paid' },
-    pendingPlanCode: null,
-  },
-]);
-
-function requireSubscription(id: string): SubscriptionProps {
-  const found = subscriptions.find(id);
-  if (!found) throw new Error('subscription_not_found');
-  return found;
-}
-
 function toSubscriptionEntity(res: BackendSubscriptionResource): Subscription {
   const statusLower = (res.status ?? '').toLowerCase();
   const status: SubscriptionStatus =
@@ -74,16 +49,16 @@ function toSubscriptionEntity(res: BackendSubscriptionResource): Subscription {
     planCode: (res.planCode ?? 'MINIMUM') as PlanCode,
     planName: res.planName ?? (res.planCode === 'CUSTOM' ? 'Plan Personalizado' : 'Plan Base'),
     currency: res.currency ?? 'S/',
-    monthlyAmount: Number(res.monthlyAmount ?? 99),
-    startedOn: res.startedOn ?? '2024-10-15',
-    renewsOn: res.renewsOn ?? '2024-11-15',
-    rooms: res.rooms ?? 2,
-    devices: res.devices ?? 5,
+    monthlyAmount: Number(res.monthlyAmount ?? 0),
+    startedOn: res.startedOn,
+    renewsOn: res.renewsOn,
+    rooms: res.rooms ?? 0,
+    devices: res.devices ?? 0,
     paymentMethod: res.paymentMethod ?? {
-      brand: 'VISA',
-      last4: '4242',
-      holderName: 'María Elena Villanueva C.',
-      autoCharge: true,
+      brand: 'Stripe',
+      last4: '••••',
+      holderName: 'Titular de la cuenta',
+      autoCharge: false,
     },
     lastPayment: res.lastPayment
       ? {
@@ -98,73 +73,50 @@ function toSubscriptionEntity(res: BackendSubscriptionResource): Subscription {
   });
 }
 
-const localSubscriptionApi: SubscriptionApi = {
-  isSample: true,
-  getCurrent: async () => {
-    const [current] = await respond(subscriptions.all());
-    return new Subscription(current);
-  },
-  changeStatus: async (id, status) =>
-    new Subscription(await respond(subscriptions.save({ ...requireSubscription(id), status }))),
-  requestPlanChange: async (id, planCode) =>
-    new Subscription(await respond(subscriptions.save({ ...requireSubscription(id), pendingPlanCode: planCode }))),
-};
-
 const httpSubscriptionApi: SubscriptionApi = {
   isSample: false,
   getCurrent: async () => {
-    try {
-      const response = await BaseApi.request(`${API_BASE_URL}/subscriptions/current`, {
-        method: 'GET',
-        headers: { Accept: 'application/json' },
-      }, { authenticated: true });
+    const response = await BaseApi.request(`${API_BASE_URL}/subscriptions/current`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    }, { authenticated: true });
 
-      if (response.ok) {
-        const data = (await response.json()) as BackendSubscriptionResource;
-        return toSubscriptionEntity(data);
-      }
-    } catch {
-      // fallback to sample data if offline, backend unreachable, or unauthenticated
+    if (response.status === 404) {
+      return null;
     }
-    return localSubscriptionApi.getCurrent();
+    if (!response.ok) {
+      throw new Error(`subscription_load_failed:${response.status}`);
+    }
+    const data = (await response.json()) as BackendSubscriptionResource;
+    return toSubscriptionEntity(data);
   },
 
   changeStatus: async (id, status) => {
-    try {
-      const response = await BaseApi.request(`${API_BASE_URL}/subscriptions/${encodeURIComponent(id)}/status`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ status }),
-      }, { authenticated: true });
+    const response = await BaseApi.request(`${API_BASE_URL}/subscriptions/${encodeURIComponent(id)}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ status }),
+    }, { authenticated: true });
 
-      if (response.ok) {
-        const data = (await response.json()) as BackendSubscriptionResource;
-        localSubscriptionApi.changeStatus(id, status).catch(() => {});
-        return toSubscriptionEntity(data);
-      }
-    } catch {
-      // fallback
+    if (!response.ok) {
+      throw new Error(`subscription_status_failed:${response.status}`);
     }
-    return localSubscriptionApi.changeStatus(id, status);
+    const data = (await response.json()) as BackendSubscriptionResource;
+    return toSubscriptionEntity(data);
   },
 
   requestPlanChange: async (id, planCode) => {
-    try {
-      const response = await BaseApi.request(`${API_BASE_URL}/subscriptions/${encodeURIComponent(id)}/plan-change`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ planCode }),
-      }, { authenticated: true });
+    const response = await BaseApi.request(`${API_BASE_URL}/subscriptions/${encodeURIComponent(id)}/plan-change`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ planCode }),
+    }, { authenticated: true });
 
-      if (response.ok) {
-        const data = (await response.json()) as BackendSubscriptionResource;
-        localSubscriptionApi.requestPlanChange(id, planCode).catch(() => {});
-        return toSubscriptionEntity(data);
-      }
-    } catch {
-      // fallback
+    if (!response.ok) {
+      throw new Error(`subscription_plan_change_failed:${response.status}`);
     }
-    return localSubscriptionApi.requestPlanChange(id, planCode);
+    const data = (await response.json()) as BackendSubscriptionResource;
+    return toSubscriptionEntity(data);
   },
 };
 
