@@ -161,6 +161,14 @@ export function SubscriptionView() {
       {state.status === 'error' && (
         <ErrorState title="No pudimos cargar tu suscripción" message="Revisa tu conexión e inténtalo de nuevo." onRetry={retry} />
       )}
+      {state.status === 'ready' && !subscription && (
+        <div className="rounded-2xl border border-alivia-primary-mist bg-white p-8 text-center">
+          <p className="text-lg font-bold text-alivia-primary-dark">Aún no tienes una suscripción activa</p>
+          <p className="mt-1 text-sm text-alivia-text-muted">
+            Cuando contrates un plan, aquí verás tu cobertura, renovaciones y comprobantes de pago.
+          </p>
+        </div>
+      )}
 
       {subscription && (
         <div className="reveal-stagger grid gap-5 lg:grid-cols-[1.15fr_1fr]">
