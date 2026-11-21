@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ArrowRightLeft, Asterisk, BatteryWarning, CalendarClock, ChevronRight, Pill, Wrench, type LucideIcon } from 'lucide-react';
+import { ArrowRightLeft, Asterisk, BatteryWarning, CalendarClock, ChevronRight, Pill, UserRoundCheck, Wrench, type LucideIcon } from 'lucide-react';
 import { formatRelative } from '@/shared/domain/model/valueobjects/relative-time.ts';
 import {
   Bone,
@@ -8,7 +8,7 @@ import {
   Skeleton,
 } from '@/shared/presentation/components/ui/index.ts';
 import { markNotificationsRead } from '../../application/notifications.store.ts';
-import { isToday, isUrgent, type CaregiverNotification, type NotificationKind } from '../../domain/model/notification.entity.ts';
+import { isReminder, isToday, isUrgent, type CaregiverNotification, type NotificationKind } from '../../domain/model/notification.entity.ts';
 
 const KIND: Record<NotificationKind, { icon: LucideIcon; tone: string }> = {
   assistance_request: { icon: Asterisk, tone: 'bg-alivia-danger/10 text-alivia-danger' },
@@ -17,6 +17,8 @@ const KIND: Record<NotificationKind, { icon: LucideIcon; tone: string }> = {
   incident_update: { icon: Wrench, tone: 'bg-alivia-mint text-alivia-secondary-deep' },
   handover_escalated: { icon: ArrowRightLeft, tone: 'bg-alivia-danger/10 text-alivia-danger' },
   medication_overdue: { icon: Pill, tone: 'bg-alivia-warning-soft text-alivia-warning' },
+  shift_reminder: { icon: UserRoundCheck, tone: 'bg-alivia-primary-mist text-alivia-primary' },
+  medication_reminder: { icon: Pill, tone: 'bg-alivia-primary-mist text-alivia-primary' },
 };
 
 interface NotificationListProps {
@@ -46,6 +48,10 @@ function Item({ item, onOpen }: { readonly item: CaregiverNotification; readonly
             {formatRelative(item.createdAt)}
           </time>
         </div>
+        {/* Worded, not only colored, so a reminder never reads as an alert. */}
+        <p className={`text-xs font-bold ${isReminder(item) ? 'text-alivia-primary' : 'text-alivia-danger'}`}>
+          {isReminder(item) ? 'Recordatorio' : 'Alerta'}
+        </p>
         <p className="mt-0.5 text-sm text-alivia-text">{item.body}</p>
         <button
           type="button"

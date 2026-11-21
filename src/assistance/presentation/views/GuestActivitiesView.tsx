@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router';
 import { CalendarDays, ChevronLeft, ChevronRight, List, Repeat } from 'lucide-react';
 import { addDays, toIsoDate } from '@/shared/domain/model/valueobjects/relative-time.ts';
 import {
@@ -15,8 +16,11 @@ import {
 import { useDocumentTitle } from '@/shared/presentation/hooks/useDocumentTitle.ts';
 import { useLoad } from '@/shared/presentation/hooks/useLoad.ts';
 import { completeActivity, isAssistanceSample, loadWeek, startOfWeek } from '../../application/assistance.store.ts';
+import { loadShifts } from '../../application/care-coordination.store.ts';
 import type { ActivityState, CareActivity } from '../../domain/model/care-activity.entity.ts';
-import { formatClock, GUEST_STATE } from '../assistance-labels.ts';
+import type { CareShift } from '../../domain/model/care-shift.entity.ts';
+import { ACTIVITY_TYPE, formatClock, formatRange, GUEST_STATE, PRIORITY_LABELS } from '../assistance-labels.ts';
+import { ShiftWeekCalendar } from '../components/ShiftWeekCalendar.tsx';
 import { GuestActivityDrawer } from '../components/GuestActivityDrawer.tsx';
 import { GuestStatePill } from '../components/GuestStatePill.tsx';
 import { WeekCalendar, WeekCalendarSkeleton } from '../components/WeekCalendar.tsx';
@@ -97,6 +101,62 @@ const MODES = [
   { id: 'schedule', label: 'Horarios', icon: CalendarDays },
 ] as const;
 
+/** A shift takes the same pill as an activity: upcoming, running or done. */
+function shiftState(shift: CareShift, now: Date): ActivityState {
+  if (shift.end <= now) return 'completed';
+  return shift.covers(now) ? 'pending' : 'scheduled';
+}
+
+type Row =
+  | { readonly kind: 'activity'; readonly at: number; readonly activity: CareActivity }
+  | { readonly kind: 'shift'; readonly at: number; readonly shift: CareShift };
+
+interface ShiftRowProps {
+  readonly shift: CareShift;
+  readonly state: ActivityState;
+  readonly person: string;
+  readonly showDay: boolean;
+}
+
+/** A shift in the list; it opens the shift board, where handovers are answered. */
+function ShiftRow({ shift, state, person, showDay }: ShiftRowProps) {
+  return (
+    <li>
+      <Link
+        to="/shifts"
+        aria-label={`Turno ${formatRange(shift.start, shift.end)}, ${GUEST_STATE[state].label}`}
+        className="group flex w-full items-center gap-3 px-4 py-3.5 text-left transition-colors duration-150 hover:bg-alivia-page/70 active:bg-alivia-primary-mist/50 sm:gap-4 sm:px-5"
+      >
+        <span className="w-[4.75rem] shrink-0 text-sm text-alivia-primary-dark tabular-nums">
+          {formatClock(shift.start.toTimeString().slice(0, 5))}
+          {showDay && (
+            <span className="block text-xs text-alivia-text-muted first-letter:uppercase">
+              {weekday(toIsoDate(shift.start), { weekday: 'short', day: 'numeric' })}
+            </span>
+          )}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-semibold text-alivia-primary-dark">Turno de cuidado · {formatRange(shift.start, shift.end)}</span>
+          {/* A shift carries the main responsibility for the person, hence the high priority. */}
+          <span className="mt-0.5 block truncate text-xs text-alivia-text-muted">
+            Turno · {person} · {PRIORITY_LABELS.high} · Responsable: {shift.caregiverName}
+          </span>
+          <span className="mt-2 block sm:hidden">
+            <GuestStatePill state={state} />
+          </span>
+        </span>
+        <span className="hidden sm:block">
+          <GuestStatePill state={state} />
+        </span>
+        <ChevronRight
+          className="size-4 shrink-0 text-alivia-text-soft transition-transform duration-150 ease-out group-hover:translate-x-0.5"
+          aria-hidden="true"
+        />
+      </Link>
+    </li>
+  );
+}
+
 function bucketOf(date: string, today: string, tomorrow: string): Bucket {
   if (date === today) return 'today';
   if (date === tomorrow) return 'tomorrow';
@@ -112,7 +172,7 @@ function bucketLabel(bucket: Bucket, today: string, tomorrow: string): string {
 
 /** Invited caregiver's agenda: only what is assigned to them, consulted as a list or on the week grid. */
 export function GuestActivitiesView() {
-  useDocumentTitle('Mis actividades');
+  useDocumentTitle('Mi agenda');
   const [mode, setMode] = useState<Mode>('list');
   const [anchor, setAnchor] = useState(() => new Date());
   const [stateFilter, setStateFilter] = useState<ActivityState | ''>('');
@@ -123,6 +183,7 @@ export function GuestActivitiesView() {
   const weekStart = useMemo(() => startOfWeek(anchor), [anchor]);
   const weekKey = toIsoDate(weekStart);
   const { state, stale, retry, setData } = useLoad(() => loadWeek(weekStart), [weekKey]);
+  const shifts = useLoad(() => loadShifts(weekStart, addDays(weekStart, 7)), [weekKey]);
   const { network, actor, status: networkStatus, retry: retryNetwork } = useCareActor();
   const canComplete = actor?.can('manage_activities') ?? false;
 
@@ -145,13 +206,21 @@ export function GuestActivitiesView() {
   const visible = mine
     .filter((activity) => stateFilter === '' || activity.stateAt(now) === stateFilter)
     .sort((a, b) => a.date.localeCompare(b.date) || a.startMinute - b.startMinute);
+  // Filtered by the current responsible, so a reassigned shift leaves this agenda and shows up in the new one.
+  const myShifts = (shifts.state.status === 'ready' && actor ? shifts.state.data : []).filter(
+    (shift) => shift.caregiverId === actor?.id && (stateFilter === '' || shiftState(shift, now) === stateFilter),
+  );
+  const rows: Row[] = [
+    ...visible.map((activity) => ({ kind: 'activity' as const, at: activity.startsAt.getTime(), activity })),
+    ...myShifts.map((shift) => ({ kind: 'shift' as const, at: shift.start.getTime(), shift })),
+  ].sort((a, b) => a.at - b.at);
   const groups = BUCKETS.map((bucket) => ({
     bucket,
-    items: visible.filter((activity) => bucketOf(activity.date, today, tomorrow) === bucket.id),
+    items: rows.filter((row) => bucketOf(toIsoDate(new Date(row.at)), today, tomorrow) === bucket.id),
   })).filter((group) => group.items.length > 0);
 
-  const loading = state.status === 'loading' || networkStatus === 'loading';
-  const failed = state.status === 'error' || networkStatus === 'error';
+  const loading = state.status === 'loading' || shifts.state.status === 'loading' || networkStatus === 'loading';
+  const failed = state.status === 'error' || shifts.state.status === 'error' || networkStatus === 'error';
 
   const complete = async (activity: CareActivity) => {
     if (!actor || state.status !== 'ready') return;
@@ -188,7 +257,7 @@ export function GuestActivitiesView() {
 
   const empty = stateFilter ? (
     <EmptyState
-      title={`No tienes actividades «${GUEST_STATE[stateFilter].label.toLowerCase()}» en esta semana`}
+      title={`No tienes turnos ni actividades «${GUEST_STATE[stateFilter].label.toLowerCase()}» en esta semana`}
       description="Elige otro estado para ver el resto de tu agenda."
       action={
         <Button variant="outline" onClick={() => setStateFilter('')}>
@@ -198,16 +267,16 @@ export function GuestActivitiesView() {
     />
   ) : (
     <EmptyState
-      title="No tienes actividades asignadas en esta semana"
-      description="Cuando la cuidadora titular te asigne una actividad, aparecerá aquí con su horario e indicaciones."
+      title="No tienes turnos ni actividades asignadas en esta semana"
+      description="Cuando te asignen un turno o una actividad, aparecerá aquí con su horario e indicaciones."
     />
   );
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
       <PageHeader
-        title="Mis actividades"
-        subtitle="Consulta las actividades que tienes asignadas."
+        title="Mi agenda"
+        subtitle="Consulta los turnos y actividades que tienes asignados."
         actions={
           <div role="group" aria-label="Vista" className="relative grid grid-cols-2 rounded-xl bg-alivia-primary-mist/70 p-1">
             {/* One pill travels between the options, so the switch reads as a single control. */}
@@ -288,6 +357,7 @@ export function GuestActivitiesView() {
           message="Revisa tu conexión e inténtalo de nuevo."
           onRetry={() => {
             retry();
+            shifts.retry();
             retryNetwork();
           }}
         />
@@ -297,13 +367,22 @@ export function GuestActivitiesView() {
         // The previous week dims while the next one loads, instead of sitting there unchanged.
         <div aria-busy={stale} className={`transition-opacity duration-200 ease-out ${stale ? 'opacity-50' : ''}`}>
           {mode === 'schedule' && (
-            <div className="animate-reveal">
-              <WeekCalendar weekStart={weekStart} activities={visible} now={now} onOpen={setDetail} caption={() => shortName} />
+            <div className="animate-reveal flex flex-col gap-5">
+              {myShifts.length > 0 && (
+                <section aria-labelledby="guest-shifts-heading" className="flex flex-col gap-2">
+                  <h3 id="guest-shifts-heading" className="text-sm font-bold text-alivia-primary-dark">Tus turnos</h3>
+                  <ShiftWeekCalendar weekStart={weekStart} shifts={myShifts} now={now} />
+                </section>
+              )}
+              <section aria-labelledby="guest-activities-heading" className="flex flex-col gap-2">
+                <h3 id="guest-activities-heading" className="text-sm font-bold text-alivia-primary-dark">Tus actividades</h3>
+                <WeekCalendar weekStart={weekStart} activities={visible} now={now} onOpen={setDetail} caption={() => shortName} />
+              </section>
             </div>
           )}
 
           {mode === 'list' &&
-            (visible.length === 0 ? (
+            (rows.length === 0 ? (
               empty
             ) : (
               <div className="overflow-hidden rounded-2xl border border-alivia-primary-mist bg-white">
@@ -318,11 +397,15 @@ export function GuestActivitiesView() {
                           {bucketLabel(bucket.id, today, tomorrow)}
                         </h3>
                         <span className="text-xs text-alivia-text-muted">
-                          {items.length} {items.length === 1 ? 'actividad' : 'actividades'}
+                          {items.length} en agenda
                         </span>
                       </header>
                       <ul className="divide-y divide-alivia-primary-mist border-b border-alivia-primary-mist last:border-0">
-                        {items.map((activity) => {
+                        {items.map((row) => {
+                          if (row.kind === 'shift') {
+                            return <ShiftRow key={`shift-${row.shift.id}`} shift={row.shift} state={shiftState(row.shift, now)} person={shortName} showDay={showDay} />;
+                          }
+                          const { activity } = row;
                           const activityState = activity.stateAt(now);
                           const muted = activityState === 'cancelled';
                           return (
@@ -348,7 +431,9 @@ export function GuestActivitiesView() {
                                       <Repeat className="size-3.5 shrink-0 text-alivia-text-soft" aria-label="Se repite" />
                                     )}
                                   </span>
-                                  <span className="mt-0.5 block truncate text-xs text-alivia-text-muted">{shortName}</span>
+                                  <span className="mt-0.5 block truncate text-xs text-alivia-text-muted">
+                                    {ACTIVITY_TYPE[activity.type].label} · {shortName} · {PRIORITY_LABELS[activity.priority]} · Responsable: {activity.caregiverName}
+                                  </span>
                                   <span className="mt-2 block sm:hidden">
                                     <GuestStatePill state={activityState} />
                                   </span>

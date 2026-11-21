@@ -1,9 +1,11 @@
 import { loadNotifications, publishNotification } from '@/communication/index.ts';
 import { addDays, formatTime, toIsoDate } from '@/shared/domain/model/valueobjects/relative-time.ts';
+import { LocalCollection } from '@/shared/infrastructure/local-collection.ts';
 import type { AccessLevel } from '@/shared/presentation/session/session.types.ts';
 import type { AssignShiftCommand } from '../domain/model/assign-shift.command.ts';
 import type { CareShift } from '../domain/model/care-shift.entity.ts';
 import type { Caregiver, CareNetwork } from '../domain/model/caregiver.entity.ts';
+import { dueReminders } from '../domain/model/care-reminder.ts';
 import { HANDOVER_LEAD_MINUTES, reliefFor, type Handover } from '../domain/model/handover.entity.ts';
 import type { MedicationAdministration, RecordAdministrationCommand } from '../domain/model/medication-administration.entity.ts';
 import type {
@@ -80,14 +82,60 @@ export async function loadShiftBoard(weekStart: Date, now: Date = new Date()): P
   return { shifts, handovers: escalated };
 }
 
+// shortcut: delivered reminder ids live in this browser; move to the backend when it schedules reminders itself.
+const deliveredReminders = new LocalCollection<{ readonly id: string }>('alivia.assistance.delivered-reminders', () => []);
+
+/** Delivers, once each, the reminders of the signed-in caregiver that are due now. */
+async function deliverReminders(who: SessionCaregiver, now: Date): Promise<void> {
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrow = addDays(today, 1);
+  const [network, shifts, activities, doses] = await Promise.all([
+    getAssistanceApi().getCareNetwork(),
+    api().listShifts(today, addDays(today, 2)),
+    getAssistanceApi().listActivities(toIsoDate(today), toIsoDate(tomorrow)),
+    api().listAdministrations(today, tomorrow),
+  ]);
+  const actor = resolveActor(network, who.accessLevel, who.displayName);
+  const due = dueReminders(
+    { caregiverId: actor.id, assistedPersonName: network.assistedPersonName, shifts, activities, doses },
+    now,
+  ).filter((reminder) => !deliveredReminders.find(reminder.id));
+  for (const reminder of due) {
+    await publishNotification({
+      id: reminder.id,
+      kind: REMINDER_KINDS[reminder.kind],
+      title: reminder.title,
+      body: reminder.body,
+      route: reminder.route,
+      actionLabel: 'Ver agenda',
+    });
+    deliveredReminders.save({ id: reminder.id });
+  }
+}
+
+const REMINDER_KINDS = { shift: 'shift_reminder', activity: 'upcoming_activity', medication: 'medication_reminder' } as const;
+
+export interface SessionCaregiver {
+  readonly accessLevel: AccessLevel;
+  readonly displayName: string | undefined;
+}
+
 /**
- * Opens due reliefs, escalates unconfirmed ones and raises overdue-dose alerts.
+ * Opens due reliefs, escalates unconfirmed ones, raises overdue-dose alerts and delivers due reminders.
+ * Offline every request fails and nothing is marked delivered, so the next run after reconnecting retries.
  * shortcut: runs every minute while someone has the app open; the backend job must do it when nobody does.
  */
-export async function runCareChecks(now: Date = new Date()): Promise<void> {
+export async function runCareChecks(who: SessionCaregiver, now: Date = new Date()): Promise<void> {
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  await Promise.all([loadShiftBoard(startOfWeek(now), now), loadAdministrations(addDays(today, -1), today, now)]);
+  await Promise.all([
+    loadShiftBoard(startOfWeek(now), now),
+    loadAdministrations(addDays(today, -1), today, now),
+    deliverReminders(who, now),
+  ]);
 }
+
+/** Shifts overlapping [from, to), without opening reliefs; for read-only agendas. */
+export const loadShifts = (from: Date, to: Date) => api().listShifts(from, to);
 
 export function saveShift(command: AssignShiftCommand, network: CareNetwork, allowConflict: boolean): Promise<CareShift> {
   if (Object.keys(command.validate()).length > 0) return reject();
