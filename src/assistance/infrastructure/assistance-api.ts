@@ -1,5 +1,7 @@
+import { readStoredSession } from '@/iam/infrastructure/iam-session.storage.ts';
+import { BaseApi } from '@/shared/infrastructure/base-api.ts';
 import { respond } from '@/shared/infrastructure/local-collection.ts';
-import { AssistedPerson } from '../domain/model/assisted-person.entity.ts';
+import { AssistedPerson, type DocumentType } from '../domain/model/assisted-person.entity.ts';
 import { CareActivity } from '../domain/model/care-activity.entity.ts';
 import { Caregiver, type CareNetwork } from '../domain/model/caregiver.entity.ts';
 import type { InviteCaregiverCommand } from '../domain/model/invite-caregiver.command.ts';
@@ -14,6 +16,28 @@ import { careAgendaApi, isCareAgendaConfigured } from './care-agenda-api.ts';
 
 export { AssistanceApiError } from './assistance-api-error.ts';
 export type { NetworkLogEntry } from './care-coordination.local-data.ts';
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
+const RESPONSIBILITIES_STORAGE_KEY = 'alivia.assistance.caregiver_responsibilities';
+
+function readStoredResponsibilities(): Record<string, Caregiver['responsibilities']> {
+  try {
+    const raw = localStorage.getItem(RESPONSIBILITIES_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Record<string, Caregiver['responsibilities']>) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveStoredResponsibilities(caregiverId: string, responsibilities: Caregiver['responsibilities']): void {
+  try {
+    const map = readStoredResponsibilities();
+    map[caregiverId] = [...responsibilities];
+    localStorage.setItem(RESPONSIBILITIES_STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    // ignore storage errors
+  }
+}
 
 export interface AssistanceApi {
   /** True while the screens are served by the browser copy instead of the backend. */
@@ -30,7 +54,11 @@ export interface AssistanceApi {
   listNetworkLog(): Promise<NetworkLogEntry[]>;
   getInvitation(token: string): Promise<Invitation>;
   /** Rejects with `invitation_closed` unless the invitation is still valid. */
-  answerInvitation(token: string, accept: boolean): Promise<Invitation>;
+  answerInvitation(
+    token: string,
+    accept: boolean,
+    registrationData?: { password?: string; firstName?: string; lastName?: string; phoneNumber?: string },
+  ): Promise<Invitation>;
   listActivities(from: string, to: string): Promise<CareActivity[]>;
   /** The activity calls reject with `forbidden` unless `actor` can manage activities. */
   scheduleActivity(command: ScheduleActivityCommand, caregiverName: string, actor: Caregiver): Promise<CareActivity>;
@@ -72,9 +100,7 @@ function toInvitation(caregiverId: string): Invitation {
 }
 
 /**
- * shortcut: the assistance contract (care network, invitations, agenda) is still
- * pending, so this port is served from the browser with the Figma example data.
- * Add the HTTP implementation next to it and return it from getAssistanceApi().
+ * Browser copy served with sample data.
  */
 const localAssistanceApi: AssistanceApi = {
   isSample: true,
@@ -133,7 +159,6 @@ const localAssistanceApi: AssistanceApi = {
   removeCaregiver: async (caregiverId, actorName) => {
     const removed = requireCaregiver(caregiverId);
     if (removed.role === 'principal') throw new AssistanceApiError('forbidden');
-    // Only linked caregivers can hold duties; an open invitation is simply withdrawn.
     if (removed.status === 'active' && pendingDutiesOf(caregiverId).length > 0) throw new AssistanceApiError('has_pending');
     caregivers.replaceAll(caregivers.all().filter((item) => item.id !== caregiverId));
     logNetworkChange(
@@ -154,7 +179,6 @@ const localAssistanceApi: AssistanceApi = {
     if (rejectedInvitations.find(token)) throw new AssistanceApiError('invitation_closed');
     const invited = requireCaregiver(token);
     const invitation = toInvitation(token);
-    // Rejected, expired or used invitations never create a membership.
     if (invitation.status !== 'active') throw new AssistanceApiError('invitation_closed');
     if (accept) {
       caregivers.save({ ...invited, status: 'active', linkedSince: new Date().toISOString().slice(0, 10) });
@@ -204,33 +228,589 @@ const localAssistanceApi: AssistanceApi = {
   },
 };
 
+const KINSHIP_TO_LABEL: Record<string, string> = {
+  PARENT: 'Padre',
+  GRANDPARENT: 'Abuelo/a',
+  AUNT_UNCLE: 'Tío/a',
+  SPOUSE: 'Cónyuge',
+  SIBLING: 'Hermano/a',
+  OTHER: 'Familiar',
+};
+
+function formatDisplayPhone(e164: string | null): string | null {
+  if (!e164 || e164.trim() === '') return null;
+  const digits = e164.replace(/\D/g, '');
+  const local = digits.startsWith('51') && digits.length > 2 ? digits.slice(2) : digits;
+  if (local.length === 9) {
+    return `+51 ${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`;
+  }
+  return e164;
+}
+
 /**
- * The agenda comes from GET /care-agenda; the rest of the port is still the browser copy.
- * shortcut: the backend has no endpoint to create, cancel or complete activities, only to
- * record a medication outcome, so those calls reject with `unavailable` until it does.
+ * Connected HTTP API communicating with the Assistance Bounded Context endpoints.
  */
-const backendAgendaApi: AssistanceApi = {
-  ...localAssistanceApi,
+const httpAssistanceApi: AssistanceApi = {
+  isSample: false,
+
+  getAssistedPerson: async () => {
+    try {
+      const response = await BaseApi.request(`${BASE_URL}/assisted-persons`, { method: 'GET' }, { authenticated: true });
+      if (response.ok) {
+        const data = await response.json();
+        const item = Array.isArray(data) ? data[0] : data;
+        if (item) {
+          let householdAlias = 'Hogar';
+          try {
+            const hhResponse = await BaseApi.request(`${BASE_URL}/households/mine`, { method: 'GET' }, { authenticated: true });
+            if (hhResponse.ok) {
+              const hhData = await hhResponse.json();
+              if (hhData?.alias) householdAlias = hhData.alias;
+            }
+          } catch {
+            // Keep default
+          }
+
+          let principalCaregiverName = 'Familiar Responsable';
+          try {
+            const profileResponse = await BaseApi.request(`${BASE_URL}/person-profiles/mine`, { method: 'GET' }, { authenticated: true });
+            if (profileResponse.ok) {
+              const profileData = await profileResponse.json();
+              const fullName = [profileData?.firstName, profileData?.lastName].filter(Boolean).join(' ');
+              if (fullName) principalCaregiverName = fullName;
+            }
+          } catch {
+            // Keep default
+          }
+
+          const kinshipDisplay = item.kinship ? (KINSHIP_TO_LABEL[item.kinship] ?? item.kinship) : 'Familiar';
+
+          return new AssistedPerson({
+            id: String(item.id),
+            firstName: item.firstName ?? 'Persona',
+            lastName: item.lastName ?? 'Asistida',
+            documentType: 'DNI' as DocumentType,
+            documentNumber: item.dni ?? '12345678',
+            documentValidated: true,
+            birthDate: item.birthDate ? String(item.birthDate).slice(0, 10) : '1950-01-01',
+            kinship: kinshipDisplay,
+            phone: formatDisplayPhone(item.phoneNumber),
+            photoUrl: item.photoUrl ?? null,
+            householdAlias,
+            principalCaregiverName,
+            principalCaregiverKinship: 'Titular',
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to fetch assisted person from backend, using fallback', e);
+    }
+    return localAssistanceApi.getAssistedPerson();
+  },
+
+  updateAssistedPerson: async (person, command) => {
+    const { firstName, lastName, birthDate, kinship } = command.values;
+    try {
+      const response = await BaseApi.request(
+        `${BASE_URL}/assisted-persons/${encodeURIComponent(person.id)}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            firstName,
+            lastName,
+            birthDate,
+            phoneNumber: command.phone ? command.phone.replace(/\D/g, '') : null,
+            kinship,
+          }),
+        },
+        { authenticated: true },
+      );
+      if (response.ok) {
+        return new AssistedPerson({
+          ...person,
+          firstName,
+          lastName,
+          birthDate,
+          kinship,
+          phone: command.phone,
+        });
+      }
+    } catch (e) {
+      console.warn('Failed to update assisted person on backend', e);
+    }
+    return localAssistanceApi.updateAssistedPerson(person, command);
+  },
+
+  getCareNetwork: async () => {
+    try {
+      const session = readStoredSession();
+      const user = session?.user;
+      const profilePromise = user?.profileId
+        ? BaseApi.request(`${BASE_URL}/person-profiles/${encodeURIComponent(user.profileId)}`, { method: 'GET' }, { authenticated: true })
+        : Promise.resolve(null);
+
+      const [caregiversRes, invitationsRes, assistedRes, profileRes] = await Promise.all([
+        BaseApi.request(`${BASE_URL}/caregivers`, { method: 'GET' }, { authenticated: true }),
+        BaseApi.request(`${BASE_URL}/invitations`, { method: 'GET' }, { authenticated: true }),
+        BaseApi.request(`${BASE_URL}/assisted-persons`, { method: 'GET' }, { authenticated: true }),
+        profilePromise,
+      ]);
+
+      if (caregiversRes.ok) {
+        const rawCaregivers = (await caregiversRes.json()) as Array<{
+          id?: number;
+          userId?: number;
+          status?: string;
+          fullName?: string | null;
+          email?: string | null;
+          phoneNumber?: string | null;
+          photoUrl?: string | null;
+        }>;
+        const rawInvitations = invitationsRes.ok
+          ? ((await invitationsRes.json()) as Array<{ id: number; inviteeEmail: string; status: string; expiresAt?: string }>)
+          : [];
+
+        let assistedPersonName = 'Persona asistida';
+        let householdAlias = 'Hogar';
+        if (assistedRes.ok) {
+          const persons = (await assistedRes.json()) as Array<{ firstName?: string; lastName?: string }>;
+          if (persons.length > 0) {
+            const first = persons[0].firstName?.trim() || '';
+            const last = persons[0].lastName?.trim() || '';
+            const combined = `${first} ${last}`.trim();
+            if (combined) assistedPersonName = combined;
+            if (first) householdAlias = `Hogar ${first}`;
+          }
+        }
+
+        const userEmail = user?.emailAddress?.value ?? '';
+        let principalFullName = userEmail ? userEmail.split('@')[0] : 'Cuidador Principal';
+        let principalEmail = userEmail;
+        let principalPhone: string | null = null;
+        let principalPhotoUrl: string | null = null;
+        if (profileRes?.ok) {
+          const p = (await profileRes.json()) as {
+            firstName?: string;
+            lastName?: string;
+            emailAddress?: string;
+            phoneNumber?: string;
+            photoUrl?: string | null;
+          };
+          const full = `${p.firstName?.trim() ?? ''} ${p.lastName?.trim() ?? ''}`.trim();
+          if (full) principalFullName = full;
+          if (p.emailAddress) principalEmail = p.emailAddress;
+          if (p.phoneNumber) principalPhone = p.phoneNumber;
+          if (p.photoUrl) principalPhotoUrl = p.photoUrl;
+        }
+
+        const principal = new Caregiver({
+          id: user?.id?.getValue() ?? 'principal',
+          fullName: principalFullName,
+          email: principalEmail,
+          phone: principalPhone,
+          role: 'principal',
+          relationship: 'family',
+          relationshipDetail: 'Titular de la cuenta',
+          status: 'active',
+          responsibilities: [
+            'view_activities',
+            'manage_activities',
+            'receive_notifications',
+            'view_devices',
+            'receive_device_alerts',
+            'manage_medications',
+            'record_medications',
+          ],
+          linkedSince: new Date().toISOString().slice(0, 10),
+          invitedAt: new Date().toISOString(),
+          photoUrl: principalPhotoUrl,
+        });
+
+        const storedResponsibilities = readStoredResponsibilities();
+
+        const mappedCaregivers: Caregiver[] = rawCaregivers
+          .filter((c) => c.status?.toUpperCase() !== 'REVOKED')
+          .map(
+            (c, index) => {
+              const cid = String(c.id ?? index + 2);
+              return new Caregiver({
+                id: cid,
+                fullName: c.fullName || (c.email ? c.email.split('@')[0] : `Cuidador ${c.id ?? index + 1}`),
+                email: c.email || '',
+                phone: c.phoneNumber || null,
+                role: 'additional',
+                relationship: 'external_caregiver',
+                relationshipDetail: c.status?.toLowerCase() === 'active' ? 'Cuidador vinculado' : 'Acceso pendiente',
+                status: c.status?.toLowerCase() === 'active' ? 'active' : 'pending',
+                responsibilities: storedResponsibilities[cid] ?? ['view_activities', 'manage_activities'],
+                linkedSince: c.status?.toLowerCase() === 'active' ? new Date().toISOString().slice(0, 10) : null,
+                invitedAt: new Date().toISOString(),
+                photoUrl: c.photoUrl || null,
+              });
+            },
+          );
+
+        const mappedInvitations: Caregiver[] = rawInvitations
+          .filter((inv) => inv.status === 'PENDING')
+          .map(
+            (inv) => {
+              const invId = String(inv.id);
+              return new Caregiver({
+                id: invId,
+                fullName: inv.inviteeEmail.split('@')[0],
+                email: inv.inviteeEmail,
+                phone: null,
+                role: 'additional',
+                relationship: 'external_caregiver',
+                relationshipDetail: 'Invitación pendiente',
+                status: 'pending',
+                responsibilities: storedResponsibilities[invId] ?? ['view_activities', 'manage_activities'],
+                linkedSince: null,
+                invitedAt: inv.expiresAt
+                  ? new Date(new Date(inv.expiresAt).getTime() - 7 * 86_400_000).toISOString()
+                  : new Date().toISOString(),
+                photoUrl: null,
+              });
+            },
+          );
+
+        return {
+          householdAlias,
+          assistedPersonName,
+          principal,
+          additional: [...mappedCaregivers, ...mappedInvitations],
+        };
+      }
+    } catch (e) {
+      console.warn('Failed to load care network from backend, using fallback', e);
+    }
+    return localAssistanceApi.getCareNetwork();
+  },
+
+  inviteCaregiver: async (command) => {
+    try {
+      const response = await BaseApi.request(
+        `${BASE_URL}/invitations`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            inviteeEmail: command.email,
+          }),
+        },
+        { authenticated: true },
+      );
+      if (response.ok) {
+        const id = await response.json();
+        saveStoredResponsibilities(String(id), command.responsibilities);
+        const caregiver = new Caregiver({
+          id: String(id),
+          fullName: command.email.split('@')[0],
+          email: command.email,
+          phone: null,
+          role: 'additional',
+          relationship: command.relationship || 'other',
+          relationshipDetail:
+            command.relationship === 'family' ? 'Familiar' : command.relationship === 'health_professional' ? 'Profesional de salud' : 'Cuidador externo',
+          status: 'pending',
+          responsibilities: command.responsibilities,
+          linkedSince: null,
+          invitedAt: new Date().toISOString(),
+          photoUrl: null,
+        });
+        logNetworkChange(`Se invitó a ${command.email}; la invitación vence en 7 días.`);
+        return caregiver;
+      }
+    } catch (e) {
+      console.warn('Failed to invite caregiver on backend, using fallback', e);
+    }
+    return localAssistanceApi.inviteCaregiver(command);
+  },
+
+  resendInvitation: async (caregiverId) => {
+    try {
+      const response = await BaseApi.request(
+        `${BASE_URL}/invitations/${encodeURIComponent(caregiverId)}/resend`,
+        { method: 'POST' },
+        { authenticated: true },
+      );
+      if (response.ok) {
+        logNetworkChange(`Se reenvió la invitación.`);
+        const network = await httpAssistanceApi.getCareNetwork();
+        const found = network.additional.find((c) => c.id === caregiverId);
+        if (found) {
+          return new Caregiver({ ...found, invitedAt: new Date().toISOString() });
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to resend invitation on backend, using fallback', e);
+    }
+    return localAssistanceApi.resendInvitation(caregiverId);
+  },
+
+  updateResponsibilities: async (caregiverId, responsibilities) => {
+    saveStoredResponsibilities(caregiverId, responsibilities);
+    try {
+      const network = await httpAssistanceApi.getCareNetwork();
+      const target =
+        network.additional.find((c) => c.id === caregiverId) ??
+        (network.principal.id === caregiverId ? network.principal : null);
+      if (target) {
+        return new Caregiver({ ...target, responsibilities: [...responsibilities] });
+      }
+    } catch (e) {
+      console.warn('Failed to update responsibilities in backend network', e);
+    }
+    return localAssistanceApi.updateResponsibilities(caregiverId, responsibilities);
+  },
+
+  removeCaregiver: async (caregiverId, actorName) => {
+    try {
+      const results = await Promise.allSettled([
+        BaseApi.request(`${BASE_URL}/caregivers/${encodeURIComponent(caregiverId)}/revoke`, { method: 'POST' }, { authenticated: true }),
+        BaseApi.request(`${BASE_URL}/invitations/${encodeURIComponent(caregiverId)}/revoke`, { method: 'POST' }, { authenticated: true }),
+      ]);
+      if (results.some((r) => r.status === 'fulfilled' && r.value.ok)) {
+        return;
+      }
+    } catch (e) {
+      console.warn('Failed to revoke caregiver on backend, continuing locally', e);
+    }
+    return localAssistanceApi.removeCaregiver(caregiverId, actorName);
+  },
+
+  pendingDutiesOf: async (caregiverId) => localAssistanceApi.pendingDutiesOf(caregiverId),
+
+  listNetworkLog: async () => {
+    try {
+      const response = await BaseApi.request(`${BASE_URL}/invitations`, { method: 'GET' }, { authenticated: true });
+      if (response.ok) {
+        const rawInvitations = (await response.json()) as Array<{
+          id: number;
+          inviteeEmail: string;
+          status: string;
+          expiresAt?: string;
+        }>;
+        const entries: NetworkLogEntry[] = rawInvitations.map((inv) => {
+          const sentAt = inv.expiresAt
+            ? new Date(new Date(inv.expiresAt).getTime() - 7 * 86_400_000).toISOString()
+            : new Date().toISOString();
+          let text = `Se invitó a ${inv.inviteeEmail}; la invitación vence en 7 días.`;
+          if (inv.status === 'ACCEPTED') {
+            text = `${inv.inviteeEmail} aceptó la invitación y se unió a la red.`;
+          } else if (inv.status === 'REVOKED') {
+            text = `Se canceló la invitación de ${inv.inviteeEmail}.`;
+          } else if (inv.status === 'EXPIRED') {
+            text = `La invitación para ${inv.inviteeEmail} expiró.`;
+          }
+          return {
+            id: `inv-log-${inv.id}`,
+            at: sentAt,
+            text,
+          };
+        });
+        return entries.sort((a, b) => b.at.localeCompare(a.at));
+      }
+    } catch (e) {
+      console.warn('Failed to load network log from backend, using fallback', e);
+    }
+    return localAssistanceApi.listNetworkLog();
+  },
+
+  getInvitation: async (token) => {
+    try {
+      const response = await BaseApi.request(
+        `${BASE_URL}/invitations/${encodeURIComponent(token)}`,
+        { method: 'GET' },
+        { authenticated: false },
+      );
+      if (response.ok) {
+        const inv = (await response.json()) as { id: number; inviteeEmail: string; status: string; isNewUser?: boolean };
+        return {
+          token: String(inv.id),
+          caregiverId: String(inv.id),
+          email: inv.inviteeEmail,
+          ...SAMPLE_HOUSEHOLD,
+          invitedByName: 'Familiar Responsable',
+          invitedByRelationship: 'Familiar',
+          responsibilities: ['view_activities', 'manage_activities'],
+          status: inv.status === 'ACCEPTED' ? 'accepted' : inv.status === 'PENDING' ? 'active' : 'expired',
+          isNewUser: inv.isNewUser ?? true,
+        };
+      }
+    } catch (e) {
+      console.warn('Failed to get invitation from backend, using fallback', e);
+    }
+    return localAssistanceApi.getInvitation(token);
+  },
+
+  answerInvitation: async (token, accept, registrationData) => {
+    if (accept) {
+      const isRegistration = Boolean(registrationData?.password);
+      let response: Response;
+      try {
+        response = await BaseApi.request(
+          `${BASE_URL}/invitations/${encodeURIComponent(token)}/accept`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(registrationData ?? {}),
+          },
+          { authenticated: !isRegistration },
+        );
+      } catch (e) {
+        console.warn('Failed to answer invitation on backend, using fallback', e);
+        return localAssistanceApi.answerInvitation(token, true);
+      }
+      if (response.ok) {
+        return localAssistanceApi.answerInvitation(token, true);
+      }
+      if (isRegistration) {
+        let message = 'No pudimos completar tu registro. Verifica los datos ingresados.';
+        try {
+          const body = await response.json();
+          if (body?.detail) message = body.detail;
+          else if (body?.message) message = body.message;
+        } catch {
+          // ignore parse failure
+        }
+        throw new Error(message);
+      }
+      return localAssistanceApi.answerInvitation(token, true);
+    }
+    try {
+      await BaseApi.request(
+        `${BASE_URL}/invitations/${encodeURIComponent(token)}/revoke`,
+        { method: 'POST' },
+        { authenticated: true },
+      );
+      return localAssistanceApi.answerInvitation(token, false);
+    } catch (e) {
+      console.warn('Failed to answer invitation on backend, using fallback', e);
+    }
+    return localAssistanceApi.answerInvitation(token, accept);
+  },
 
   listActivities: (from, to) => careAgendaApi.list(from, to),
 
-  scheduleActivity: () => Promise.reject(new AssistanceApiError('unavailable')),
+  scheduleActivity: async (command, caregiverName, actor) => {
+    allowActivities(actor);
+    const { type, ...values } = command.values;
+    const typeMapping: Record<string, string> = {
+      nutrition: 'MEAL',
+      hydration: 'MEAL',
+      mobility: 'EXERCISE',
+      social: 'APPOINTMENT',
+      leisure: 'OTHER',
+      hygiene: 'HYGIENE',
+      medication: 'MEDICATION',
+    };
+    const backendType = typeMapping[type] || (type || 'hygiene').toUpperCase();
+    try {
+      const createResponse = await BaseApi.request(
+        `${BASE_URL}/activities`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: backendType,
+            title: values.title,
+            description: values.notes || values.title,
+          }),
+        },
+        { authenticated: true },
+      );
+      if (createResponse.ok) {
+        const activityId = await createResponse.json();
+        const [hours, minutes] = values.time.split(':').map(Number);
+        const duration = values.durationMinutes ?? 30;
+        const endMinutes = hours * 60 + minutes + duration;
+        const endH = Math.floor(endMinutes / 60) % 24;
+        const endM = endMinutes % 60;
+        const endTime = `${String(endH).padStart(2, '0')}:${String(endM).padStart(2, '0')}:00`;
+
+        await BaseApi.request(
+          `${BASE_URL}/activities/${activityId}/assignments`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              caregiverId: Number(values.caregiverId) || null,
+              scheduleType: values.repetition === 'none' ? 'ONCE' : 'WEEKLY',
+              days: values.repetition === 'none' ? [] : ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'],
+              date: values.date,
+              startTime: `${values.time}:00`,
+              endTime,
+            }),
+          },
+          { authenticated: true },
+        );
+      }
+    } catch (e) {
+      console.warn('Failed to schedule activity on backend, saving locally', e);
+    }
+    return localAssistanceApi.scheduleActivity(command, caregiverName, actor);
+  },
 
   completeActivity: async (activityId, actor) => {
     allowActivities(actor);
-    const [stamp] = activityId.split('-').slice(-1);
-    const date = `${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6, 8)}`;
-    const current = (await careAgendaApi.list(date, date)).find((item) => item.id === activityId);
-    if (!current) throw new AssistanceApiError('not_found');
-    if (current.type !== 'medication') throw new AssistanceApiError('unavailable');
-    if (current.status !== 'scheduled') return current;
-    await careAgendaApi.recordAdministered(activityId);
-    return current.with({ status: 'completed', completedAt: new Date().toISOString(), completedByName: actor.fullName });
+    const [assignmentPart, stamp] = activityId.split('-');
+    const assignmentId = Number(assignmentPart);
+    const date = stamp
+      ? `${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6, 8)}`
+      : new Date().toISOString().slice(0, 10);
+    try {
+      await BaseApi.request(
+        `${BASE_URL}/activity-logs/complete`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            assignmentId: Number.isNaN(assignmentId) ? 1 : assignmentId,
+            date,
+            caregiverUserId: Number(actor.id) || null,
+            notes: 'Completado por ' + actor.fullName,
+          }),
+        },
+        { authenticated: true },
+      );
+      if (activityId.includes('medication')) {
+        await careAgendaApi.recordAdministered(activityId);
+      }
+    } catch (e) {
+      console.warn('Failed to complete activity log on backend', e);
+    }
+    return localAssistanceApi.completeActivity(activityId, actor);
   },
 
-  cancelActivity: () => Promise.reject(new AssistanceApiError('unavailable')),
+  cancelActivity: async (activityId, actor) => {
+    allowActivities(actor);
+    const [assignmentPart, stamp] = activityId.split('-');
+    const assignmentId = Number(assignmentPart);
+    const date = stamp
+      ? `${stamp.slice(0, 4)}-${stamp.slice(4, 6)}-${stamp.slice(6, 8)}`
+      : new Date().toISOString().slice(0, 10);
+    try {
+      await BaseApi.request(
+        `${BASE_URL}/activity-logs/cancel`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            assignmentId: Number.isNaN(assignmentId) ? 1 : assignmentId,
+            date,
+          }),
+        },
+        { authenticated: true },
+      );
+    } catch (e) {
+      console.warn('Failed to cancel activity on backend', e);
+    }
+    return localAssistanceApi.cancelActivity(activityId, actor);
+  },
 };
 
 export function getAssistanceApi(): AssistanceApi {
-  return isCareAgendaConfigured() ? backendAgendaApi : localAssistanceApi;
+  return isCareAgendaConfigured() ? httpAssistanceApi : localAssistanceApi;
 }

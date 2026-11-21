@@ -4,7 +4,7 @@ import { getSubscriptionApi } from '../infrastructure/subscription-api.ts';
 
 export const isSubscriptionSample = () => getSubscriptionApi().isSample;
 
-export const loadSubscription = (): Promise<Subscription> => getSubscriptionApi().getCurrent();
+export const loadSubscription = (): Promise<Subscription | null> => getSubscriptionApi().getCurrent();
 
 export const changeSubscriptionStatus = (subscription: Subscription, status: SubscriptionStatus) =>
   getSubscriptionApi().changeStatus(subscription.id, status);

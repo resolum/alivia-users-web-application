@@ -4,28 +4,31 @@ import { toIamErrorFromResponse } from '../iam-error.mapper.ts';
 import { registerAssistedPersonLocally } from './assisted-person-fallback.ts';
 import { toAssistedPersonRequest, type AssistedPersonResponse } from './assisted-person.request.ts';
 
-const CARE_PROFILE_PATH = import.meta.env.VITE_ASSISTED_PERSON_CARE_PROFILE_ENDPOINT_PATH ?? '';
+const ASSISTED_PERSONS_PATH =
+  import.meta.env.VITE_ASSISTED_PERSONS_ENDPOINT_PATH ??
+  import.meta.env.VITE_ASSISTED_PERSON_CARE_PROFILE_ENDPOINT_PATH ??
+  'assisted-persons';
 
 /**
- * Endpoint for the care profile of the assisted person, registered in the
- * contracting flow (PUT /api/v1/assisted-person-care-profiles/mine, upsert).
+ * Endpoint for the assisted person, registered in the
+ * contracting flow (POST /api/v1/assisted-persons).
  */
 export class AssistedPersonApiEndpoint {
   /**
-   * Saves the care profile of the assisted person of the household.
+   * Saves the assisted person of the household.
    * @param householdId - Household created in the previous substep.
    * @param command - The validated command.
-   * @returns A promise resolving to the identifier of the care profile.
+   * @returns A promise resolving to the identifier of the assisted person.
    */
   async register(householdId: string, command: RegisterAssistedPersonCommand): Promise<string> {
     const request = toAssistedPersonRequest(householdId, command);
-    // shortcut: without VITE_ASSISTED_PERSON_CARE_PROFILE_ENDPOINT_PATH the profile stays in this browser.
-    if (CARE_PROFILE_PATH.trim() === '') return registerAssistedPersonLocally(request);
+    // shortcut: without endpoint path the profile stays in this browser.
+    if (ASSISTED_PERSONS_PATH.trim() === '') return registerAssistedPersonLocally(request);
 
     const response = await BaseApi.request(
-      `${import.meta.env.VITE_API_BASE_URL}/${CARE_PROFILE_PATH}`,
+      `${import.meta.env.VITE_API_BASE_URL}/${ASSISTED_PERSONS_PATH}`,
       {
-        method: 'PUT',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(request),
       },

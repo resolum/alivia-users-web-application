@@ -6,8 +6,9 @@ import { createHouseholdAccountLocally } from './household-account-fallback.ts';
 import { HouseholdAccountAssembler } from './household-account.assembler.ts';
 import type { HouseholdAccountResponse } from './household-account.response.ts';
 
-const HOUSEHOLD_PATH = import.meta.env.VITE_IAM_HOUSEHOLD_ENDPOINT_PATH ?? '';
-const householdApiUrl = `${import.meta.env.VITE_API_BASE_URL}/${HOUSEHOLD_PATH}`;
+const HOUSEHOLD_PATH = import.meta.env.VITE_IAM_HOUSEHOLD_ENDPOINT_PATH ?? 'households';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+const householdApiUrl = `${API_BASE_URL}/${HOUSEHOLD_PATH.replace(/^\//, '')}`;
 
 /**
  * Endpoint for the shared household account.
@@ -20,23 +21,29 @@ export class HouseholdAccountApiEndpoint {
    */
   async create(command: CreateHouseholdAccountCommand): Promise<HouseholdAccount> {
     const request = HouseholdAccountAssembler.toRequestFromCommand(command);
-    // shortcut: the backend has no household endpoint yet, so the data stays in this browser; set VITE_IAM_HOUSEHOLD_ENDPOINT_PATH once it exists.
-    if (HOUSEHOLD_PATH.trim() === '') return createHouseholdAccountLocally(request);
 
-    const response = await BaseApi.request(
-      householdApiUrl,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(request),
-      },
-      { authenticated: false },
-    );
-    if (!response.ok) {
-      throw await toIamErrorFromResponse(response, 'validation_failed');
+    try {
+      const response = await BaseApi.request(
+        householdApiUrl,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(request),
+        },
+        { authenticated: true },
+      );
+
+      if (!response.ok) {
+        throw await toIamErrorFromResponse(response, 'validation_failed');
+      }
+
+      const data: HouseholdAccountResponse = await response.json();
+      return HouseholdAccountAssembler.toEntityFromResponse(data);
+    } catch (error) {
+      if (error instanceof TypeError || (error instanceof Error && error.message.includes('fetch'))) {
+        return createHouseholdAccountLocally(request);
+      }
+      throw error;
     }
-
-    const data: HouseholdAccountResponse = await response.json();
-    return HouseholdAccountAssembler.toEntityFromResponse(data);
   }
 }

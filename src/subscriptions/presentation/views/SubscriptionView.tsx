@@ -43,6 +43,10 @@ function Line({ label, children }: { readonly label: string; readonly children: 
 function downloadReceipt(subscription: Subscription) {
   const payment = subscription.lastPayment;
   if (!payment) return;
+  if (payment.receiptUrl) {
+    window.open(payment.receiptUrl, '_blank', 'noopener,noreferrer');
+    return;
+  }
   const text = [
     'ALIVIA · Comprobante de pago',
     '',
@@ -156,6 +160,14 @@ export function SubscriptionView() {
         </Skeleton>}
       {state.status === 'error' && (
         <ErrorState title="No pudimos cargar tu suscripción" message="Revisa tu conexión e inténtalo de nuevo." onRetry={retry} />
+      )}
+      {state.status === 'ready' && !subscription && (
+        <div className="rounded-2xl border border-alivia-primary-mist bg-white p-8 text-center">
+          <p className="text-lg font-bold text-alivia-primary-dark">Aún no tienes una suscripción activa</p>
+          <p className="mt-1 text-sm text-alivia-text-muted">
+            Cuando contrates un plan, aquí verás tu cobertura, renovaciones y comprobantes de pago.
+          </p>
+        </div>
       )}
 
       {subscription && (

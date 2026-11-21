@@ -17,7 +17,8 @@ interface ImportMetaEnv {
   readonly VITE_IAM_ACTIVATE_ENDPOINT_PATH?: string;
   readonly VITE_IAM_ACTIVATION_ENDPOINT_PATH?: string;
   readonly VITE_IAM_HOUSEHOLD_ENDPOINT_PATH?: string;
-  /** Care profile of the assisted person (api/v1/assisted-person-care-profiles/mine). Empty keeps it in the browser. */
+  readonly VITE_HOUSEHOLDS_ENDPOINT_PATH?: string;
+  readonly VITE_ASSISTED_PERSONS_ENDPOINT_PATH?: string;
   readonly VITE_ASSISTED_PERSON_CARE_PROFILE_ENDPOINT_PATH?: string;
   readonly VITE_PROFILES_ENDPOINT_PATH?: string;
   readonly VITE_MY_PROFILE_ENDPOINT_PATH?: string;
@@ -49,6 +50,7 @@ interface ImportMetaEnv {
   readonly VITE_CARE_AGENDA_ENDPOINT_PATH?: string;
   readonly VITE_MEDICATION_ADMINISTRATIONS_ENDPOINT_PATH?: string;
   readonly VITE_MEDICATION_OUTCOMES_ENDPOINT_PATH?: string;
+  readonly VITE_MEDICATIONS_ENDPOINT_PATH?: string;
   readonly VITE_SUPPORT_INCIDENTS_ENDPOINT_PATH?: string;
   readonly VITE_SUPPORT_INCIDENT_REPORTS_ENDPOINT_PATH?: string;
   readonly VITE_SUPPORT_INCIDENT_DEVICES_ENDPOINT_PATH?: string;

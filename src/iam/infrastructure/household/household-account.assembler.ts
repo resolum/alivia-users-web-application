@@ -27,7 +27,7 @@ export class HouseholdAccountAssembler {
     return new HouseholdAccount({
       id: String(response.id),
       alias: response.alias,
-      responsibleAccountId: response.responsibleAccountId,
+      responsibleAccountId: String(response.responsibleAccountId ?? ''),
     });
   }
 }
