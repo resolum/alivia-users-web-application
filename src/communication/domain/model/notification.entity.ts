@@ -4,7 +4,9 @@ export type NotificationKind =
   | 'upcoming_activity'
   | 'incident_update'
   | 'handover_escalated'
-  | 'medication_overdue';
+  | 'medication_overdue'
+  | 'shift_reminder'
+  | 'medication_reminder';
 
 /** Notice delivered to a caregiver. Backend equivalent: Notification (Comunicaciones, pending contract). */
 export interface CaregiverNotification {
@@ -18,6 +20,11 @@ export interface CaregiverNotification {
   readonly route: string;
   readonly actionLabel: string;
 }
+
+const REMINDERS: readonly NotificationKind[] = ['upcoming_activity', 'shift_reminder', 'medication_reminder'];
+
+/** Reminders announce what is coming; every other kind is an alert about a failure, risk or lapse. */
+export const isReminder = (notification: CaregiverNotification) => REMINDERS.includes(notification.kind);
 
 /** Urgent notices get a filled button; the rest a text link. */
 export const isUrgent = (notification: CaregiverNotification) =>

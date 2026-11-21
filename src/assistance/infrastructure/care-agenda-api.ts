@@ -1,5 +1,5 @@
 import { BaseApi } from '@/shared/infrastructure/base-api.ts';
-import { CareActivity, type ActivityRecordStatus, type ActivityType } from '../domain/model/care-activity.entity.ts';
+import { CareActivity, type ActivityPriority, type ActivityRecordStatus, type ActivityType } from '../domain/model/care-activity.entity.ts';
 import { MedicationAdministration, type AdministrationResult } from '../domain/model/medication-administration.entity.ts';
 import { AssistanceApiError } from './assistance-api-error.ts';
 
@@ -38,6 +38,8 @@ const TYPES: Readonly<Record<string, ActivityType>> = {
   OTHER: 'leisure',
 };
 
+const PRIORITIES: Readonly<Record<string, ActivityPriority>> = { HIGH: 'high', MEDIUM: 'medium', LOW: 'low', ROUTINE: 'routine' };
+
 // MISSED stays scheduled: the entity derives "overdue" from the clock.
 const STATUSES: Readonly<Record<string, ActivityRecordStatus>> = {
   COMPLETED: 'completed',
@@ -68,6 +70,7 @@ export function toCareActivity(item: AgendaOccurrenceResource): CareActivity {
     status: STATUSES[item.status] ?? 'scheduled',
     completedAt: null,
     completedByName: null,
+    priority: PRIORITIES[item.priority],
   });
 }
 

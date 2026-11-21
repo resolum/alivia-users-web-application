@@ -13,7 +13,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import type { StatusTone } from '@/shared/presentation/components/ui/index.ts';
-import type { ActivityState, ActivityType, Repetition } from '../domain/model/care-activity.entity.ts';
+import type { ActivityPriority, ActivityState, ActivityType, Repetition } from '../domain/model/care-activity.entity.ts';
 import type { CaregiverLinkStatus, Relationship, Responsibility } from '../domain/model/caregiver.entity.ts';
 import type { HandoverStatus } from '../domain/model/handover.entity.ts';
 import type { AdministrationState } from '../domain/model/medication-administration.entity.ts';
@@ -68,6 +68,13 @@ export const GUEST_STATE: Record<ActivityState, { label: string; icon: LucideIco
   overdue: { label: 'Vencida', icon: TriangleAlert, tone: 'border-alivia-warning/40 bg-alivia-warning-soft text-alivia-warning' },
   scheduled: { label: 'Programada', icon: Clock, tone: 'border-alivia-primary-mist bg-alivia-page text-alivia-text-muted' },
   cancelled: { label: 'Cancelada', icon: CircleX, tone: 'border-alivia-primary-mist bg-white text-alivia-text-muted' },
+};
+
+export const PRIORITY_LABELS: Record<ActivityPriority, string> = {
+  high: 'Prioridad alta',
+  medium: 'Prioridad media',
+  low: 'Prioridad baja',
+  routine: 'Rutina',
 };
 
 export const REPETITION_LABELS: Record<Repetition, string> = {

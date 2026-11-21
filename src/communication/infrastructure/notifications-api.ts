@@ -50,8 +50,12 @@ const notifications = new LocalCollection<CaregiverNotification>('alivia.communi
   },
 ]);
 
-function mapBackendTypeToKind(type: string): NotificationKind {
+function mapBackendTypeToKind(type: string, sourceId: string): NotificationKind {
   switch (type) {
+    case 'CARE_ACTIVITY_REMINDER':
+      // The reminder id set by the app says what it reminds of.
+      if (sourceId.startsWith('reminder-shift-')) return 'shift_reminder';
+      return sourceId.startsWith('reminder-dose-') ? 'medication_reminder' : 'upcoming_activity';
     case 'LOW_BATTERY':
       return 'low_battery';
     case 'HELP_REQUEST_DELAYED':
@@ -67,16 +71,25 @@ function mapKindToBackendType(kind: NotificationKind): string {
       return 'LOW_BATTERY';
     case 'assistance_request':
       return 'HELP_REQUEST_DELAYED';
+    case 'upcoming_activity':
+    case 'shift_reminder':
+    case 'medication_reminder':
+      return 'CARE_ACTIVITY_REMINDER';
     default:
       return 'ASSIGNMENT_CREATED';
   }
 }
 
+const REMINDER_ROUTES: Partial<Record<NotificationKind, string>> = {
+  shift_reminder: '/shifts',
+  medication_reminder: '/medications',
+};
+
 function toCaregiverNotification(b: BackendNotification): CaregiverNotification {
-  const kind = mapBackendTypeToKind(b.type);
+  const kind = mapBackendTypeToKind(b.type, b.sourceId ?? '');
   const route = kind === 'low_battery' || kind === 'assistance_request'
     ? (b.sourceId ? `/devices?device=${encodeURIComponent(b.sourceId)}` : '/devices')
-    : '/activities';
+    : (REMINDER_ROUTES[kind] ?? '/activities');
   const actionLabel = kind === 'assistance_request'
     ? 'Ver solicitud'
     : kind === 'low_battery'
