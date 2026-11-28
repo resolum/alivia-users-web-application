@@ -31,7 +31,7 @@ const RANGES: readonly { id: MetricRange; label: string }[] = [
   { id: 'month', label: '30 días' },
 ];
 
-const KIND_LABELS: Record<DeviceKind, string> = { light: 'Luces', door: 'Puertas', window: 'Ventanas' };
+const KIND_LABELS: Record<DeviceKind, string> = { light: 'Luces', door: 'Puertas', window: 'Ventanas', curtain: 'Cortinas' };
 
 const RESULT: Record<ActionResult, { label: string; tone: StatusTone }> = {
   succeeded: { label: 'Exitosa', tone: 'success' },

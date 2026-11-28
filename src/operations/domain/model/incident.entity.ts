@@ -7,7 +7,7 @@ export const PROBLEM_TYPES = ['battery', 'no_response', 'false_alarm', 'connecti
 export type ProblemType = (typeof PROBLEM_TYPES)[number];
 
 /** Kind of the affected device, copied from telemetry when the incident is reported. */
-export type IncidentDeviceKind = 'microphone' | 'light' | 'window_sensor' | 'door_sensor' | 'other';
+export type IncidentDeviceKind = 'microphone' | 'light' | 'window_sensor' | 'door_sensor' | 'curtain' | 'other';
 
 export interface IncidentEvidence {
   readonly name: string;

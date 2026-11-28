@@ -105,7 +105,7 @@ export function DeviceDetailDrawer({ device, onClose }: { readonly device: Devic
                 </span>
               </Row>
               <Row label="Última sincronización">
-                {formatTime(device.lastSyncAt)} ({formatRelative(device.lastSyncAt).toLowerCase()})
+                {device.hasReported ? `${formatTime(device.lastSyncAt)} (${formatRelative(device.lastSyncAt).toLowerCase()})` : 'Sin reportes todavía'}
               </Row>
             </dl>
           </section>

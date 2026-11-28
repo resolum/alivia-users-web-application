@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router';
-import { ArrowRight, BedDouble, Flag, Plug, RefreshCw, WifiOff } from 'lucide-react';
+import { ArrowRight, BedDouble, Cpu, Flag, Plug, RefreshCw, WifiOff } from 'lucide-react';
 import { useCareActor } from '@/assistance/index.ts';
 import { formatDateTime, formatRelative, formatTime } from '@/shared/domain/model/valueobjects/relative-time.ts';
 import {
@@ -15,9 +15,36 @@ import { useDocumentTitle } from '@/shared/presentation/hooks/useDocumentTitle.t
 import { useLoad } from '@/shared/presentation/hooks/useLoad.ts';
 import { useSession } from '@/shared/presentation/hooks/useSession.ts';
 import { isTrackingSample, loadSupervision } from '../../application/tracking.store.ts';
-import { homeConnection, recentEvents, type Device, type DeviceHealth, type HomeEvent } from '../../domain/model/device.entity.ts';
+import { homeConnection, recentEvents, type Device, type DeviceHealth, type HomeEdge, type HomeEvent } from '../../domain/model/device.entity.ts';
 import { HEALTH, KIND_ICON } from '../device-presentation.ts';
 import { DeviceDetailDrawer } from '../components/DeviceDetailDrawer.tsx';
+
+const EDGE_LINK: Record<HomeEdge['link'], { label: string; tone: 'success' | 'neutral' | 'warning' }> = {
+  online: { label: 'En línea', tone: 'success' },
+  offline: { label: 'Sin conexión', tone: 'warning' },
+  unknown: { label: 'Aún no reporta', tone: 'neutral' },
+};
+
+function EdgeCard({ edge }: { readonly edge: HomeEdge }) {
+  const link = EDGE_LINK[edge.link];
+  return (
+    <article className="flex flex-col gap-3 rounded-2xl border border-alivia-primary-mist bg-white p-5">
+      <div className="flex items-start gap-3">
+        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-alivia-primary-mist text-alivia-primary-dark">
+          <Cpu className="size-5" aria-hidden="true" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-bold text-alivia-primary-dark">{edge.name}</h3>
+          <p className="text-sm text-alivia-text-muted">{edge.description}</p>
+        </div>
+        <StatusDot tone={link.tone} className="shrink-0 px-3 py-1 text-xs">{link.label}</StatusDot>
+      </div>
+      <p className="text-xs text-alivia-hint">
+        {edge.lastReportAt ? `Último reporte ${formatRelative(edge.lastReportAt).toLowerCase()}` : 'Sin reportes todavía'}
+      </p>
+    </article>
+  );
+}
 
 function DeviceCard({ device, onOpen }: { readonly device: Device; readonly onOpen: () => void }) {
   const Icon = KIND_ICON[device.kind];
@@ -74,7 +101,9 @@ function DeviceCard({ device, onOpen }: { readonly device: Device; readonly onOp
         <p className="text-alivia-text">
           <span className="text-alivia-text-muted">Estado:</span> {device.stateLabel}
         </p>
-        <p className="text-xs text-alivia-hint">Actualizado {formatRelative(device.lastSyncAt).toLowerCase()}</p>
+        <p className="text-xs text-alivia-hint">
+          {device.hasReported ? `Actualizado ${formatRelative(device.lastSyncAt).toLowerCase()}` : 'Sin reportes todavía'}
+        </p>
       </div>
 
       <button
@@ -261,6 +290,21 @@ export function DevicesView() {
           </ul>
 
           <RecentEvents events={recentEvents(home.devices)} onOpen={select} />
+
+          {home.edges && home.edges.length > 0 && (
+            <section aria-labelledby="home-edges" className="flex animate-reveal flex-col gap-4">
+              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 id="home-edges" className="flex items-center gap-2 text-xl font-bold text-alivia-primary-dark">
+                  <Cpu className="size-5 text-alivia-secondary-deep" aria-hidden="true" />
+                  Nodos Edge
+                </h2>
+                <p className="text-sm text-alivia-text-muted">Procesan en tu hogar la voz y las órdenes a los actuadores</p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {home.edges.map((edge) => <EdgeCard key={edge.id} edge={edge} />)}
+              </div>
+            </section>
+          )}
 
           {home.rooms.map((room, index) => {
             const devices = home.devices.filter((device) => device.roomId === room.id);

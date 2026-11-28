@@ -1,7 +1,7 @@
 export const METRIC_RANGES = ['today', 'week', 'month'] as const;
 export type MetricRange = (typeof METRIC_RANGES)[number];
 
-export const DEVICE_KINDS = ['light', 'door', 'window'] as const;
+export const DEVICE_KINDS = ['light', 'door', 'window', 'curtain'] as const;
 export type DeviceKind = (typeof DEVICE_KINDS)[number];
 
 /** low_confidence: the voice command was rejected; unconfirmed: sent, but the actuator never answered. */
@@ -54,7 +54,7 @@ export interface ActionSummary {
 }
 
 export function summarize(actions: readonly DeviceAction[]): ActionSummary {
-  const byKind = { light: { requested: 0, executed: 0 }, door: { requested: 0, executed: 0 }, window: { requested: 0, executed: 0 } };
+  const byKind = { light: { requested: 0, executed: 0 }, door: { requested: 0, executed: 0 }, window: { requested: 0, executed: 0 }, curtain: { requested: 0, executed: 0 } };
   const byResult = { succeeded: 0, failed: 0, low_confidence: 0, unconfirmed: 0 };
   for (const action of actions) {
     byKind[action.deviceKind].requested += 1;

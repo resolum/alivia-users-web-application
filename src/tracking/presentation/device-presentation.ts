@@ -1,4 +1,4 @@
-import { DoorClosed, Lightbulb, Mic, PanelsTopLeft, type LucideIcon } from 'lucide-react';
+import { Blinds, DoorClosed, Lightbulb, Mic, PanelsTopLeft, type LucideIcon } from 'lucide-react';
 import type { StatusTone } from '@/shared/presentation/components/ui/index.ts';
 import type { DeviceHealth, DeviceKind } from '../domain/model/device.entity.ts';
 
@@ -7,6 +7,7 @@ export const KIND_ICON: Record<DeviceKind, LucideIcon> = {
   light: Lightbulb,
   window_sensor: PanelsTopLeft,
   door_sensor: DoorClosed,
+  curtain: Blinds,
 };
 
 export const HEALTH: Record<DeviceHealth, { label: string; tone: StatusTone }> = {

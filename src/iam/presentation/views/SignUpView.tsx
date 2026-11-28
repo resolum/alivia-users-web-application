@@ -1,11 +1,12 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router';
 import {
   Checkbox,
   PasswordField,
 } from '@/shared/presentation/components/base-form/index.ts';
 import { useDocumentTitle } from '@/shared/presentation/hooks/useDocumentTitle.ts';
-import { getRegistrationProgress, signUp } from '../../application/iam.store.ts';
+import { discardRegistrationProgress, getRegistrationProgress, signUp } from '../../application/iam.store.ts';
+import { registrationEntry } from '../../application/registration-entry.ts';
 import type { FieldErrors } from '../../domain/model/field-errors.ts';
 import { IamError } from '../../domain/model/iam-error.ts';
 import { evaluatePassword, passwordsMatch } from '../../domain/model/password-policy.ts';
@@ -19,6 +20,7 @@ import { RegistrationLayout } from '../components/RegistrationLayout.tsx';
 import { PeruMobileField } from '../components/PeruMobileField.tsx';
 import { RegistrationTextField } from '../components/RegistrationTextField.tsx';
 import { fieldErrorMessage, focusFirstInvalid } from '../field-error-message.ts';
+import { useIamSession } from '../hooks/useIamSession.ts';
 import { useIamTranslations } from '../hooks/useIamTranslations.ts';
 import { useSubmission } from '../hooks/useSubmission.ts';
 
@@ -73,11 +75,16 @@ export function SignUpView() {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errors, setErrors] = useState<FieldErrors<SignUpFormField>>({});
 
-  // A responsible client who already created the household resumes where they left off.
-  const progress = getRegistrationProgress();
-  if (progress?.householdId) {
-    const next = progress.assistedPersonId ? '/contract/configuration' : '/household/assisted-person';
-    return <Navigate to={next} replace />;
+  // A signed-in responsible client who already created the household resumes where they left off; progress
+  // without a session is stale and the visitor registers again from the account step.
+  const { status: sessionStatus } = useIamSession();
+  const entry = registrationEntry(getRegistrationProgress(), sessionStatus);
+  const discardStale = entry.kind === 'fresh' && entry.discardStale;
+  useEffect(() => {
+    if (discardStale) discardRegistrationProgress();
+  }, [discardStale]);
+  if (entry.kind === 'resume') {
+    return <Navigate to={entry.to} replace />;
   }
 
   const emailTaken = errorKey === 'emailAlreadyRegistered';
