@@ -1,6 +1,6 @@
 import type { BaseEntity } from '@/shared/domain/model/base-entity.ts';
 
-export type DeviceKind = 'microphone' | 'light' | 'window_sensor' | 'door_sensor';
+export type DeviceKind = 'microphone' | 'light' | 'window_sensor' | 'door_sensor' | 'curtain';
 
 export type DevicePower =
   | { readonly type: 'wired' }
@@ -38,6 +38,9 @@ export interface DeviceProps {
 
 export const LOW_BATTERY = 20;
 
+/** lastSyncAt of a device that has never reported anything. */
+export const NEVER_SYNCED = new Date(0).toISOString();
+
 /** A device installed in the home. Backend equivalent: Device (Telemetría). */
 export class Device implements BaseEntity {
   readonly id: string;
@@ -74,6 +77,11 @@ export class Device implements BaseEntity {
     this.history = props.history;
   }
 
+  /** Whether the device has ever reported to the platform. */
+  get hasReported(): boolean {
+    return this.lastSyncAt !== NEVER_SYNCED;
+  }
+
   get batteryLevel(): number | null {
     return this.power.type === 'battery' ? this.power.level : null;
   }
@@ -95,9 +103,22 @@ export interface Room {
   readonly description: string;
 }
 
+/** A local node of the home (voice or actuators) that links its devices with the platform. */
+export interface HomeEdge {
+  readonly id: string;
+  readonly kind: 'voice' | 'actuators';
+  readonly name: string;
+  readonly description: string;
+  /** online: reporting; offline: stopped reporting; unknown: has never reported. */
+  readonly link: 'online' | 'offline' | 'unknown';
+  readonly lastReportAt: string | null;
+}
+
 export interface HomeDevices {
   readonly rooms: readonly Room[];
   readonly devices: readonly Device[];
+  /** The edges of the home; empty when the source does not know them. */
+  readonly edges?: readonly HomeEdge[];
   /** Whether the home hub is reaching the platform, and when it last did. */
   readonly hubOnline: boolean;
   readonly hubLastContactAt: string;
@@ -113,7 +134,8 @@ export interface HomeConnection {
 }
 
 export function homeConnection(home: HomeDevices, now: Date = new Date()): HomeConnection {
-  const lastUpdateAt = [home.hubLastContactAt, ...home.devices.map((device) => device.lastSyncAt)].sort((a, b) => a.localeCompare(b)).at(-1) ?? null;
+  const lastUpdateAt = [home.hubLastContactAt, ...home.devices.map((device) => device.lastSyncAt)]
+    .filter((at) => at !== NEVER_SYNCED).sort((a, b) => a.localeCompare(b)).at(-1) ?? null;
   const stale = lastUpdateAt === null || now.getTime() - new Date(lastUpdateAt).getTime() > STALE_MINUTES * 60_000;
   const allDown = home.devices.length > 0 && home.devices.every((device) => !device.online);
   return { online: home.hubOnline && !stale && !allDown, lastUpdateAt };

@@ -1,5 +1,6 @@
+import { BaseApi } from '@/shared/infrastructure/base-api.ts';
 import { LocalCollection, respond } from '@/shared/infrastructure/local-collection.ts';
-import { Device, type DeviceProps, type HomeDevices, type Room } from '../domain/model/device.entity.ts';
+import { Device, NEVER_SYNCED, type DeviceKind, type HomeEdge, type DeviceProps, type HomeDevices, type Room } from '../domain/model/device.entity.ts';
 
 export interface TrackingApi {
   readonly isSample: boolean;
@@ -55,10 +56,7 @@ const devices = new LocalCollection<DeviceProps>('alivia.tracking.devices', () =
   },
 ]);
 
-/**
- * shortcut: the telemetry contract is pending, so devices come from the
- * browser with the Figma example data. Swap in the HTTP source here.
- */
+/** Example devices from the Figma design, used when the backend is not configured or cannot be reached. */
 const localTrackingApi: TrackingApi = {
   isSample: true,
   getHomeDevices: async () => {
@@ -69,6 +67,145 @@ const localTrackingApi: TrackingApi = {
   },
 };
 
+/** One device of `GET /assisted-persons/{id}/devices/status`. */
+export interface HomeDeviceStatusResource {
+  readonly deviceId: number;
+  readonly alias: string;
+  readonly type: string;
+  readonly roomKey: string;
+  readonly connectionStatus: 'CONNECTED' | 'DISCONNECTED' | 'UNKNOWN';
+  readonly operationalStatus?: 'OK' | 'DEGRADED' | 'FAILED';
+  readonly currentState?: string;
+  readonly batteryPct?: number;
+  readonly lastCommunicationAt?: string;
+  readonly lastUpdatedAt?: string;
+  readonly faults?: readonly string[];
+  readonly stale: boolean;
+}
+
+export interface HomeEdgeStatusResource {
+  readonly edgeId: number;
+  readonly kind: 'MICROPHONE' | 'ACTUATOR';
+  readonly link: 'ONLINE' | 'OFFLINE' | 'UNKNOWN';
+  readonly lastReportAt?: string;
+}
+
+export interface HomeStatusResource {
+  readonly householdId: number;
+  readonly edgeLink: 'ONLINE' | 'OFFLINE' | 'UNKNOWN';
+  readonly lastUpdatedAt?: string;
+  readonly devices: readonly HomeDeviceStatusResource[];
+  readonly edges?: readonly HomeEdgeStatusResource[];
+}
+
+function toHomeEdge(edge: HomeEdgeStatusResource): HomeEdge {
+  const voice = edge.kind === 'MICROPHONE';
+  return {
+    id: String(edge.edgeId),
+    kind: voice ? 'voice' : 'actuators',
+    name: voice ? 'Edge de control por voz' : 'Edge de actuadores',
+    description: voice ? 'Escucha los micrófonos y entiende los comandos de voz' : 'Mueve la puerta, la ventana, la cortina y la luz',
+    link: edge.link === 'ONLINE' ? 'online' : edge.link === 'OFFLINE' ? 'offline' : 'unknown',
+    lastReportAt: edge.lastReportAt ?? null,
+  };
+}
+
+const KINDS: Record<string, { kind: DeviceKind; description: string }> = {
+  MICROPHONE: { kind: 'microphone', description: 'Reconocimiento de voz y botón de ayuda' },
+  LIGHT: { kind: 'light', description: 'Encendido y apagado de la luz' },
+  WINDOW: { kind: 'window_sensor', description: 'Apertura y cierre de la ventana' },
+  DOOR: { kind: 'door_sensor', description: 'Apertura y cierre de la puerta' },
+  CURTAIN: { kind: 'curtain', description: 'Apertura y cierre de la cortina' },
+};
+
+const STATES: Record<string, string> = {
+  OPEN: 'Abierta', CLOSED: 'Cerrada', ON: 'Encendida', OFF: 'Apagada', LISTENING: 'En escucha', IDLE: 'En espera',
+};
+
+/** "habitacion-1" → "Habitación 1", "main-bedroom" → "Main bedroom": the backend only stores the room key. */
+export function roomNameOf(roomKey: string): string {
+  const numbered = /^habitacion-(\d+)$/.exec(roomKey);
+  if (numbered) return `Habitación ${numbered[1]}`;
+  const words = roomKey.replace(/[-_]+/g, ' ').trim();
+  return words ? words.charAt(0).toUpperCase() + words.slice(1) : 'Sin habitación';
+}
+
+function stateLabelOf(device: HomeDeviceStatusResource): string {
+  if (device.connectionStatus === 'UNKNOWN') return 'Aún no reporta';
+  if (device.operationalStatus === 'FAILED') return 'Con falla';
+  const state = device.currentState ? STATES[device.currentState.toUpperCase()] ?? device.currentState : 'Sin estado reportado';
+  return device.stale ? `${state} (último estado conocido)` : state;
+}
+
+/** Maps the backend's view of the home to the entities the Devices screen shows. */
+export function toHomeDevices(resource: HomeStatusResource): HomeDevices {
+  const rooms = new Map<string, Room>();
+  const list = resource.devices.map((device) => {
+    const kind = KINDS[device.type] ?? KINDS.MICROPHONE;
+    const roomName = roomNameOf(device.roomKey);
+    if (!rooms.has(device.roomKey)) rooms.set(device.roomKey, { id: device.roomKey, name: roomName, description: 'Habitación del hogar' });
+    return new Device({
+      id: String(device.deviceId),
+      code: `DEV-${String(device.deviceId).padStart(4, '0')}`,
+      name: device.alias,
+      description: kind.description,
+      kind: kind.kind,
+      roomId: device.roomKey,
+      roomName,
+      placement: null,
+      power: device.batteryPct == null ? { type: 'wired' } : { type: 'battery', level: device.batteryPct, cell: 'Batería' },
+      online: device.connectionStatus === 'CONNECTED' && device.operationalStatus !== 'FAILED',
+      stateLabel: stateLabelOf(device),
+      connectivity: 'Edge Alivia del hogar',
+      lastSyncAt: device.lastCommunicationAt ?? device.lastUpdatedAt ?? NEVER_SYNCED,
+      technicianName: 'Técnico Alivia',
+      history: (device.faults ?? []).map((fault) => ({
+        at: device.lastUpdatedAt ?? new Date(0).toISOString(), title: 'Falla reportada', detail: fault, tone: 'warning' as const,
+      })),
+    });
+  });
+  return {
+    rooms: [...rooms.values()],
+    devices: list,
+    edges: (resource.edges ?? []).map(toHomeEdge),
+    hubOnline: resource.edgeLink === 'ONLINE',
+    hubLastContactAt: resource.lastUpdatedAt ?? NEVER_SYNCED,
+  };
+}
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+const ASSISTED_PERSONS_PATH = (import.meta.env.VITE_ASSISTED_PERSONS_ENDPOINT_PATH ?? 'assisted-persons').replace(/^\//, '');
+const STATUS_PATH = (import.meta.env.VITE_HOME_DEVICE_STATUS_ENDPOINT_PATH ?? 'devices/status').replace(/^\//, '');
+
+let usingSample = true;
+
+/** Devices of the home of the account's assisted person, as the backend tracks them. */
+const httpTrackingApi: TrackingApi = {
+  get isSample() {
+    return usingSample;
+  },
+  getHomeDevices: async () => {
+    let persons: Response;
+    try {
+      persons = await BaseApi.request(`${API_BASE_URL}/${ASSISTED_PERSONS_PATH}`, { method: 'GET' }, { authenticated: true });
+    } catch {
+      usingSample = true;
+      return localTrackingApi.getHomeDevices();
+    }
+    if (!persons.ok) throw new Error(`No se pudo leer la persona asistida (${persons.status}).`);
+    const data: unknown = await persons.json();
+    const person = (Array.isArray(data) ? data[0] : data) as { id?: number } | undefined;
+    usingSample = false;
+    if (person?.id == null) return { rooms: [], devices: [], hubOnline: false, hubLastContactAt: new Date(0).toISOString() };
+    const response = await BaseApi.request(
+      `${API_BASE_URL}/${ASSISTED_PERSONS_PATH}/${encodeURIComponent(person.id)}/${STATUS_PATH}`, { method: 'GET' }, { authenticated: true });
+    // 404: the person has no home with an installation yet, so there is nothing installed to show.
+    if (response.status === 404) return { rooms: [], devices: [], hubOnline: false, hubLastContactAt: new Date(0).toISOString() };
+    if (!response.ok) throw new Error(`No se pudo leer el estado de los dispositivos (${response.status}).`);
+    return toHomeDevices(await response.json() as HomeStatusResource);
+  },
+};
+
 export function getTrackingApi(): TrackingApi {
-  return localTrackingApi;
+  return API_BASE_URL ? httpTrackingApi : localTrackingApi;
 }

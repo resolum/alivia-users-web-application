@@ -1,4 +1,4 @@
-import { Cpu, DoorClosed, Lightbulb, Mic, PanelsTopLeft, type LucideIcon } from 'lucide-react';
+import { Blinds, Cpu, DoorClosed, Lightbulb, Mic, PanelsTopLeft, type LucideIcon } from 'lucide-react';
 import type { StatusTone } from '@/shared/presentation/components/ui/index.ts';
 import type { IncidentDeviceKind, IncidentStage, ProblemType } from '../domain/model/incident.entity.ts';
 
@@ -7,6 +7,7 @@ export const DEVICE_ICON: Record<IncidentDeviceKind, LucideIcon> = {
   light: Lightbulb,
   window_sensor: PanelsTopLeft,
   door_sensor: DoorClosed,
+  curtain: Blinds,
   other: Cpu,
 };
 

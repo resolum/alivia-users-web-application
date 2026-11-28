@@ -242,6 +242,11 @@ export function getRegistrationProgress(): RegistrationProgress | null {
   return readRegistrationProgress();
 }
 
+/** Forgets a registration progress that no longer matches a session in this browser. */
+export function discardRegistrationProgress(): void {
+  clearRegistrationProgress();
+}
+
 /** Registers the responsible client and keeps the email for resending. */
 export async function signUp(command: SignUpCommand): Promise<Account> {
   assertValid(command.validate());

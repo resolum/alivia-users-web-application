@@ -1,5 +1,6 @@
 import type { RouteObject } from 'react-router';
 import { GuestOnly } from './guards/GuestOnly.tsx';
+import { RequireAuth } from './guards/RequireAuth.tsx';
 import { IamAuthLayout } from './IamAuthLayout.tsx';
 
 const signInView = () =>
@@ -42,6 +43,12 @@ export const iamRoutes: RouteObject[] = [
   },
   // The 6-digit code can be entered with or without a session, so it is not guest-only.
   { Component: IamAuthLayout, children: [{ path: 'verify-email', lazy: verifyEmailView }] },
-  { path: 'household/new', lazy: householdAccountView },
-  { path: 'household/assisted-person', lazy: assistedPersonRegistrationView },
+  // The household steps act on the signed-in account: without a session they go to sign-in instead of failing.
+  {
+    Component: RequireAuth,
+    children: [
+      { path: 'household/new', lazy: householdAccountView },
+      { path: 'household/assisted-person', lazy: assistedPersonRegistrationView },
+    ],
+  },
 ];
